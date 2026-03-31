@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beykush Winery</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width:980px;margin:0 auto;padding:12px 16px 40px}
+a{color:#8b5cf6;text-decoration:none}
+.hdr{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}.hdr .dot{width:8px;height:8px;border-radius:50%;background:#9f1239}.hdr h1{font-size:17px;font-weight:700;letter-spacing:-.5px}.hdr .badge{font-size:9px;color:#7d8196;background:#151821;padding:2px 7px;border-radius:10px}.hdr .st{font-size:9px;margin-left:auto}
+.sub{font-size:10px;color:#7d8196;margin-bottom:10px}
+.tabs{display:flex;gap:3px;margin-bottom:10px;flex-wrap:wrap;align-items:center}.tab{padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;background:#151821;color:#7d8196;transition:all .15s}.tab.on{background:#9f1239;color:#fff}
+.filters{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.flt{padding:4px 8px;border-radius:5px;border:1px solid #232738;background:#151821;color:#e4e5ea;font-size:10px;font-family:inherit;cursor:pointer}
+.flt option{background:#151821}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:10px}
+.kpi{background:#151821;border-radius:7px;padding:10px 12px;border:1px solid #232738}.kpi .l{font-size:9px;color:#7d8196;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}.kpi .v{font-size:18px;font-weight:700}.kpi .s{font-size:9px;color:#7d8196;margin-top:1px}
+.cc{background:#151821;border-radius:7px;padding:12px;border:1px solid #232738;margin-bottom:10px}.cc h3{font-size:10px;font-weight:600;color:#7d8196;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}@media(max-width:700px){.row{grid-template-columns:1fr}}
+.tbl{width:100%;border-collapse:collapse;font-size:10px}.tbl th{text-align:left;padding:5px 3px;color:#7d8196;font-weight:500;border-bottom:1px solid #232738}.tbl td{padding:4px 3px;border-bottom:1px solid rgba(35,39,56,.3)}.tbl .r{text-align:right}.tbl .g{color:#10b981}.tbl .rd{color:#ef4444}.tbl tr.click{cursor:pointer}.tbl tr.click:hover{background:#1e2130}
+.si{margin-bottom:5px;padding:7px 9px;background:#151821;border-radius:5px;border:1px solid #232738}.si.low{border-color:rgba(239,68,68,.3)}.si.stk{border-color:rgba(245,158,11,.3)}.si .top{display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px}.si .nm{font-weight:600}.si .bar{height:3px;background:#232738;border-radius:2px;overflow:hidden}.si .bf{height:100%;border-radius:2px}.si .bot{display:flex;justify-content:space-between;margin-top:2px;font-size:9px;color:#7d8196}
+.lgd{display:flex;gap:8px;margin-bottom:6px;font-size:9px;color:#7d8196}.lgd i{width:5px;height:5px;border-radius:2px;display:inline-block;margin-right:2px}
+.mg{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #232738;font-size:11px;cursor:pointer}.mg:hover{background:#1e2130;margin:0 -4px;padding:6px 4px;border-radius:4px}.mg:last-child{border:none}.mg .n{font-weight:600}.mg .s{font-size:9px;color:#7d8196}.mg .v{font-weight:600;color:#10b981;text-align:right}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100}.modal-c{background:#151821;border:1px solid #232738;border-radius:10px;padding:20px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto}.modal-c h2{font-size:15px;margin-bottom:12px}.modal-close{float:right;background:none;border:none;color:#7d8196;font-size:18px;cursor:pointer}
+.hidden{display:none}
+.warn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:8px 10px;font-size:10px;color:#ef4444;margin-bottom:8px}
+.info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:6px;padding:8px 10px;font-size:10px;color:#3b82f6;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span></div>
+<div class="sub" id="subtitle">Загрузка...</div>
+<div class="tabs" id="tabs">
+  <button class="tab on" onclick="sw('pl',this)">P&L</button>
+  <button class="tab" onclick="sw('sales',this)">Продажи</button>
+  <button class="tab" onclick="sw('exp',this)">Расходы</button>
+  <button class="tab" onclick="sw('assets',this)">Осн.фонды</button>
+  <button class="tab" onclick="sw('shop',this)">Магазин</button>
+  <button class="tab" onclick="sw('stock',this)">Склад</button>
+  <button class="tab" onclick="sw('cash',this)">Кэш-фло</button>
+  <button class="tab" onclick="sw('unrec',this)">⚠ Нераспозн.</button>
+  <button class="tab" onclick="sw('settings',this)">⚙</button>
+</div>
+<div id="ld" class="hidden-init"><h2 style="text-align:center;padding:60px 0">Загрузка...</h2></div>
+<div id="t-pl" class="hidden"></div><div id="t-sales" class="hidden"></div><div id="t-exp" class="hidden"></div><div id="t-assets" class="hidden"></div><div id="t-shop" class="hidden"></div><div id="t-stock" class="hidden"></div><div id="t-cash" class="hidden"></div><div id="t-unrec" class="hidden"></div><div id="t-settings" class="hidden"></div>
+<div id="modal" class="modal hidden"></div>
+
+<script>
+const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
+const WC="https://beykush.com/wp-json/wc/v3";
+const WCK="consumer_key=ck_5b87215529858139d17b602945170ae4d9c8adbd&consumer_secret=cs_3ad054a505185162e849a92bf019979e6c037c93";
+const IGN=["#ignore","Конвертація","ІГНОР!!!","Банк???","Банк, Еквайринг"];
+const ZP=["ЗП менеджерів","ЗП Виноградник","ЗП Виноробня","ЗП Готель","ЗП Цибак","BW Света","BW Наташа","BW Таня"];
+const ASSET_CATS=["Обладнання виноробні","Обладнання виноградник","Обладнання, власний транспорт"];
+let T=[],SK=[],BL=[],WO=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"};
+// Helpers
+function pn(s){if(!s||s==="")return 0;s=String(s).trim();let ng=false;if(s.startsWith("(")&&s.endsWith(")")){ng=true;s=s.slice(1,-1)}if(s.startsWith("-")){ng=true;s=s.slice(1)}s=s.replace(/[₴$€\s]/g,"").replace(/,/g,"");let n=parseFloat(s);return isNaN(n)?0:ng?-n:n}
+const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};
+const ff=n=>n?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n):"0";
+function gv(o,s){for(const k of Object.keys(o)){if(k.trim().toLowerCase().startsWith(s.toLowerCase()))return o[k]}return""}
+function toCur(uah){if(SETS.dispCur==="EUR")return uah/FX.EUR;if(SETS.dispCur==="USD")return uah/FX.USD;return uah}
+function curSym(){return SETS.dispCur==="EUR"?"€":SETS.dispCur==="USD"?"$":"₴"}
+async function csv(sh){const r=await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}
+async function fetchWC(ep,p=""){let all=[],pg=1;while(pg<=10){try{const r=await fetch(`${WC}/${ep}?${WCK}&per_page=100&page=${pg}&${p}`);if(!r.ok)break;const d=await r.json();if(!d.length)break;all=all.concat(d);if(d.length<100)break;pg++}catch(e){break}}return all}
+async function fetchNBU(){try{const r=await fetch("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json");const d=await r.json();const e=d.find(x=>x.cc==="EUR"),u=d.find(x=>x.cc==="USD");if(e)FX.EUR=e.rate;if(u)FX.USD=u.rate}catch(e){}}
+function netto(t){
+  if(t.tp==="Доход"){
+    if((t.src==="PRIVAT"||t.src==="VOSTOK")&&t.cat!=="Продаж, Експорт")return t.amt/1.2;
+    return t.amt;
+  }
+  if(t.tp==="Расход"){
+    if((t.src==="PRIVAT"||t.src==="VOSTOK")&&!ZP.some(z=>t.cat.includes(z))&&!t.cat.includes("Податки")&&!t.cat.includes("Банківська"))return t.amt/1.2;
+    return t.amt;
+  }
+  return t.amt;
+}
+function isAsset(t){return ASSET_CATS.some(a=>t.cat.includes(a))}
+function srcType(t){return(t.src==="2fMK"||t.src==="2fKiev")?"2Ф":"1Ф"}
+
+// Load
+async function load(){
+  try{
+    await fetchNBU();
+    const[t,s,b]=await Promise.all([csv("Dashboard_Data"),csv("3_Stock"),csv("6_Balances")]);
+    T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),smoney:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});
+    T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход";x.net=netto(x);x.stype=srcType(x)});
+    SK=s;BL=b;
+    try{WO=await fetchWC("orders","status=completed,processing")}catch(e){WO=[]}
+    // Year filter
+    const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
+    // Dates
+    const lastTxn=T.length?T.reduce((a,b)=>a.mo>b.mo?a:b).ym:"?";
+    const stDate=SK.length?"(статич.)":"нет данных";
+    document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";
+    document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" заказов WC · Данные до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2);
+    document.getElementById("ld").classList.add("hidden");
+    buildFilters(yrs);render();
+  }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>'}
+}
+function buildFilters(yrs){
+  // Insert filters bar after tabs
+  let fb=document.getElementById("filterbar");
+  if(!fb){fb=document.createElement("div");fb.id="filterbar";fb.className="filters";document.getElementById("tabs").after(fb)}
+  const geos=[...new Set(T.filter(t=>t.geo&&t.geo!=="="&&t.geo!=="-").map(t=>t.geo))].sort();
+  const channels=[...new Set(T.filter(t=>t.tp==="Доход").map(t=>t.cat))].sort();
+  fb.innerHTML=`
+    <select class="flt" id="fYear"><option value="ALL">Все годы</option>${yrs.map(y=>'<option value="'+y+'">'+y+'</option>').join("")}</select>
+    <select class="flt" id="fMonth"><option value="ALL">Все мес</option>${["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>'<option value="'+m+'">'+m+'</option>').join("")}</select>
+    <select class="flt" id="fSrc"><option value="ALL">1Ф+2Ф</option><option value="1Ф">1Ф</option><option value="2Ф">2Ф</option></select>
+    <select class="flt" id="fChan"><option value="ALL">Все каналы</option>${channels.map(c=>'<option value="'+c+'">'+(c.length>25?c.substring(0,25)+"…":c)+'</option>').join("")}</select>
+    <select class="flt" id="fGeo"><option value="ALL">Все гео</option>${geos.map(g=>'<option value="'+g+'">'+g+'</option>').join("")}</select>
+    <select class="flt" id="fCur" title="Валюта отображения"><option value="UAH">₴ UAH</option><option value="EUR">€ EUR</option><option value="USD">$ USD</option></select>`;
+  ["fYear","fMonth","fSrc","fChan","fGeo","fCur"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{if(id==="fCur")SETS.dispCur=document.getElementById("fCur").value;render()}));
+}
+function getF(){
+  const yr=document.getElementById("fYear")?.value||"ALL";
+  const mm=document.getElementById("fMonth")?.value||"ALL";
+  const src=document.getElementById("fSrc")?.value||"ALL";
+  const chan=document.getElementById("fChan")?.value||"ALL";
+  const geo=document.getElementById("fGeo")?.value||"ALL";
+  return{yr,mm,src,chan,geo};
+}
+function filt(list,f,typeF){
+  let r=list;
+  if(f.yr!=="ALL")r=r.filter(t=>t.yr===f.yr);
+  if(f.mm!=="ALL")r=r.filter(t=>t.mm===f.mm);
+  if(f.src!=="ALL")r=r.filter(t=>t.stype===f.src);
+  if(f.chan!=="ALL")r=r.filter(t=>t.cat===f.chan);
+  if(f.geo!=="ALL")r=r.filter(t=>t.geo===f.geo);
+  if(typeF)r=r.filter(t=>t.tp===typeF);
+  return r;
+}
+function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['pl','sales','exp','assets','shop','stock','cash','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
+const CHS=["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ","Продаж,  Дістрібʼютор Укр","Продаж, Інтернет магазини","Продаж, на виноробні"];
+const CSH={"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Инет","Продаж, на виноробні":"Виноробня"};
+const CC=["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1","#a855f7"];
+const MN=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];const MMa=["01","02","03","04","05","06","07","08","09","10","11","12"];
+const CO={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9,padding:6}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
+function aY(){return[...new Set(T.map(x=>x.yr))].sort()}
+function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||"2026"}
+function pYr(y){return String(parseInt(y)-1)}
+function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
+
+function render(){const f=getF();rPL(f);rSales(f);rExp(f);rAssets(f);rShop(f);rStock();rCash(f);rUnrec();rSettings()}
+
+// ===== P&L =====
+function rPL(f){
+  const el=document.getElementById("t-pl"),sy=sY(f),py=pYr(sy),mm=mxMM(sy);
+  const opex=T.filter(t=>!isAsset(t));
+  const sr=opex.filter(t=>t.yr===sy&&t.tp==="Доход").reduce((s,t)=>s+t.net,0);
+  const se=opex.filter(t=>t.yr===sy&&t.tp==="Расход").reduce((s,t)=>s+t.net,0);
+  const sp=sr+se,sm=sr?(sp/sr*100).toFixed(1):"0";
+  const pr=opex.filter(t=>t.yr===py&&parseInt(t.mm)<=mm&&t.tp==="Доход").reduce((s,t)=>s+t.net,0);
+  const gr=pr?((sr-pr)/pr*100).toFixed(1):"0";const ytd=mm<12?" ("+MN[mm-1]+")":"";
+  const cs=curSym();
+  const uahB=pn(gv(BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH")||{},"баланс")||"0");
+  const eurB=pn(gv(BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR")||{},"баланс")||"0");
+  const usdB=pn(gv(BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD")||{},"баланс")||"0");
+  const totalB=uahB+eurB*FX.EUR+usdB*FX.USD;
+  const yrs=aY();
+  const bd=yrs.map(y=>{const ox=opex.filter(t=>t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.net,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.net,0);return{y,r:toCur(r),e:toCur(Math.abs(e)),p:toCur(r+e),m:r?((r+e)/r*100):0}});
+  const ms={},mp={};opex.filter(t=>t.yr===sy&&t.tp==="Доход").forEach(t=>{ms[t.mm]=(ms[t.mm]||0)+toCur(t.net)});opex.filter(t=>t.yr===py&&t.tp==="Доход").forEach(t=>{mp[t.mm]=(mp[t.mm]||0)+toCur(t.net)});
+
+  el.innerHTML=`
+    <div class="kpis">
+      <div class="kpi"><div class="l">Выручка нетто ${sy}${ytd}</div><div class="v" style="color:#10b981">${fm(toCur(sr))}${cs}</div><div class="s">${gr>0?"+":""}${gr}% vs ${py}${ytd}</div></div>
+      <div class="kpi"><div class="l">Расходы нетто</div><div class="v" style="color:#ef4444">${fm(toCur(Math.abs(se)))}${cs}</div></div>
+      <div class="kpi"><div class="l">Прибыль</div><div class="v" style="color:${sp>0?'#10b981':'#ef4444'}">${fm(toCur(sp))}${cs}</div><div class="s">Маржа ${sm}%</div></div>
+      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${ff(toCur(totalB))}${cs}</div><div class="s">₴${ff(uahB)} €${ff(eurB)} $${ff(usdB)}</div></div>
+    </div>
+    <div class="row"><div class="cc"><h3>P&L по годам (без осн.фондов)</h3><canvas id="c1" height="150"></canvas></div><div class="cc"><h3>Маржинальность</h3><canvas id="c1m" height="150"></canvas></div></div>
+    <div class="cc"><h3>Выручка помесячно: ${sy} vs ${py}</h3><canvas id="c2" height="85"></canvas></div>`;
+  dc("c1");CH.c1=new Chart(document.getElementById("c1"),{type:"bar",data:{labels:yrs,datasets:[{label:"Выручка",data:bd.map(x=>x.r),backgroundColor:"#10b981",borderRadius:3},{label:"Расходы",data:bd.map(x=>x.e),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},{label:"Прибыль",data:bd.map(x=>x.p),backgroundColor:"#8b5cf6",borderRadius:3}]},options:CO});
+  dc("c1m");CH.c1m=new Chart(document.getElementById("c1m"),{type:"line",data:{labels:yrs,datasets:[{label:"Маржа",data:bd.map(x=>x.m),borderColor:"#f59e0b",backgroundColor:"rgba(245,158,11,.1)",fill:true,tension:.3,pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",callback:v=>v.toFixed(0)+"%"},grid:{color:"#1e2130"}}}}});
+  dc("c2");CH.c2=new Chart(document.getElementById("c2"),{type:"bar",data:{labels:MN,datasets:[{label:sy,data:MMa.map(m=>ms[m]||0),backgroundColor:"#10b981",borderRadius:3},{label:py,data:MMa.map(m=>mp[m]||0),backgroundColor:"rgba(139,92,246,.4)",borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+curSym()}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+}
+
+// ===== SALES =====
+function rSales(f){
+  const el=document.getElementById("t-sales"),cs=curSym();
+  const ft=filt(T,f,"Доход");
+  // Channels
+  const pd=CHS.map(c=>({n:CSH[c]||c,v:ft.filter(t=>t.cat===c).reduce((s,t)=>s+toCur(t.net),0)})).filter(x=>x.v>1000);
+  // Managers
+  const bm={};ft.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||!m.trim())return;if(!bm[m])bm[m]={s:0,c:0};bm[m].s+=toCur(t.net);bm[m].c+=toCur(t.com)});
+  const mgrs=Object.entries(bm).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s);
+  // Top contragents
+  const bc={};ft.forEach(t=>{const a=t.alias||t.name;if(!a||a==="#ignore")return;if(!bc[a])bc[a]={s:0,cnt:0};bc[a].s+=toCur(t.net);bc[a].cnt++});
+  const topC=Object.entries(bc).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,15);
+  // Channels by year
+  const chYrs=aY();const chD=chYrs.map(y=>{const yt=T.filter(t=>t.yr===y&&t.tp==="Доход");const o={};CHS.forEach(c=>{o[CSH[c]]=toCur(yt.filter(t=>t.cat===c).reduce((s,t)=>s+t.net,0))});return{year:y,...o}});
+  // Export in EUR/USD
+  const expFt=ft.filter(t=>t.cat==="Продаж, Експорт");
+  const expEUR=expFt.filter(t=>t.money==="EUR").reduce((s,t)=>s+t.smoney,0);
+  const expUSD=expFt.filter(t=>t.money==="USD").reduce((s,t)=>s+t.smoney,0);
+  const expUAH=expFt.reduce((s,t)=>s+t.amt,0);
+
+  el.innerHTML=`
+    <div class="cc"><h3>Каналы по годам</h3><canvas id="c5" height="120"></canvas><div style="display:flex;flex-wrap:wrap;gap:3px 8px;margin-top:6px">${CHS.map((c,i)=>'<span style="display:flex;align-items:center;gap:3px;font-size:8px;color:#7d8196"><i style="width:5px;height:5px;border-radius:2px;display:inline-block;background:'+CC[i]+'"></i>'+CSH[c]+'</span>').join("")}</div></div>
+    <div class="row">
+      <div class="cc"><h3>Каналы</h3><canvas id="c3" height="180"></canvas></div>
+      <div class="cc"><h3>Менеджеры</h3>${mgrs.map(m=>'<div class="mg" onclick="showMgr(\''+m.n.replace(/'/g,"\\'")+'\')"><div><div class="n">'+m.n+'</div><div class="s">КМ: '+(m.s?(m.c/m.s*100).toFixed(1):0)+'%</div></div><div><div class="v">'+ff(m.s)+cs+'</div><div class="s">'+ff(m.c)+cs+'</div></div></div>').join("")}</div>
+    </div>
+    ${expFt.length?'<div class="info">Экспорт: '+ff(expUAH)+' ₴ · €'+ff(expEUR)+' · $'+ff(expUSD)+'</div>':''}
+    <div class="cc"><h3>Топ контрагентов</h3><table class="tbl"><tr><th>Контрагент</th><th class="r">Сумма нетто</th><th class="r">Операций</th></tr>${topC.map(c=>'<tr class="click" onclick="showContr(\''+c.n.replace(/'/g,"\\'")+'\')"><td>'+c.n.substring(0,35)+'</td><td class="r g">'+ff(c.s)+cs+'</td><td class="r">'+c.cnt+'</td></tr>').join("")}</table></div>`;
+  dc("c5");CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets:CHS.map((c,i)=>({label:CSH[c],data:chD.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}))},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+  dc("c3");CH.c3=new Chart(document.getElementById("c3"),{type:"doughnut",data:{labels:pd.map(x=>x.n),datasets:[{data:pd.map(x=>x.v),backgroundColor:CC.slice(0,pd.length),borderWidth:0}]},options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:8},boxWidth:7,padding:5}},tooltip:{callbacks:{label:c=>c.label+": "+ff(c.raw)+cs}}}}});
+}
+
+// Modal: Manager detail
+window.showMgr=function(name){
+  const f=getF();const ft=filt(T,f).filter(t=>t.mgr===name);
+  const rev=ft.filter(t=>t.tp==="Доход").reduce((s,t)=>s+toCur(t.net),0);
+  const com=ft.filter(t=>t.tp==="Доход").reduce((s,t)=>s+toCur(t.com),0);
+  const byCat={};ft.filter(t=>t.tp==="Доход").forEach(t=>{const c=t.cat;byCat[c]=(byCat[c]||0)+toCur(t.net)});
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const byC={};ft.filter(t=>t.tp==="Доход").forEach(t=>{const a=t.alias||t.name;byC[a]=(byC[a]||0)+toCur(t.net)});
+  const contrs=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const cs=curSym();
+  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${name}</h2>
+    <div class="kpis"><div class="kpi"><div class="l">Продажи</div><div class="v g">${ff(rev)}${cs}</div></div><div class="kpi"><div class="l">Комиссия</div><div class="v">${ff(com)}${cs}</div><div class="s">${rev?(com/rev*100).toFixed(1):0}%</div></div></div>
+    <h3 style="color:#7d8196;font-size:11px;margin:10px 0 6px">По каналам</h3><table class="tbl">${cats.map(([c,v])=>'<tr><td>'+(CSH[c]||c)+'</td><td class="r g">'+ff(v)+cs+'</td></tr>').join("")}</table>
+    <h3 style="color:#7d8196;font-size:11px;margin:10px 0 6px">Топ контрагентов</h3><table class="tbl">${contrs.map(([n,v])=>'<tr><td>'+n.substring(0,30)+'</td><td class="r g">'+ff(v)+cs+'</td></tr>').join("")}</table>
+  </div>`;
+  document.getElementById("modal").classList.remove("hidden");
+};
+window.showContr=function(name){
+  const f=getF();const ft=filt(T,f).filter(t=>(t.alias||t.name)===name);
+  const rev=ft.filter(t=>t.tp==="Доход").reduce((s,t)=>s+toCur(t.net),0);
+  const byYr={};ft.filter(t=>t.tp==="Доход").forEach(t=>{byYr[t.yr]=(byYr[t.yr]||0)+toCur(t.net)});
+  const yrs=Object.entries(byYr).sort();
+  const byM={};ft.filter(t=>t.tp==="Доход").forEach(t=>{byM[t.ym]=(byM[t.ym]||0)+toCur(t.net)});
+  const ms=Object.entries(byM).sort();
+  const cs=curSym();
+  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${name}</h2>
+    <div class="kpi" style="margin-bottom:10px"><div class="l">Всего продаж</div><div class="v g">${ff(rev)}${cs}</div></div>
+    <h3 style="color:#7d8196;font-size:11px;margin:10px 0 6px">По годам</h3><table class="tbl">${yrs.map(([y,v])=>'<tr><td>'+y+'</td><td class="r g">'+ff(v)+cs+'</td></tr>').join("")}</table>
+    <h3 style="color:#7d8196;font-size:11px;margin:10px 0 6px">По месяцам</h3><table class="tbl">${ms.map(([m,v])=>'<tr><td>'+m+'</td><td class="r g">'+ff(v)+cs+'</td></tr>').join("")}</table>
+  </div>`;
+  document.getElementById("modal").classList.remove("hidden");
+};
+window.closeModal=function(){document.getElementById("modal").classList.add("hidden")};
+document.getElementById("modal").addEventListener("click",function(e){if(e.target===this)closeModal()});
+
+// ===== EXPENSES (opex only) =====
+function rExp(f){
+  const el=document.getElementById("t-exp"),sy=sY(f),py=pYr(sy),cs=curSym();
+  const ft=filt(T.filter(t=>t.tp==="Расход"&&!isAsset(t)),f);
+  const revT=filt(T.filter(t=>t.tp==="Доход"),f).reduce((s,t)=>s+t.net,0);
+  const bc={};ft.forEach(t=>{bc[t.cat||"???"]=(bc[t.cat||"???"]||0)+t.net});
+  const so=Object.entries(bc).map(([c,v])=>({c,a:v})).sort((a,b)=>a.a-b.a).slice(0,15);
+  const prevFt=T.filter(t=>t.tp==="Расход"&&!isAsset(t)&&t.yr===py);
+  const prevBc={};prevFt.forEach(t=>{prevBc[t.cat||"???"]=(prevBc[t.cat||"???"]||0)+t.net});
+  el.innerHTML=`
+    <div class="cc"><h3>Операционные расходы (без осн.фондов)</h3><canvas id="c4" height="${Math.max(130,so.length*15)}"></canvas></div>
+    <div class="cc"><h3>Детализация</h3><table class="tbl"><tr><th>Категория</th><th class="r">Сумма</th><th class="r">% выр.</th><th class="r">${py}</th><th class="r">Δ</th></tr>${so.map(e=>{const cv=toCur(Math.abs(e.a));const pv=toCur(Math.abs(prevBc[e.c]||0));const pct=revT?(Math.abs(e.a)/revT*100).toFixed(1):"—";const d=pv?((cv-pv)/pv*100).toFixed(0):"—";return'<tr><td>'+e.c.substring(0,25)+'</td><td class="r rd">'+ff(cv)+cs+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(pv)+'</td><td class="r" style="color:'+(d>0?"#ef4444":"#10b981")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}</table></div>`;
+  dc("c4");CH.c4=new Chart(document.getElementById("c4"),{type:"bar",data:{labels:so.map(e=>e.c.substring(0,22)),datasets:[{data:so.map(e=>toCur(Math.abs(e.a))),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9}},grid:{display:false}}}}});
+}
+
+// ===== ASSETS =====
+function rAssets(f){
+  const el=document.getElementById("t-assets"),cs=curSym();
+  const ft=T.filter(t=>isAsset(t)&&t.tp==="Расход");
+  const byYr={};aY().forEach(y=>{byYr[y]=toCur(Math.abs(ft.filter(t=>t.yr===y).reduce((s,t)=>s+t.net,0)))});
+  const byCat={};ASSET_CATS.forEach(c=>{byCat[c]=toCur(Math.abs(ft.filter(t=>t.cat.includes(c)).reduce((s,t)=>s+t.net,0)))});
+  const total=toCur(Math.abs(ft.reduce((s,t)=>s+t.net,0)));
+  el.innerHTML=`
+    <div class="kpis"><div class="kpi"><div class="l">Всего инвестиций</div><div class="v" style="color:#3b82f6">${ff(total)}${cs}</div></div>${ASSET_CATS.map(c=>'<div class="kpi"><div class="l">'+c.replace("Обладнання","Обл.").replace(", власний транспорт"," транспорт")+'</div><div class="v">'+ff(byCat[c]||0)+cs+'</div></div>').join("")}</div>
+    <div class="cc"><h3>Инвестиции по годам</h3><canvas id="ca1" height="140"></canvas></div>`;
+  const yrs=aY();
+  dc("ca1");CH.ca1=new Chart(document.getElementById("ca1"),{type:"bar",data:{labels:yrs,datasets:ASSET_CATS.map((c,i)=>({label:c.replace("Обладнання ",""),data:yrs.map(y=>toCur(Math.abs(ft.filter(t=>t.yr===y&&t.cat.includes(c)).reduce((s,t)=>s+t.net,0)))),backgroundColor:CC[i+3],borderRadius:2}))},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{stacked:true,ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+}
+
+// ===== SHOP =====
+function rShop(f){
+  const el=document.getElementById("t-shop"),cs=curSym();
+  if(!WO.length){el.innerHTML='<div class="warn">WooCommerce: не удалось загрузить. Проверьте CORS (нужен плагин WP CORS на сайте).</div>';return}
+  const yr=f.yr;const orders=yr==="ALL"?WO:WO.filter(o=>(o.date_created||"").startsWith(yr));
+  const totalRev=orders.reduce((s,o)=>s+parseFloat(o.total||0),0);
+  const avgCheck=orders.length?totalRev/orders.length:0;
+  const byM={};orders.forEach(o=>{const m=(o.date_created||"").substring(0,7);if(!byM[m])byM[m]={r:0,c:0};byM[m].r+=parseFloat(o.total||0);byM[m].c++});const ms=Object.keys(byM).sort();
+  const prods={};orders.forEach(o=>{(o.line_items||[]).forEach(li=>{if(parseFloat(li.total||0)>0){const n=li.name||"?";if(!prods[n])prods[n]={r:0,q:0};prods[n].r+=parseFloat(li.total);prods[n].q+=li.quantity||1}})});
+  const topP=Object.entries(prods).map(([n,d])=>({n,...d})).sort((a,b)=>b.r-a.r).slice(0,10);
+  const srcs={};orders.forEach(o=>{const m=o.meta_data||[];const s=(m.find(x=>x.key==="_metorik_utm_source")||{}).value||"direct";srcs[s]=(srcs[s]||0)+1});
+  const srcS=Object.entries(srcs).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const cities={};orders.forEach(o=>{const c=o.shipping?.city||o.billing?.city||"";if(c)cities[c]=(cities[c]||0)+1});
+  const topCit=Object.entries(cities).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const fopCut=totalRev*(SETS.fopTax+SETS.fopBank)/100;
+
+  el.innerHTML=`
+    <div class="kpis">
+      <div class="kpi"><div class="l">Выручка магазин</div><div class="v g">${ff(toCur(totalRev))}${cs}</div></div>
+      <div class="kpi"><div class="l">Заказов</div><div class="v">${orders.length}</div></div>
+      <div class="kpi"><div class="l">Ср.чек</div><div class="v">${ff(toCur(avgCheck))}${cs}</div></div>
+      <div class="kpi"><div class="l">ФОП налоги (${SETS.fopTax}%)</div><div class="v rd">${ff(toCur(fopCut))}${cs}</div></div>
+    </div>
+    <div class="cc"><h3>Заказы помесячно</h3><canvas id="cs1" height="90"></canvas></div>
+    <div class="row">
+      <div class="cc"><h3>Топ товаров</h3><table class="tbl"><tr><th>Товар</th><th class="r">Выручка</th><th class="r">Шт</th></tr>${topP.map(p=>'<tr><td>'+p.n.substring(0,28)+'</td><td class="r g">'+ff(toCur(p.r))+cs+'</td><td class="r">'+p.q+'</td></tr>').join("")}</table></div>
+      <div class="cc"><h3>Источники / Города</h3><table class="tbl"><tr><th>UTM</th><th class="r">Зак.</th></tr>${srcS.map(([s,c])=>'<tr><td>'+s+'</td><td class="r">'+c+'</td></tr>').join("")}</table>
+        <table class="tbl" style="margin-top:8px"><tr><th>Город</th><th class="r">Зак.</th></tr>${topCit.map(([c,n])=>'<tr><td>'+c+'</td><td class="r">'+n+'</td></tr>').join("")}</table></div>
+    </div>`;
+  dc("cs1");CH.cs1=new Chart(document.getElementById("cs1"),{type:"bar",data:{labels:ms,datasets:[{label:"Выручка",data:ms.map(m=>toCur(byM[m].r)),backgroundColor:"#10b981",borderRadius:2,yAxisID:"y"},{label:"Заказов",data:ms.map(m=>byM[m].c),type:"line",borderColor:"#f59e0b",pointRadius:2,pointBackgroundColor:"#f59e0b",borderWidth:1.5,yAxisID:"y1"}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{position:"left",ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y1:{position:"right",ticks:{color:"#f59e0b",font:{size:9}},grid:{display:false}}}}});
+}
+
+// ===== STOCK =====
+function rStock(){
+  const el=document.getElementById("t-stock");
+  const it=SK.map(s=>{const w=gv(s,"вино")||"";const vi=gv(s,"урожай")||"";const st=pn(gv(s,"остаток")||"0");const so=pn(gv(s,"продано")||"0");const av=pn(gv(s,"сред")||"0");const mr=gv(s,"запас")||"";const mo=mr&&mr!=="N/A"?parseFloat(mr):null;return{w,vi,st,so,av,mo}}).filter(s=>s.st>0);
+  it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
+  const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<2).length,lo3=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
+  el.innerHTML=`
+    <div class="info">Данные склада: статичные (из файла). Для live-обновления подключите IMPORTRANGE из 1С.</div>
+    <div class="kpis"><div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div><div class="kpi"><div class="l">Бутылок</div><div class="v">${ff(tb)}</div></div><div class="kpi"><div class="l">Крит.</div><div class="v rd">${lo}</div><div class="s">&lt;2м</div></div><div class="kpi"><div class="l">Заканч.</div><div class="v" style="color:#e11d48">${lo3}</div><div class="s">&lt;3м</div></div><div class="kpi"><div class="l">Застр.</div><div class="v" style="color:#f59e0b">${sk}</div><div class="s">&gt;15м</div></div></div>
+    <div class="lgd"><span><i style="background:#ef4444"></i>&lt;2м</span><span><i style="background:#e11d48"></i>&lt;3м</span><span><i style="background:#f59e0b"></i>Застр.</span><span><i style="background:#10b981"></i>Норма</span></div>
+    ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const cr=i.mo!==null&&i.mo<2;const lw=i.mo!==null&&i.mo<3;const st=i.mo!==null&&i.mo>15;const cl=cr||lw?"low":st?"stk":"";const co=cr?"#ef4444":lw?"#e11d48":st?"#f59e0b":"#10b981";return'<div class="si '+cl+'"><div class="top"><span class="nm">'+i.w+' '+i.vi+'</span><span style="color:'+co+';font-weight:600">'+ff(i.st)+' · '+(i.mo!==null?i.mo.toFixed(1)+'м':'N/A')+'</span></div><div class="bar"><div class="bf" style="width:'+p+'%;background:'+co+'"></div></div><div class="bot"><span>Продано: '+ff(i.so)+'</span><span>~'+i.av+'/мес</span></div></div>'}).join("")}`;
+}
+
+// ===== CASH FLOW =====
+function rCash(f){
+  const el=document.getElementById("t-cash"),cs=curSym();
+  const uahB=pn(gv(BL.find(b=>gv(b,"валют")==="UAH")||{},"баланс")||"0");
+  const eurB=pn(gv(BL.find(b=>gv(b,"валют")==="EUR")||{},"баланс")||"0");
+  const usdB=pn(gv(BL.find(b=>gv(b,"валют")==="USD")||{},"баланс")||"0");
+  const totalB=uahB+eurB*FX.EUR+usdB*FX.USD;
+  const totalEUR=uahB/FX.EUR+eurB+usdB*FX.USD/FX.EUR;
+  const totalUSD=uahB/FX.USD+eurB*FX.EUR/FX.USD+usdB;
+  // All amounts (no netto - raw)
+  const ft=f.yr!=="ALL"?T.filter(t=>t.yr===f.yr):T;
+  const byM={};ft.forEach(t=>{if(!byM[t.ym])byM[t.ym]={i:0,o:0};if(t.amt>0)byM[t.ym].i+=t.amt;else byM[t.ym].o+=Math.abs(t.amt)});
+  const ms=Object.keys(byM).sort();
+  // Last txn dates by source
+  const lastDates={};T.forEach(t=>{if(!lastDates[t.src]||t.ym>lastDates[t.src])lastDates[t.src]=t.ym});
+
+  el.innerHTML=`
+    <div class="kpis">
+      <div class="kpi"><div class="l">Всего (₴)</div><div class="v" style="color:#f59e0b">${ff(totalB)} ₴</div></div>
+      <div class="kpi"><div class="l">Всего (€)</div><div class="v" style="color:#3b82f6">${ff(totalEUR)} €</div></div>
+      <div class="kpi"><div class="l">Всего ($)</div><div class="v" style="color:#10b981">${ff(totalUSD)} $</div></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">₴ счёт</div><div class="v">${ff(uahB)}</div></div>
+      <div class="kpi"><div class="l">€ счёт</div><div class="v">${ff(eurB)}</div><div class="s">= ${ff(eurB*FX.EUR)} ₴</div></div>
+      <div class="kpi"><div class="l">$ счёт</div><div class="v">${ff(usdB)}</div><div class="s">= ${ff(usdB*FX.USD)} ₴</div></div>
+    </div>
+    <div class="cc"><h3>Входящие vs Исходящие (брутто)</h3><canvas id="cc1" height="110"></canvas></div>
+    <div class="cc"><h3>Нетто помесячно</h3><canvas id="cc2" height="80"></canvas></div>
+    <div class="cc"><h3>Последние обновления счетов</h3><table class="tbl"><tr><th>Источник</th><th class="r">Последние данные</th></tr>${Object.entries(lastDates).sort().map(([s,d])=>'<tr><td>'+s+'</td><td class="r">'+(d||"?")+'</td></tr>').join("")}</table></div>
+    <p style="font-size:9px;color:#7d8196;margin-top:6px">Курсы НБУ: €1=${FX.EUR.toFixed(2)}₴ $1=${FX.USD.toFixed(2)}₴</p>`;
+  dc("cc1");CH.cc1=new Chart(document.getElementById("cc1"),{type:"bar",data:{labels:ms,datasets:[{label:"Вход",data:ms.map(m=>byM[m].i),backgroundColor:"#10b981",borderRadius:2},{label:"Выход",data:ms.map(m=>byM[m].o),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},maxTicksLimit:15},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+  const netto=ms.map(m=>byM[m].i-byM[m].o);
+  dc("cc2");CH.cc2=new Chart(document.getElementById("cc2"),{type:"bar",data:{labels:ms,datasets:[{data:netto,backgroundColor:netto.map(v=>v>=0?"#10b981":"#ef4444"),borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},maxTicksLimit:15},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+}
+
+// ===== UNRECOGNIZED =====
+function rUnrec(){
+  const el=document.getElementById("t-unrec");
+  const unrec=T.filter(t=>t.cat==="???"||t.cat===""||t.cat.includes("???"));
+  const byAlias={};unrec.forEach(t=>{const a=t.alias||t.name||"(пусто)";if(!byAlias[a])byAlias[a]={cnt:0,amt:0};byAlias[a].cnt++;byAlias[a].amt+=t.amt});
+  const sorted=Object.entries(byAlias).map(([n,d])=>({n,...d})).sort((a,b)=>Math.abs(b.amt)-Math.abs(a.amt));
+  el.innerHTML=`
+    ${sorted.length?'<div class="warn">'+sorted.length+' нераспознанных контрагентов на сумму '+ff(Math.abs(sorted.reduce((s,x)=>s+x.amt,0)))+' ₴. Добавьте их в workerNEW в BW_accounts.</div>':'<div class="info">Все контрагенты распознаны ✓</div>'}
+    <div class="cc"><h3>Нераспознанные контрагенты</h3><table class="tbl"><tr><th>Контрагент</th><th class="r">Сумма</th><th class="r">Операций</th></tr>${sorted.map(x=>'<tr><td>'+x.n.substring(0,40)+'</td><td class="r '+(x.amt>0?"g":"rd")+'">'+ff(x.amt)+' ₴</td><td class="r">'+x.cnt+'</td></tr>').join("")}</table></div>`;
+}
+
+// ===== SETTINGS =====
+function rSettings(){
+  const el=document.getElementById("t-settings");
+  el.innerHTML=`
+    <div class="cc"><h3>Настройки</h3>
+      <table class="tbl">
+        <tr><td>ФОП единый налог %</td><td class="r"><input type="number" value="${SETS.fopTax}" step="0.5" style="width:60px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:3px 6px;border-radius:4px;font-family:inherit" onchange="SETS.fopTax=parseFloat(this.value);render()"></td></tr>
+        <tr><td>ФОП банк комиссия %</td><td class="r"><input type="number" value="${SETS.fopBank}" step="0.5" style="width:60px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:3px 6px;border-radius:4px;font-family:inherit" onchange="SETS.fopBank=parseFloat(this.value);render()"></td></tr>
+      </table>
+      <p style="font-size:9px;color:#7d8196;margin-top:8px">Курс НБУ: €${FX.EUR.toFixed(2)} · $${FX.USD.toFixed(2)}</p>
+      <p style="font-size:9px;color:#7d8196">Google Sheet ID: ${SID}</p>
+    </div>`;
+}
+
+load();
+</script>
+
+</body>
+</html>
