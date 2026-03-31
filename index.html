@@ -3,309 +3,215 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beykush Winery Dashboard</title>
+<title>Beykush Winery</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0c0e13;--card:#151821;--border:#232738;--text:#e4e5ea;--muted:#7d8196;--accent:#9f1239;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',-apple-system,sans-serif;min-height:100vh}
-.header{padding:24px 24px 0;margin-bottom:20px}
-.header h1{font-size:20px;font-weight:700;letter-spacing:-0.5px;display:inline}
-.header .badge{font-size:11px;color:var(--muted);background:var(--card);padding:2px 9px;border-radius:16px;margin-left:10px}
-.header .status{font-size:10px;color:var(--green);float:right;margin-top:6px}
-.header .sub{font-size:12px;color:var(--muted);margin-top:4px}
-.tabs{display:flex;gap:4px;padding:0 24px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.tab{padding:7px 16px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;background:var(--card);color:var(--muted);transition:all .15s}
-.tab.active{background:var(--accent);color:#fff}
-.year-select{margin-left:auto;padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-family:inherit;cursor:pointer}
-.content{padding:0 24px}
-.kpis{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.kpi{background:var(--card);border-radius:10px;padding:16px 18px;border:1px solid var(--border);flex:1 1 170px;min-width:155px}
-.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
-.kpi .value{font-size:24px;font-weight:700}
-.kpi .sub{font-size:11px;color:var(--muted);margin-top:3px}
-.chart-card{background:var(--card);border-radius:10px;padding:18px;border:1px solid var(--border);margin-bottom:16px}
-.chart-card h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:14px}
-.row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-.row > div{flex:1 1 280px}
-.stock-item{margin-bottom:8px;padding:9px 12px;background:var(--card);border-radius:7px;border:1px solid var(--border)}
-.stock-item.low{border-color:rgba(239,68,68,.27)}
-.stock-item.stuck{border-color:rgba(245,158,11,.27)}
-.stock-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
-.stock-header .name{font-weight:600}
-.stock-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.stock-bar-fill{height:100%;border-radius:3px}
-.stock-footer{display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:10px}
-.legend span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
-.legend i{width:7px;height:7px;border-radius:2px;display:inline-block}
-.mgr{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
-.mgr:last-child{border-bottom:none}
-.mgr .n{font-size:13px;font-weight:600}
-.mgr .s{font-size:10px;color:var(--muted)}
-.mgr .v{font-size:13px;font-weight:600;color:var(--green);text-align:right}
-.exp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(35,39,56,.5);font-size:12px}
-.exp-row .cat{font-weight:500;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exp-row .amt{color:var(--red);font-weight:600}
-.loading{display:flex;align-items:center;justify-content:center;min-height:80vh;flex-direction:column}
-.loading h2{font-size:18px;font-weight:600;margin-bottom:8px}
-.loading p{font-size:13px;color:var(--muted)}
-.insight{background:rgba(159,18,57,.13);border:1px solid rgba(159,18,57,.25);border-radius:10px;padding:14px;font-size:12px;line-height:1.6;margin-top:16px}
-.insight strong{color:#e11d48}
+body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width:960px;margin:0 auto;padding:16px 20px 40px}
+.hdr{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.hdr .dot{width:8px;height:8px;border-radius:50%;background:#9f1239}
+.hdr h1{font-size:18px;font-weight:700;letter-spacing:-.5px}
+.hdr .badge{font-size:10px;color:#7d8196;background:#151821;padding:2px 8px;border-radius:12px}
+.hdr .st{font-size:10px;margin-left:auto}
+.sub{font-size:11px;color:#7d8196;margin-bottom:14px}
+.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.tab{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;background:#151821;color:#7d8196;transition:all .15s}
+.tab.on{background:#9f1239;color:#fff}
+.yf{margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid #232738;background:#151821;color:#e4e5ea;font-size:11px;font-family:inherit}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px}
+.kpi{background:#151821;border-radius:8px;padding:12px 14px;border:1px solid #232738}
+.kpi .l{font-size:10px;color:#7d8196;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.kpi .v{font-size:20px;font-weight:700}
+.kpi .s{font-size:10px;color:#7d8196;margin-top:2px}
+.cc{background:#151821;border-radius:8px;padding:14px;border:1px solid #232738;margin-bottom:12px}
+.cc h3{font-size:11px;font-weight:600;color:#7d8196;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:700px){.row{grid-template-columns:1fr}}
+.si{margin-bottom:6px;padding:8px 10px;background:#151821;border-radius:6px;border:1px solid #232738}
+.si.low{border-color:rgba(239,68,68,.3)}.si.stk{border-color:rgba(245,158,11,.3)}
+.si .top{display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px}
+.si .nm{font-weight:600}.si .bar{height:4px;background:#232738;border-radius:2px;overflow:hidden}
+.si .bf{height:100%;border-radius:2px}.si .bot{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:#7d8196}
+.lgd{display:flex;gap:10px;margin-bottom:8px;font-size:10px;color:#7d8196}
+.lgd i{width:6px;height:6px;border-radius:2px;display:inline-block;margin-right:3px}
+.mg{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #232738;font-size:12px}
+.mg:last-child{border:none}.mg .n{font-weight:600}.mg .s{font-size:10px;color:#7d8196}
+.mg .v{font-weight:600;color:#10b981;text-align:right}
+.er{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(35,39,56,.4);font-size:11px}
+.er .c{font-weight:500;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.er .a{color:#ef4444;font-weight:600}
+.ld{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column}
+.ld h2{font-size:16px;margin-bottom:6px}.ld p{font-size:12px;color:#7d8196}
 .hidden{display:none}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
-    <h1>BEYKUSH WINERY</h1>
-    <span class="badge">Live Dashboard</span>
-    <span class="status" id="status">⏳ Loading...</span>
-  </div>
-  <div class="sub" id="subtitle">Загрузка данных...</div>
+<div class="hdr">
+  <div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span>
+  <span class="st" id="status" style="color:#f59e0b">⏳ Loading...</span>
 </div>
-
+<div class="sub" id="subtitle">Загрузка...</div>
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('pl',this)">P&L</button>
-  <button class="tab" onclick="switchTab('sales',this)">Продажи</button>
-  <button class="tab" onclick="switchTab('expenses',this)">Расходы</button>
-  <button class="tab" onclick="switchTab('stock',this)">Склад</button>
-  <select class="year-select" id="yearFilter" onchange="applyFilter()">
+  <button class="tab on" onclick="sw('pl',this)">P&L</button>
+  <button class="tab" onclick="sw('sales',this)">Продажи</button>
+  <button class="tab" onclick="sw('exp',this)">Расходы</button>
+  <button class="tab" onclick="sw('stock',this)">Склад</button>
+  <select class="yf" id="yf" onchange="render()">
     <option value="ALL">Все годы</option>
-    <option value="2021">2021</option>
-    <option value="2022">2022</option>
-    <option value="2023">2023</option>
-    <option value="2024">2024</option>
-    <option value="2025">2025</option>
+    <option value="2021">2021</option><option value="2022">2022</option>
+    <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
   </select>
 </div>
-
-<div class="content">
-  <div id="loading" class="loading">
-    <h2>Загрузка данных из Google Sheets...</h2>
-    <p>Подключение к таблице BW_Looker_Data</p>
-  </div>
-
-  <div id="tab-pl" class="hidden"></div>
-  <div id="tab-sales" class="hidden"></div>
-  <div id="tab-expenses" class="hidden"></div>
-  <div id="tab-stock" class="hidden"></div>
-</div>
+<div id="ld" class="ld"><h2>Загрузка данных из Google Sheets...</h2><p>Подключение к BW_Looker_Data</p></div>
+<div id="t-pl" class="hidden"></div>
+<div id="t-sales" class="hidden"></div>
+<div id="t-exp" class="hidden"></div>
+<div id="t-stock" class="hidden"></div>
 
 <script>
-const SHEET_ID = "1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
-let allTxns = [], stockData = [], balData = [];
-let charts = {};
+const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
+let T=[],SK=[],BL=[],CH={};
 
-const fmt = n => { if (!n && n !== 0) return "—"; const a = Math.abs(n); if (a >= 1e6) return (n/1e6).toFixed(1)+"M"; if (a >= 1e3) return (n/1e3).toFixed(0)+"K"; return n.toFixed(0); };
-const fmtF = n => n ? new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n) : "0";
+function pn(s){
+  if(!s||s==="")return 0;
+  s=String(s).trim();
+  let neg=false;
+  if(s.startsWith("(")&&s.endsWith(")")){neg=true;s=s.slice(1,-1);}
+  if(s.startsWith("-")){neg=true;s=s.slice(1);}
+  s=s.replace(/[₴$€\s]/g,"").replace(/,/g,"");
+  let n=parseFloat(s);
+  if(isNaN(n))return 0;
+  return neg?-n:n;
+}
 
-async function fetchCSV(sheet) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const rows = []; let cur = []; let inQ = false; let f = "";
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQ) { if (c === '"' && text[i+1] === '"') { f += '"'; i++; } else if (c === '"') inQ = false; else f += c; }
-    else { if (c === '"') inQ = true; else if (c === ',') { cur.push(f); f = ""; } else if (c === '\n' || (c === '\r' && text[i+1] === '\n')) { cur.push(f); f = ""; rows.push(cur); cur = []; if (c === '\r') i++; } else f += c; }
+const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};
+const ff=n=>n?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n):"0";
+
+async function csv(sh){
+  const r=await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);
+  const t=await r.text();const rows=[];let c=[],q=false,f="";
+  for(let i=0;i<t.length;i++){const x=t[i];
+    if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}
+    else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}
+  if(f||c.length){c.push(f);rows.push(c)}
+  if(rows.length<2)return[];const h=rows[0];
+  return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k.trim()]=r[i]!==undefined?r[i].trim():""});return o})
+}
+
+async function load(){
+  try{
+    const[t,s,b]=await Promise.all([csv("1_Transactions"),csv("3_Stock"),csv("6_Balances")]);
+    T=t.map(x=>({...x,amt:pn(x.Amount_UAH),yr:x.Year||"",mo:x.Month||"",tp:x.Type||"",cat:x.Category||"",mgr:x.Manager||"",com:pn(x.Commission)}));
+    SK=s;BL=b;
+    document.getElementById("status").textContent="● Connected";
+    document.getElementById("status").style.color="#10b981";
+    document.getElementById("subtitle").textContent=ff(T.length)+" транзакций · Google Sheets";
+    document.getElementById("ld").classList.add("hidden");
+    render();
+  }catch(e){
+    document.getElementById("status").textContent="● Ошибка";document.getElementById("status").style.color="#ef4444";
+    document.getElementById("ld").innerHTML=`<h2 style="color:#ef4444">Ошибка загрузки</h2><p>${e.message}</p>`;
   }
-  if (f || cur.length) { cur.push(f); rows.push(cur); }
-  if (rows.length < 2) return [];
-  const h = rows[0];
-  return rows.slice(1).map(r => { const o = {}; h.forEach((k, i) => { o[k.trim()] = r[i] !== undefined ? r[i].trim() : ""; }); return o; });
 }
 
-async function loadData() {
-  try {
-    const [txns, stk, bal] = await Promise.all([fetchCSV("1_Transactions"), fetchCSV("3_Stock"), fetchCSV("6_Balances")]);
-    allTxns = txns.map(t => ({...t, amount: parseFloat(t.Amount_UAH)||0, year: t.Year||"", month: t.Month||"", type: t.Type||"", category: t.Category||"", manager: t.Manager||"", commission: parseFloat(t.Commission)||0 }));
-    stockData = stk; balData = bal;
-    document.getElementById("status").textContent = "● Google Sheets connected";
-    document.getElementById("status").style.color = "var(--green)";
-    document.getElementById("subtitle").textContent = fmtF(allTxns.length) + " транзакций · Данные из Google Sheets";
-    document.getElementById("loading").classList.add("hidden");
-    renderAll();
-  } catch(e) {
-    document.getElementById("status").textContent = "● Ошибка";
-    document.getElementById("status").style.color = "var(--red)";
-    document.getElementById("loading").innerHTML = `<h2 style="color:var(--red)">Ошибка загрузки</h2><p>${e.message}</p><p style="margin-top:12px">Убедись что таблица расшарена: Anyone with link → Viewer</p>`;
-  }
+function sw(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');
+  ['pl','sales','exp','stock'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));
+  document.getElementById('t-'+id).classList.remove('hidden');render();
 }
 
-function getFiltered() {
-  const yr = document.getElementById("yearFilter").value;
-  return yr === "ALL" ? allTxns : allTxns.filter(t => t.year === yr);
-}
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  ['pl','sales','expenses','stock'].forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
-  document.getElementById('tab-'+id).classList.remove('hidden');
-  renderAll();
-}
+const CHS=["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ","Продаж,  Дістрібʼютор Укр","Продаж, Інтернет магазини"];
+const CSH={"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Инет"};
+const CC=["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1"];
+const CO={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10,padding:8}}},scales:{x:{ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:10},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
 
-function applyFilter() { renderAll(); }
+function render(){rPL();rSales();rExp();rStock()}
 
-function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function rPL(){
+  const el=document.getElementById("t-pl");
+  const yrs=["2021","2022","2023","2024","2025"];
+  const d=yrs.map(y=>{const yt=T.filter(t=>t.yr===y);const rev=yt.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.amt,0);const exp=yt.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.amt,0);return{y,rev,exp:Math.abs(exp),pr:rev+exp}});
+  const r25=d[4].rev,r24=d[3].rev,p25=d[4].pr,gr=r24?((r25-r24)/r24*100).toFixed(1):0,mg=r25?(p25/r25*100).toFixed(1):0;
+  const tr=d.reduce((s,x)=>s+x.rev,0),te=d.reduce((s,x)=>s+x.exp,0);
+  const uah=BL.find(b=>(b["Валюта"]||b.Currency||"")==="UAH"),eur=BL.find(b=>(b["Валюта"]||b.Currency||"")==="EUR"),usd=BL.find(b=>(b["Валюта"]||b.Currency||"")==="USD");
 
-const CHANNELS = ["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ"];
-const CH_SHORT = {"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса"};
-const CH_COLORS = ["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1"];
-
-function renderAll() {
-  renderPL(); renderSales(); renderExpenses(); renderStock();
-}
-
-function renderPL() {
-  const el = document.getElementById("tab-pl");
-  const yrs = ["2021","2022","2023","2024","2025"];
-  const plD = yrs.map(y => {
-    const yt = allTxns.filter(t => t.year === y);
-    const rev = yt.filter(t => t.type==="Доход").reduce((s,t) => s+t.amount, 0);
-    const exp = yt.filter(t => t.type==="Расход").reduce((s,t) => s+t.amount, 0);
-    return { year: y, rev, exp: Math.abs(exp), profit: rev+exp };
-  });
-  const r25 = plD[4].rev, r24 = plD[3].rev, p25 = plD[4].profit;
-  const growth = r24 ? ((r25-r24)/r24*100).toFixed(1) : 0;
-  const margin = r25 ? (p25/r25*100).toFixed(1) : 0;
-  const totalR = plD.reduce((s,d) => s+d.rev, 0);
-  const totalE = plD.reduce((s,d) => s+d.exp, 0);
-  const uah = balData.find(b => (b["Валюта"]||b.Currency||"") === "UAH");
-  const eur = balData.find(b => (b["Валюта"]||b.Currency||"") === "EUR");
-  const usd = balData.find(b => (b["Валюта"]||b.Currency||"") === "USD");
-
-  el.innerHTML = `
+  el.innerHTML=`
     <div class="kpis">
-      <div class="kpi"><div class="label">Выручка 2025</div><div class="value" style="color:var(--green)">${fmt(r25)} ₴</div><div class="sub">${growth>0?"+":""}${growth}% vs 2024</div></div>
-      <div class="kpi"><div class="label">Прибыль 2025</div><div class="value" style="color:${p25>0?'var(--green)':'var(--red)'}">${fmt(p25)} ₴</div><div class="sub">Маржа ${margin}%</div></div>
-      <div class="kpi"><div class="label">Всего 2021-25</div><div class="value">${fmt(totalR)} ₴</div><div class="sub">Расходы: ${fmt(totalE)} ₴</div></div>
-      <div class="kpi"><div class="label">Баланс</div><div class="value" style="color:var(--amber)">${uah ? fmtF(parseFloat(uah["Баланс"]||uah.Balance||0)) : "—"} ₴</div><div class="sub">${eur?"€"+fmtF(parseFloat(eur["Баланс"]||eur.Balance||0)):""} · ${usd?"$"+fmtF(parseFloat(usd["Баланс"]||usd.Balance||0)):""}</div></div>
+      <div class="kpi"><div class="l">Выручка 2025</div><div class="v" style="color:#10b981">${fm(r25)} ₴</div><div class="s">${gr>0?"+":""}${gr}% vs 2024</div></div>
+      <div class="kpi"><div class="l">Прибыль 2025</div><div class="v" style="color:${p25>0?'#10b981':'#ef4444'}">${fm(p25)} ₴</div><div class="s">Маржа ${mg}%</div></div>
+      <div class="kpi"><div class="l">Всего 2021-25</div><div class="v">${fm(tr)} ₴</div><div class="s">Расходы: ${fm(te)} ₴</div></div>
+      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${uah?ff(pn(uah["Баланс"]||uah.Balance||0)):"—"} ₴</div><div class="s">${eur?"€"+ff(pn(eur["Баланс"]||eur.Balance||0)):""} · ${usd?"$"+ff(pn(usd["Баланс"]||usd.Balance||0)):""}</div></div>
     </div>
-    <div class="chart-card"><h3>ВЫРУЧКА · РАСХОДЫ · ПРИБЫЛЬ</h3><canvas id="plChart" height="130"></canvas></div>
-    <div class="chart-card"><h3>ВЫРУЧКА ПОМЕСЯЧНО</h3><canvas id="monthChart" height="100"></canvas></div>
-  `;
+    <div class="cc"><h3>Выручка · Расходы · Прибыль</h3><canvas id="c1" height="120"></canvas></div>
+    <div class="cc"><h3>Выручка помесячно</h3><canvas id="c2" height="80"></canvas></div>`;
 
-  destroyChart("plChart");
-  charts.plChart = new Chart(document.getElementById("plChart"), {
-    type: "bar", data: { labels: yrs, datasets: [
-      { label: "Выручка", data: plD.map(d=>d.rev), backgroundColor: "#10b981" },
-      { label: "Расходы", data: plD.map(d=>d.exp), backgroundColor: "rgba(239,68,68,.65)" },
-      { label: "Прибыль", data: plD.map(d=>d.profit), backgroundColor: "#8b5cf6" },
-    ]},
-    options: { responsive: true, plugins: { legend: { labels: { color: "#7d8196", font: { size: 11 } } } }, scales: { x: { ticks: { color: "#7d8196" }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } } } }
-  });
+  dc("c1");CH.c1=new Chart(document.getElementById("c1"),{type:"bar",data:{labels:yrs,datasets:[
+    {label:"Выручка",data:d.map(x=>x.rev),backgroundColor:"#10b981",borderRadius:3},
+    {label:"Расходы",data:d.map(x=>x.exp),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},
+    {label:"Прибыль",data:d.map(x=>x.pr),backgroundColor:"#8b5cf6",borderRadius:3}
+  ]},options:CO});
 
-  const byMonth = {};
-  allTxns.filter(t => t.type==="Доход" && t.month>="2021").forEach(t => { byMonth[t.month] = (byMonth[t.month]||0)+t.amount; });
-  const months = Object.keys(byMonth).sort();
-  destroyChart("monthChart");
-  charts.monthChart = new Chart(document.getElementById("monthChart"), {
-    type: "line", data: { labels: months, datasets: [{ label: "Выручка", data: months.map(m=>byMonth[m]), borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.1)", fill: true, tension: .3, pointRadius: 0 }] },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#7d8196", maxTicksLimit: 12, font: { size: 9 } }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } } } }
-  });
+  const bm={};T.filter(t=>t.tp==="Доход"&&t.mo>="2021").forEach(t=>{bm[t.mo]=(bm[t.mo]||0)+t.amt});
+  const ms=Object.keys(bm).sort();
+  dc("c2");CH.c2=new Chart(document.getElementById("c2"),{type:"line",data:{labels:ms,datasets:[{data:ms.map(m=>bm[m]),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.08)",fill:true,tension:.3,pointRadius:0,borderWidth:1.5}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",maxTicksLimit:10,font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
 }
 
-function renderSales() {
-  const el = document.getElementById("tab-sales");
-  const yr = document.getElementById("yearFilter").value;
-  const pieYr = yr === "ALL" ? "2025" : yr;
-  const ft = allTxns.filter(t => t.type === "Доход" && (yr === "ALL" || t.year === yr));
+function rSales(){
+  const el=document.getElementById("t-sales");const yr=document.getElementById("yf").value;
+  const pyr=yr==="ALL"?"2025":yr;
+  const ft=T.filter(t=>t.tp==="Доход"&&(yr==="ALL"||t.yr===yr));
+  const pd=CHS.map((c,i)=>({n:CSH[c]||c,v:ft.filter(t=>t.cat.includes(c.substring(0,15))).reduce((s,t)=>s+t.amt,0)})).filter(x=>x.v>5000);
+  const bm={};ft.forEach(t=>{if(!t.mgr||t.mgr==="-"||t.mgr==="=")return;if(!bm[t.mgr])bm[t.mgr]={s:0,c:0};bm[t.mgr].s+=t.amt;bm[t.mgr].c+=t.com});
+  const ms=Object.entries(bm).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,5);
 
-  const chData = CHANNELS.map((c,i) => ({ name: CH_SHORT[c], value: ft.filter(t => t.category.includes(c.substring(0,15))).reduce((s,t) => s+t.amount, 0) })).filter(d => d.value > 5000);
+  el.innerHTML=`<div class="row">
+    <div class="cc"><h3>Каналы ${yr!=="ALL"?yr:"2025"}</h3><canvas id="c3" height="180"></canvas></div>
+    <div class="cc"><h3>Менеджеры</h3>${ms.map(m=>`<div class="mg"><div><div class="n">${m.n}</div><div class="s">КМ: ${m.s?(m.c/m.s*100).toFixed(1):0}%</div></div><div><div class="v">${ff(m.s)} ₴</div><div class="s">${ff(m.c)} ₴</div></div></div>`).join("")}</div>
+  </div>`;
 
-  // Managers
-  const byMgr = {};
-  ft.forEach(t => { if (!t.manager || t.manager==="-" || t.manager==="=") return; if (!byMgr[t.manager]) byMgr[t.manager]={sales:0,comm:0}; byMgr[t.manager].sales+=t.amount; byMgr[t.manager].comm+=t.commission; });
-  const mgrs = Object.entries(byMgr).map(([n,d])=>({name:n,...d})).sort((a,b)=>b.sales-a.sales).slice(0,5);
-
-  el.innerHTML = `
-    <div class="row">
-      <div class="chart-card"><h3>КАНАЛЫ ПРОДАЖ ${yr!=="ALL"?yr:""}</h3><canvas id="pieChart" height="200"></canvas>
-        <div class="legend">${chData.map((d,i)=>`<span><i style="background:${CH_COLORS[i]}"></i>${d.name}</span>`).join("")}</div>
-      </div>
-      <div class="chart-card"><h3>МЕНЕДЖЕРЫ</h3>
-        ${mgrs.map(m => `<div class="mgr"><div><div class="n">${m.name}</div><div class="s">Комиссия: ${m.sales?(m.comm/m.sales*100).toFixed(1):0}%</div></div><div><div class="v">${fmtF(m.sales)} ₴</div><div class="s">КМ: ${fmtF(m.comm)} ₴</div></div></div>`).join("")}
-      </div>
-    </div>
-  `;
-
-  destroyChart("pieChart");
-  charts.pieChart = new Chart(document.getElementById("pieChart"), {
-    type: "doughnut", data: { labels: chData.map(d=>d.name), datasets: [{ data: chData.map(d=>d.value), backgroundColor: CH_COLORS.slice(0, chData.length), borderWidth: 0 }] },
-    options: { responsive: true, cutout: "55%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label+": "+fmtF(ctx.raw)+" ₴" } } } }
-  });
+  dc("c3");CH.c3=new Chart(document.getElementById("c3"),{type:"doughnut",data:{labels:pd.map(x=>x.n),datasets:[{data:pd.map(x=>x.v),backgroundColor:CC.slice(0,pd.length),borderWidth:0}]},
+    options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:9},boxWidth:8,padding:6}},tooltip:{callbacks:{label:c=>c.label+": "+ff(c.raw)+" ₴"}}}}});
 }
 
-function renderExpenses() {
-  const el = document.getElementById("tab-expenses");
-  const yr = document.getElementById("yearFilter").value;
-  const ft = yr === "ALL" ? allTxns.filter(t=>t.type==="Расход") : allTxns.filter(t=>t.type==="Расход"&&t.year===yr);
-  const byCat = {};
-  ft.forEach(t => { byCat[t.category||"???"] = (byCat[t.category||"???"]||0)+t.amount; });
-  const sorted = Object.entries(byCat).map(([c,v])=>({cat:c,amt:v})).sort((a,b)=>a.amt-b.amt).slice(0,20);
+function rExp(){
+  const el=document.getElementById("t-exp");const yr=document.getElementById("yf").value;
+  const ft=yr==="ALL"?T.filter(t=>t.tp==="Расход"):T.filter(t=>t.tp==="Расход"&&t.yr===yr);
+  const bc={};ft.forEach(t=>{const c=t.cat||"???";bc[c]=(bc[c]||0)+t.amt});
+  const so=Object.entries(bc).map(([c,v])=>({c,a:v})).sort((a,b)=>a.a-b.a).slice(0,15);
 
-  el.innerHTML = `
-    <div class="chart-card"><h3>ТОП РАСХОДОВ ${yr!=="ALL"?yr:"ЗА ВСЁ ВРЕМЯ"}</h3><canvas id="expChart" height="${Math.max(200, sorted.length*18)}"></canvas></div>
-    <div class="chart-card"><h3>ДЕТАЛИЗАЦИЯ</h3>
-      ${sorted.map(e => `<div class="exp-row"><span class="cat">${e.cat}</span><span class="amt">${fmtF(Math.abs(e.amt))} ₴</span></div>`).join("")}
-    </div>
-  `;
+  el.innerHTML=`
+    <div class="cc"><h3>Топ расходов ${yr!=="ALL"?yr:""}</h3><canvas id="c4" height="${Math.max(140,so.length*16)}"></canvas></div>
+    <div class="cc"><h3>Детализация</h3>${so.map(e=>`<div class="er"><span class="c">${e.c}</span><span class="a">${ff(Math.abs(e.a))} ₴</span></div>`).join("")}</div>`;
 
-  destroyChart("expChart");
-  charts.expChart = new Chart(document.getElementById("expChart"), {
-    type: "bar", data: { labels: sorted.map(e=>e.cat.substring(0,25)), datasets: [{ data: sorted.map(e=>Math.abs(e.amt)), backgroundColor: "rgba(239,68,68,.6)", borderRadius: 3 }] },
-    options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtF(ctx.raw)+" ₴" } } }, scales: { x: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", font: { size: 10 } }, grid: { display: false } } } }
-  });
+  dc("c4");CH.c4=new Chart(document.getElementById("c4"),{type:"bar",data:{labels:so.map(e=>e.c.substring(0,22)),datasets:[{data:so.map(e=>Math.abs(e.a)),backgroundColor:"rgba(239,68,68,.55)",borderRadius:2}]},
+    options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9}},grid:{display:false}}}}});
 }
 
-function renderStock() {
-  const el = document.getElementById("tab-stock");
-  const items = stockData.map(s => ({
-    wine: s["Вино"]||"", vintage: s["Урожай"]||"",
-    stock: parseInt(s["Остаток"])||0, sold: parseInt(s["Продано"])||0,
-    avg: parseInt(s["Сред/мес"])||0,
-    months: s["Запас мес"] && s["Запас мес"] !== "N/A" ? parseFloat(s["Запас мес"]) : null,
-    status: s["Статус"]||""
-  })).filter(s => s.stock > 0);
+function rStock(){
+  const el=document.getElementById("t-stock");
+  const it=SK.map(s=>({w:s["Вино"]||"",vi:s["Урожай"]||"",st:pn(s["Остаток"]),so:pn(s["Продано"]),av:pn(s["Сред/мес"]),
+    mo:s["Запас мес"]&&s["Запас мес"]!=="N/A"?parseFloat(s["Запас мес"]):null})).filter(s=>s.st>0);
+  it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
+  const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
 
-  items.sort((a,b) => { if (a.months===null) return 1; if (b.months===null) return -1; return a.months-b.months; });
-
-  const totalBtl = items.reduce((s,i)=>s+i.stock,0);
-  const low = items.filter(i=>i.months!==null&&i.months<3).length;
-  const stuck = items.filter(i=>i.months!==null&&i.months>15).length;
-
-  el.innerHTML = `
+  el.innerHTML=`
     <div class="kpis">
-      <div class="kpi"><div class="label">Позиций</div><div class="value">${items.length}</div></div>
-      <div class="kpi"><div class="label">Бутылок</div><div class="value">${fmtF(totalBtl)}</div></div>
-      <div class="kpi"><div class="label">Заканчиваются</div><div class="value" style="color:var(--red)">${low}</div><div class="sub">&lt;3 мес</div></div>
-      <div class="kpi"><div class="label">Застряли</div><div class="value" style="color:var(--amber)">${stuck}</div><div class="sub">&gt;15 мес</div></div>
+      <div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div>
+      <div class="kpi"><div class="l">Бутылок</div><div class="v">${ff(tb)}</div></div>
+      <div class="kpi"><div class="l">Заканчив.</div><div class="v" style="color:#ef4444">${lo}</div><div class="s">&lt;3 мес</div></div>
+      <div class="kpi"><div class="l">Застряли</div><div class="v" style="color:#f59e0b">${sk}</div><div class="s">&gt;15 мес</div></div>
     </div>
-    <div class="legend" style="margin-bottom:12px">
-      <span><i style="background:var(--red)"></i>Заканчивается</span>
-      <span><i style="background:var(--amber)"></i>Застряло</span>
-      <span><i style="background:var(--green)"></i>Норма</span>
-    </div>
-    ${items.map(i => {
-      const total = i.stock+i.sold; const pct = total>0?(i.stock/total*100):0;
-      const cls = i.months!==null&&i.months<3?"low":i.months!==null&&i.months>15?"stuck":"";
-      const col = cls==="low"?"var(--red)":cls==="stuck"?"var(--amber)":"var(--green)";
-      return `<div class="stock-item ${cls}">
-        <div class="stock-header"><span class="name">${i.wine} ${i.vintage}</span><span style="color:${col};font-weight:600;font-size:11px">${fmtF(i.stock)} бут · ${i.months!==null?i.months.toFixed(1)+" мес":"N/A"}</span></div>
-        <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${col}"></div></div>
-        <div class="stock-footer"><span>Продано: ${fmtF(i.sold)}</span><span>~${i.avg}/мес</span></div>
-      </div>`;
-    }).join("")}
-  `;
+    <div class="lgd"><span><i style="background:#ef4444"></i>Заканч.</span><span><i style="background:#f59e0b"></i>Застряло</span><span><i style="background:#10b981"></i>Норма</span></div>
+    ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const cl=i.mo!==null&&i.mo<3?"low":i.mo!==null&&i.mo>15?"stk":"";
+      const co=cl==="low"?"#ef4444":cl==="stk"?"#f59e0b":"#10b981";
+      return`<div class="si ${cl}"><div class="top"><span class="nm">${i.w} ${i.vi}</span><span style="color:${co};font-weight:600">${ff(i.st)} · ${i.mo!==null?i.mo.toFixed(1)+"м":"N/A"}</span></div><div class="bar"><div class="bf" style="width:${p}%;background:${co}"></div></div><div class="bot"><span>Продано: ${ff(i.so)}</span><span>~${i.av}/мес</span></div></div>`}).join("")}`;
 }
 
-loadData();
+load();
 </script>
 </body>
 </html>
-
