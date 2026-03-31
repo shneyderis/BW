@@ -9,16 +9,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width:980px;margin:0 auto;padding:16px 20px 40px}
-.hdr{display:flex;align-items:center;gap:10px;margin-bottom:4px}.hdr .dot{width:8px;height:8px;border-radius:50%;background:#9f1239}.hdr h1{font-size:18px;font-weight:700;letter-spacing:-.5px}.hdr .badge{font-size:10px;color:#7d8196;background:#151821;padding:2px 8px;border-radius:12px}.hdr .st{font-size:10px;margin-left:auto}
+.hdr{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}.hdr .dot{width:8px;height:8px;border-radius:50%;background:#9f1239}.hdr h1{font-size:18px;font-weight:700;letter-spacing:-.5px}.hdr .badge{font-size:10px;color:#7d8196;background:#151821;padding:2px 8px;border-radius:12px}.hdr .st{font-size:10px;margin-left:auto}
 .sub{font-size:11px;color:#7d8196;margin-bottom:14px}
-.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.tab{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;background:#151821;color:#7d8196;transition:all .15s}.tab.on{background:#9f1239;color:#fff}
-.yf,.mf{padding:5px 10px;border-radius:6px;border:1px solid #232738;background:#151821;color:#e4e5ea;font-size:11px;font-family:inherit}.yf{margin-left:auto}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
-.kpi{background:#151821;border-radius:8px;padding:12px 14px;border:1px solid #232738}.kpi .l{font-size:10px;color:#7d8196;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}.kpi .v{font-size:20px;font-weight:700}.kpi .s{font-size:10px;color:#7d8196;margin-top:2px}
+.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;align-items:center}.tab{padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;background:#151821;color:#7d8196;transition:all .15s}.tab.on{background:#9f1239;color:#fff}.yf{margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid #232738;background:#151821;color:#e4e5ea;font-size:11px;font-family:inherit}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}.kpi{background:#151821;border-radius:8px;padding:12px 14px;border:1px solid #232738}.kpi .l{font-size:9px;color:#7d8196;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}.kpi .v{font-size:20px;font-weight:700}.kpi .s{font-size:10px;color:#7d8196;margin-top:2px}
 .cc{background:#151821;border-radius:8px;padding:14px;border:1px solid #232738;margin-bottom:12px}.cc h3{font-size:11px;font-weight:600;color:#7d8196;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}@media(max-width:700px){.row{grid-template-columns:1fr}}
-.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}@media(max-width:800px){.row3{grid-template-columns:1fr}}
 .tbl{width:100%;border-collapse:collapse;font-size:11px}.tbl th{text-align:left;padding:6px 4px;color:#7d8196;font-weight:500;border-bottom:1px solid #232738}.tbl td{padding:5px 4px;border-bottom:1px solid rgba(35,39,56,.3)}.tbl .r{text-align:right}.tbl .g{color:#10b981}.tbl .rd{color:#ef4444}
 .si{margin-bottom:6px;padding:8px 10px;background:#151821;border-radius:6px;border:1px solid #232738}.si.low{border-color:rgba(239,68,68,.3)}.si.stk{border-color:rgba(245,158,11,.3)}.si .top{display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px}.si .nm{font-weight:600}.si .bar{height:4px;background:#232738;border-radius:2px;overflow:hidden}.si .bf{height:100%;border-radius:2px}.si .bot{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:#7d8196}
 .lgd{display:flex;gap:10px;margin-bottom:8px;font-size:10px;color:#7d8196}.lgd i{width:6px;height:6px;border-radius:2px;display:inline-block;margin-right:3px}
@@ -26,6 +22,7 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
 .er{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(35,39,56,.4);font-size:11px}.er .c{font-weight:500;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.er .a{color:#ef4444;font-weight:600}
 .ld{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column}.ld h2{font-size:16px;margin-bottom:6px}.ld p{font-size:12px;color:#7d8196}
 .hidden{display:none}
+.ord{padding:6px 8px;background:#0c0e13;border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:center}.ord .on{color:#7d8196;font-size:10px}
 </style>
 </head>
 <body>
@@ -36,200 +33,209 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
   <button class="tab" onclick="sw('sales',this)">Продажи</button>
   <button class="tab" onclick="sw('exp',this)">Расходы</button>
   <button class="tab" onclick="sw('export',this)">Экспорт</button>
+  <button class="tab" onclick="sw('shop',this)">Магазин</button>
   <button class="tab" onclick="sw('stock',this)">Склад</button>
   <button class="tab" onclick="sw('cash',this)">Кэш-фло</button>
   <select class="yf" id="yf" onchange="render()"><option value="ALL">Все годы</option></select>
 </div>
-<div id="ld" class="ld"><h2>Загрузка...</h2><p>Dashboard_Data + Stock + Balances</p></div>
-<div id="t-pl" class="hidden"></div><div id="t-sales" class="hidden"></div><div id="t-exp" class="hidden"></div><div id="t-export" class="hidden"></div><div id="t-stock" class="hidden"></div><div id="t-cash" class="hidden"></div>
+<div id="ld" class="ld"><h2>Загрузка...</h2><p>Sheets + WooCommerce + НБУ</p></div>
+<div id="t-pl" class="hidden"></div><div id="t-sales" class="hidden"></div><div id="t-exp" class="hidden"></div><div id="t-export" class="hidden"></div><div id="t-shop" class="hidden"></div><div id="t-stock" class="hidden"></div><div id="t-cash" class="hidden"></div>
 
 <script>
 const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
+const WC="https://beykush.com/wp-json/wc/v3";
+const WCK="consumer_key=ck_5b87215529858139d17b602945170ae4d9c8adbd&consumer_secret=cs_3ad054a505185162e849a92bf019979e6c037c93";
 const IGN=["#ignore","Конвертація","ІГНОР!!!","Банк???","Банк, Еквайринг"];
-let T=[],SK=[],BL=[],CH={};
+const ZP_CATS=["ЗП менеджерів","ЗП Виноградник","ЗП Виноробня","ЗП Готель","ЗП Цибак","BW Света","BW Наташа","BW Таня"];
+let T=[],SK=[],BL=[],WO=[],FX={EUR:1,USD:1},CH={};
 function pn(s){if(!s||s==="")return 0;s=String(s).trim();let ng=false;if(s.startsWith("(")&&s.endsWith(")")){ng=true;s=s.slice(1,-1)}if(s.startsWith("-")){ng=true;s=s.slice(1)}s=s.replace(/[₴$€\s]/g,"").replace(/,/g,"");let n=parseFloat(s);return isNaN(n)?0:ng?-n:n}
 const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};
 const ff=n=>n?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n):"0";
 function gv(o,s){for(const k of Object.keys(o)){if(k.trim().toLowerCase().startsWith(s.toLowerCase()))return o[k]}return""}
 async function csv(sh){const r=await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}
-async function load(){try{const[t,s,b]=await Promise.all([csv("Dashboard_Data"),csv("3_Stock"),csv("6_Balances")]);T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),smoney:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход"});SK=s;BL=b;const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();const sel=document.getElementById("yf");sel.innerHTML='<option value="ALL">Все годы</option>';yrs.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o)});document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";document.getElementById("subtitle").textContent=ff(T.length)+" операций · live";document.getElementById("ld").classList.add("hidden");render()}catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<h2 style="color:#ef4444">Ошибка</h2><p>'+e.message+'</p>'}}
-function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['pl','sales','exp','export','stock','cash'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
+
+async function fetchWC(endpoint,params=""){
+  let all=[];let page=1;
+  while(page<=10){
+    try{const r=await fetch(`${WC}/${endpoint}?${WCK}&per_page=100&page=${page}&${params}`);if(!r.ok)break;const d=await r.json();if(!d.length)break;all=all.concat(d);if(d.length<100)break;page++}catch(e){break}
+  }
+  return all;
+}
+async function fetchNBU(){
+  try{const r=await fetch("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json");const d=await r.json();const eur=d.find(x=>x.cc==="EUR");const usd=d.find(x=>x.cc==="USD");if(eur)FX.EUR=eur.rate;if(usd)FX.USD=usd.rate}catch(e){FX.EUR=44;FX.USD=41}
+}
+
+// VAT adjustment
+function nettoAmt(t){
+  const isUkrSale=t.tp==="Доход"&&(t.src==="PRIVAT"||t.src==="VOSTOK")&&t.cat!=="Продаж, Експорт";
+  const isUkrExp=t.tp==="Расход"&&(t.src==="PRIVAT"||t.src==="VOSTOK")&&!ZP_CATS.some(z=>t.cat.includes(z))&&!t.cat.includes("Податки")&&!t.cat.includes("Банківська");
+  if(isUkrSale)return t.amt/1.2;
+  if(isUkrExp)return t.amt/1.2;
+  return t.amt;
+}
+
+async function load(){
+  try{
+    const[t,s,b]=await Promise.all([csv("Dashboard_Data"),csv("3_Stock"),csv("6_Balances"),fetchNBU()]);
+    T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),smoney:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});
+    T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход";x.netto=nettoAmt(x)});
+    SK=s;BL=b;
+    const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
+    const sel=document.getElementById("yf");sel.innerHTML='<option value="ALL">Все годы</option>';yrs.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o)});
+    // Load WooCommerce
+    try{WO=await fetchWC("orders","status=completed,processing")}catch(e){WO=[]}
+    document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";
+    document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+ff(WO.length)+" заказов · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2);
+    document.getElementById("ld").classList.add("hidden");render();
+  }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<h2 style="color:#ef4444">Ошибка</h2><p>'+e.message+'</p>'}
+}
+
+function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['pl','sales','exp','export','shop','stock','cash'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 const CHS=["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ","Продаж,  Дістрібʼютор Укр","Продаж, Інтернет магазини","Продаж, на виноробні"];
 const CSH={"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Инет","Продаж, на виноробні":"Виноробня"};
 const CC=["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1","#a855f7"];
-const MN=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
-const MM=["01","02","03","04","05","06","07","08","09","10","11","12"];
+const MN=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];const MM=["01","02","03","04","05","06","07","08","09","10","11","12"];
 const CO={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10,padding:8}}},scales:{x:{ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:10},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
-function getY(){return document.getElementById("yf").value}
-function allYrs(){return[...new Set(T.map(x=>x.yr))].sort()}
-function selY(){const y=getY();const a=allYrs();return y!=="ALL"?y:a[a.length-1]||"2026"}
-function prevY(){return String(parseInt(selY())-1)}
-function maxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
-function ytdRev(y,mm){return T.filter(t=>t.yr===y&&parseInt(t.mm)<=mm&&t.tp==="Доход").reduce((s,t)=>s+t.amt,0)}
-function ytdExp(y,mm){return T.filter(t=>t.yr===y&&parseInt(t.mm)<=mm&&t.tp==="Расход").reduce((s,t)=>s+t.amt,0)}
+function getY(){return document.getElementById("yf").value}function aY(){return[...new Set(T.map(x=>x.yr))].sort()}function sY(){const y=getY();const a=aY();return y!=="ALL"?y:a[a.length-1]||"2026"}function pY(){return String(parseInt(sY())-1)}
+function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
-function render(){rPL();rSales();rExp();rExport();rStock();rCash()}
+function render(){rPL();rSales();rExp();rExport();rShop();rStock();rCash()}
 
 function rPL(){
-  const el=document.getElementById("t-pl"),sy=selY(),py=prevY(),mm=maxMM(sy);
-  const sr=ytdRev(sy,mm),se=ytdExp(sy,mm),sp=sr+se,sm=sr?(sp/sr*100).toFixed(1):"0";
-  const pr=ytdRev(py,mm),gr=pr?((sr-pr)/pr*100).toFixed(1):"0";
-  const ytd=mm<12?" ("+MN[mm-1]+")":"";
-  const tr=T.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.amt,0),te=T.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.amt,0);
-  const uah=BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH");const eur=BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR");const usd=BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD");const gb=r=>r?pn(gv(r,"баланс")||gv(r,"balance")||"0"):0;
-  const yrs=allYrs();
-  const bd=yrs.map(y=>{const r=T.filter(t=>t.yr===y&&t.tp==="Доход").reduce((s,t)=>s+t.amt,0);const e=T.filter(t=>t.yr===y&&t.tp==="Расход").reduce((s,t)=>s+t.amt,0);return{y,r,e:Math.abs(e),p:r+e,m:r?(((r+e)/r)*100):0}});
-  const ms={},mp={};T.filter(t=>t.yr===sy&&t.tp==="Доход").forEach(t=>{ms[t.mm]=(ms[t.mm]||0)+t.amt});T.filter(t=>t.yr===py&&t.tp==="Доход").forEach(t=>{mp[t.mm]=(mp[t.mm]||0)+t.amt});
-  const msE={},mpE={};T.filter(t=>t.yr===sy&&t.tp==="Расход").forEach(t=>{msE[t.mm]=(msE[t.mm]||0)+Math.abs(t.amt)});T.filter(t=>t.yr===py&&t.tp==="Расход").forEach(t=>{mpE[t.mm]=(mpE[t.mm]||0)+Math.abs(t.amt)});
+  const el=document.getElementById("t-pl"),sy=sY(),py=pY(),mm=mxMM(sy);
+  const sr=T.filter(t=>t.yr===sy&&t.tp==="Доход").reduce((s,t)=>s+t.netto,0);
+  const se=T.filter(t=>t.yr===sy&&t.tp==="Расход").reduce((s,t)=>s+t.netto,0);
+  const sp=sr+se,sm=sr?(sp/sr*100).toFixed(1):"0";
+  const pr=T.filter(t=>t.yr===py&&parseInt(t.mm)<=mm&&t.tp==="Доход").reduce((s,t)=>s+t.netto,0);
+  const gr=pr?((sr-pr)/pr*100).toFixed(1):"0";const ytd=mm<12?" ("+MN[mm-1]+")":"";
+  const tr=T.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.netto,0),te=T.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.netto,0);
+  // Balance in UAH
+  const uahB=pn(gv(BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH")||{},"баланс")||"0");
+  const eurB=pn(gv(BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR")||{},"баланс")||"0");
+  const usdB=pn(gv(BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD")||{},"баланс")||"0");
+  const totalB=uahB+eurB*FX.EUR+usdB*FX.USD;
+  const yrs=aY();const bd=yrs.map(y=>{const r=T.filter(t=>t.yr===y&&t.tp==="Доход").reduce((s,t)=>s+t.netto,0);const e=T.filter(t=>t.yr===y&&t.tp==="Расход").reduce((s,t)=>s+t.netto,0);return{y,r,e:Math.abs(e),p:r+e,m:r?((r+e)/r*100):0}});
+  const ms={},mp={};T.filter(t=>t.yr===sy&&t.tp==="Доход").forEach(t=>{ms[t.mm]=(ms[t.mm]||0)+t.netto});T.filter(t=>t.yr===py&&t.tp==="Доход").forEach(t=>{mp[t.mm]=(mp[t.mm]||0)+t.netto});
 
   el.innerHTML=`
     <div class="kpis">
-      <div class="kpi"><div class="l">Выручка ${sy}${ytd}</div><div class="v" style="color:#10b981">${fm(sr)} ₴</div><div class="s">${gr>0?"+":""}${gr}% vs ${py}${ytd}</div></div>
-      <div class="kpi"><div class="l">Расходы ${sy}${ytd}</div><div class="v" style="color:#ef4444">${fm(Math.abs(se))} ₴</div></div>
+      <div class="kpi"><div class="l">Выручка нетто ${sy}${ytd}</div><div class="v" style="color:#10b981">${fm(sr)} ₴</div><div class="s">${gr>0?"+":""}${gr}% vs ${py}${ytd}</div></div>
+      <div class="kpi"><div class="l">Расходы нетто ${sy}</div><div class="v" style="color:#ef4444">${fm(Math.abs(se))} ₴</div></div>
       <div class="kpi"><div class="l">Прибыль ${sy}</div><div class="v" style="color:${sp>0?'#10b981':'#ef4444'}">${fm(sp)} ₴</div><div class="s">Маржа ${sm}%</div></div>
-      <div class="kpi"><div class="l">Всего</div><div class="v">${fm(tr)} ₴</div><div class="s">Расх: ${fm(Math.abs(te))} ₴</div></div>
-      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${uah?ff(gb(uah)):"—"} ₴</div><div class="s">${eur?"€"+ff(gb(eur)):""} · ${usd?"$"+ff(gb(usd)):""}</div></div>
+      <div class="kpi"><div class="l">Баланс всего</div><div class="v" style="color:#f59e0b">${ff(totalB)} ₴</div><div class="s">₴${ff(uahB)} · €${ff(eurB)} · $${ff(usdB)}</div></div>
     </div>
-    <div class="row">
-      <div class="cc"><h3>P&L по годам</h3><canvas id="c1" height="160"></canvas></div>
-      <div class="cc"><h3>Маржинальность</h3><canvas id="c1m" height="160"></canvas></div>
-    </div>
-    <div class="cc"><h3>Выручка помесячно: ${sy} vs ${py}</h3><canvas id="c2" height="90"></canvas></div>
-    <div class="cc"><h3>Расходы помесячно: ${sy} vs ${py}</h3><canvas id="c2e" height="90"></canvas></div>`;
-
+    <div class="row"><div class="cc"><h3>P&L по годам (нетто)</h3><canvas id="c1" height="160"></canvas></div><div class="cc"><h3>Маржинальность</h3><canvas id="c1m" height="160"></canvas></div></div>
+    <div class="cc"><h3>Выручка помесячно: ${sy} vs ${py}</h3><canvas id="c2" height="90"></canvas></div>`;
   dc("c1");CH.c1=new Chart(document.getElementById("c1"),{type:"bar",data:{labels:yrs,datasets:[{label:"Выручка",data:bd.map(x=>x.r),backgroundColor:"#10b981",borderRadius:3},{label:"Расходы",data:bd.map(x=>x.e),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},{label:"Прибыль",data:bd.map(x=>x.p),backgroundColor:"#8b5cf6",borderRadius:3}]},options:CO});
-  dc("c1m");CH.c1m=new Chart(document.getElementById("c1m"),{type:"line",data:{labels:yrs,datasets:[{label:"Маржа %",data:bd.map(x=>x.m),borderColor:"#f59e0b",backgroundColor:"rgba(245,158,11,.1)",fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#f59e0b",borderWidth:2}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+"%"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:10},callback:v=>v.toFixed(0)+"%"},grid:{color:"#1e2130"}}}}});
-  dc("c2");CH.c2=new Chart(document.getElementById("c2"),{type:"bar",data:{labels:MN,datasets:[{label:sy,data:MM.map(m=>ms[m]||0),backgroundColor:"#10b981",borderRadius:3},{label:py,data:MM.map(m=>mp[m]||0),backgroundColor:"rgba(139,92,246,.45)",borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
-  dc("c2e");CH.c2e=new Chart(document.getElementById("c2e"),{type:"bar",data:{labels:MN,datasets:[{label:sy,data:MM.map(m=>msE[m]||0),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},{label:py,data:MM.map(m=>mpE[m]||0),backgroundColor:"rgba(239,68,68,.25)",borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+  dc("c1m");CH.c1m=new Chart(document.getElementById("c1m"),{type:"line",data:{labels:yrs,datasets:[{label:"Маржа %",data:bd.map(x=>x.m),borderColor:"#f59e0b",backgroundColor:"rgba(245,158,11,.1)",fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#f59e0b",borderWidth:2}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+"%"}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",callback:v=>v.toFixed(0)+"%"},grid:{color:"#1e2130"}}}}});
+  dc("c2");CH.c2=new Chart(document.getElementById("c2"),{type:"bar",data:{labels:MN,datasets:[{label:sy,data:MM.map(m=>ms[m]||0),backgroundColor:"#10b981",borderRadius:3},{label:py,data:MM.map(m=>mp[m]||0),backgroundColor:"rgba(139,92,246,.45)",borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
 }
 
 function rSales(){
-  const el=document.getElementById("t-sales"),yr=getY(),sy=selY();
+  const el=document.getElementById("t-sales"),yr=getY();
   const ft=T.filter(t=>t.tp==="Доход"&&(yr==="ALL"||t.yr===yr));
-  const pd=CHS.map(c=>({n:CSH[c]||c,v:ft.filter(t=>t.cat===c).reduce((s,t)=>s+t.amt,0)})).filter(x=>x.v>5000);
-  // Managers
-  const bm={};ft.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||m===""||m==="0")return;if(!bm[m])bm[m]={s:0,c:0};bm[m].s+=t.amt;bm[m].c+=t.com});
+  const pd=CHS.map(c=>({n:CSH[c]||c,v:ft.filter(t=>t.cat===c).reduce((s,t)=>s+t.netto,0)})).filter(x=>x.v>5000);
+  const bm={};ft.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||!m.trim())return;if(!bm[m])bm[m]={s:0,c:0};bm[m].s+=t.netto;bm[m].c+=t.com});
   const mgrs=Object.entries(bm).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,6);
-  // Top contragents
-  const bc={};ft.forEach(t=>{const a=t.alias||t.name;if(!a||a==="#ignore")return;if(!bc[a])bc[a]={s:0,cnt:0};bc[a].s+=t.amt;bc[a].cnt++});
+  const bc={};ft.forEach(t=>{const a=t.alias||t.name;if(!a||a==="#ignore")return;if(!bc[a])bc[a]={s:0,cnt:0};bc[a].s+=t.netto;bc[a].cnt++});
   const topC=Object.entries(bc).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,10);
-  // Avg check by channel
-  const avgCh=CHS.map(c=>{const f=ft.filter(t=>t.cat===c);const sum=f.reduce((s,t)=>s+t.amt,0);return{n:CSH[c],sum,cnt:f.length,avg:f.length?sum/f.length:0}}).filter(x=>x.sum>0);
-  // Stacked
-  const chYrs=allYrs();const chD=chYrs.map(y=>{const yt=T.filter(t=>t.yr===y&&t.tp==="Доход");const o={year:y};CHS.forEach(c=>{o[CSH[c]||c]=yt.filter(t=>t.cat===c).reduce((s,t)=>s+t.amt,0)});return o});
-
+  const chYrs=aY();const chD=chYrs.map(y=>{const yt=T.filter(t=>t.yr===y&&t.tp==="Доход");const o={};CHS.forEach(c=>{o[CSH[c]]=yt.filter(t=>t.cat===c).reduce((s,t)=>s+t.netto,0)});return{year:y,...o}});
   el.innerHTML=`
-    <div class="cc"><h3>Каналы по годам</h3><canvas id="c5" height="130"></canvas>
-      <div style="display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:8px">${CHS.map((c,i)=>'<span style="display:flex;align-items:center;gap:4px;font-size:9px;color:#7d8196"><i style="width:6px;height:6px;border-radius:2px;display:inline-block;background:'+CC[i]+'"></i>'+CSH[c]+'</span>').join("")}</div>
-    </div>
-    <div class="row">
-      <div class="cc"><h3>Каналы ${yr!=="ALL"?yr:sy}</h3><canvas id="c3" height="200"></canvas></div>
-      <div class="cc"><h3>Менеджеры</h3>${mgrs.map(m=>'<div class="mg"><div><div class="n">'+m.n+'</div><div class="s">КМ: '+(m.s?(m.c/m.s*100).toFixed(1):0)+'%</div></div><div><div class="v">'+ff(m.s)+' ₴</div><div class="s">'+ff(m.c)+' ₴</div></div></div>').join("")}</div>
-    </div>
-    <div class="row">
-      <div class="cc"><h3>Топ-10 контрагентов</h3>
-        <table class="tbl"><tr><th>Контрагент</th><th class="r">Сумма</th><th class="r">Кол-во</th></tr>
-        ${topC.map(c=>'<tr><td>'+c.n.substring(0,30)+'</td><td class="r g">'+ff(c.s)+'</td><td class="r">'+c.cnt+'</td></tr>').join("")}</table>
-      </div>
-      <div class="cc"><h3>Средний чек по каналам</h3>
-        <table class="tbl"><tr><th>Канал</th><th class="r">Сумма</th><th class="r">Ср.чек</th></tr>
-        ${avgCh.map(c=>'<tr><td>'+c.n+'</td><td class="r g">'+fm(c.sum)+'</td><td class="r">'+ff(c.avg)+'</td></tr>').join("")}</table>
-      </div>
-    </div>`;
-
-  dc("c5");CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets:CHS.map((c,i)=>({label:CSH[c],data:chD.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}))},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+    <div class="cc"><h3>Каналы по годам (нетто)</h3><canvas id="c5" height="130"></canvas><div style="display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:8px">${CHS.map((c,i)=>'<span style="display:flex;align-items:center;gap:4px;font-size:9px;color:#7d8196"><i style="width:6px;height:6px;border-radius:2px;display:inline-block;background:'+CC[i]+'"></i>'+CSH[c]+'</span>').join("")}</div></div>
+    <div class="row"><div class="cc"><h3>Каналы ${yr!=="ALL"?yr:sY()}</h3><canvas id="c3" height="200"></canvas></div><div class="cc"><h3>Менеджеры</h3>${mgrs.map(m=>'<div class="mg"><div><div class="n">'+m.n+'</div><div class="s">КМ: '+(m.s?(m.c/m.s*100).toFixed(1):0)+'%</div></div><div><div class="v">'+ff(m.s)+' ₴</div><div class="s">'+ff(m.c)+' ₴</div></div></div>').join("")}</div></div>
+    <div class="cc"><h3>Топ-10 контрагентов</h3><table class="tbl"><tr><th>Контрагент</th><th class="r">Сумма нетто</th><th class="r">Кол-во</th></tr>${topC.map(c=>'<tr><td>'+c.n.substring(0,35)+'</td><td class="r g">'+ff(c.s)+'</td><td class="r">'+c.cnt+'</td></tr>').join("")}</table></div>`;
+  dc("c5");CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets:CHS.map((c,i)=>({label:CSH[c],data:chD.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}))},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
   dc("c3");CH.c3=new Chart(document.getElementById("c3"),{type:"doughnut",data:{labels:pd.map(x=>x.n),datasets:[{data:pd.map(x=>x.v),backgroundColor:CC.slice(0,pd.length),borderWidth:0}]},options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:9},boxWidth:8,padding:6}},tooltip:{callbacks:{label:c=>c.label+": "+ff(c.raw)+" ₴"}}}}});
 }
 
 function rExp(){
-  const el=document.getElementById("t-exp"),yr=getY(),sy=selY(),py=prevY();
+  const el=document.getElementById("t-exp"),yr=getY(),sy=sY(),py=pY();
   const ft=yr==="ALL"?T.filter(t=>t.tp==="Расход"):T.filter(t=>t.tp==="Расход"&&t.yr===yr);
-  const revTotal=yr==="ALL"?T.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.amt,0):T.filter(t=>t.tp==="Доход"&&t.yr===yr).reduce((s,t)=>s+t.amt,0);
-  const bc={};ft.forEach(t=>{bc[t.cat||"???"]=(bc[t.cat||"???"]||0)+t.amt});
+  const revT=yr==="ALL"?T.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.netto,0):T.filter(t=>t.tp==="Доход"&&t.yr===yr).reduce((s,t)=>s+t.netto,0);
+  const bc={};ft.forEach(t=>{bc[t.cat||"???"]=(bc[t.cat||"???"]||0)+t.netto});
   const so=Object.entries(bc).map(([c,v])=>({c,a:v})).sort((a,b)=>a.a-b.a).slice(0,15);
-  // vs prev year
-  const prevFt=T.filter(t=>t.tp==="Расход"&&t.yr===py);
-  const prevBc={};prevFt.forEach(t=>{prevBc[t.cat||"???"]=(prevBc[t.cat||"???"]||0)+t.amt});
-
-  el.innerHTML=`
-    <div class="cc"><h3>Топ расходов ${yr!=="ALL"?yr:""}</h3><canvas id="c4" height="${Math.max(140,so.length*16)}"></canvas></div>
-    <div class="cc"><h3>Детализация (% от выручки, сравнение с ${py})</h3>
-      <table class="tbl"><tr><th>Категория</th><th class="r">${sy}</th><th class="r">% выр.</th><th class="r">${py}</th><th class="r">Δ</th></tr>
-      ${so.map(e=>{const pv=Math.abs(prevBc[e.c]||0);const cv=Math.abs(e.a);const pct=revTotal?(cv/revTotal*100).toFixed(1):"—";const delta=pv?((cv-pv)/pv*100).toFixed(0):"—";
-        return'<tr><td>'+e.c.substring(0,28)+'</td><td class="r rd">'+ff(cv)+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(pv)+'</td><td class="r" style="color:'+(delta>0?"#ef4444":"#10b981")+'">'+(delta>0?"+":"")+delta+'%</td></tr>'}).join("")}
-      </table>
-    </div>`;
+  const prevFt=T.filter(t=>t.tp==="Расход"&&t.yr===py);const prevBc={};prevFt.forEach(t=>{prevBc[t.cat||"???"]=(prevBc[t.cat||"???"]||0)+t.netto});
+  el.innerHTML=`<div class="cc"><h3>Топ расходов ${yr!=="ALL"?yr:""} (нетто)</h3><canvas id="c4" height="${Math.max(140,so.length*16)}"></canvas></div>
+    <div class="cc"><h3>Детализация</h3><table class="tbl"><tr><th>Категория</th><th class="r">${sy}</th><th class="r">% выр.</th><th class="r">${py}</th><th class="r">Δ</th></tr>${so.map(e=>{const cv=Math.abs(e.a);const pv=Math.abs(prevBc[e.c]||0);const pct=revT?(cv/revT*100).toFixed(1):"—";const d=pv?((cv-pv)/pv*100).toFixed(0):"—";return'<tr><td>'+e.c.substring(0,28)+'</td><td class="r rd">'+ff(cv)+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(pv)+'</td><td class="r" style="color:'+(d>0?"#ef4444":"#10b981")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}</table></div>`;
   dc("c4");CH.c4=new Chart(document.getElementById("c4"),{type:"bar",data:{labels:so.map(e=>e.c.substring(0,25)),datasets:[{data:so.map(e=>Math.abs(e.a)),backgroundColor:"rgba(239,68,68,.55)",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9}},grid:{display:false}}}}});
 }
 
 function rExport(){
   const el=document.getElementById("t-export"),yr=getY();
   const exp=T.filter(t=>t.cat==="Продаж, Експорт"&&(yr==="ALL"||t.yr===yr));
-  const expAll=T.filter(t=>t.cat==="Продаж, Експорт");
-  // By currency
-  const byCur={};exp.forEach(t=>{const c=t.money||"UAH";if(!byCur[c])byCur[c]=0;byCur[c]+=t.smoney});
-  // By country
-  const byGeo={};exp.forEach(t=>{const g=t.geo||"N/A";if(g==="="||g==="-"||g==="")return;if(!byGeo[g])byGeo[g]=0;byGeo[g]+=t.amt});
-  const geoSorted=Object.entries(byGeo).map(([g,v])=>({g,v})).sort((a,b)=>b.v-a.v);
-  // By year
-  const yrs=allYrs();const byYr=yrs.map(y=>{const yt=expAll.filter(t=>t.yr===y);return{y,uah:yt.reduce((s,t)=>s+t.amt,0),eur:yt.filter(t=>t.money==="EUR").reduce((s,t)=>s+t.smoney,0)}});
-  const totalExp=exp.reduce((s,t)=>s+t.amt,0);
+  const byCur={};exp.forEach(t=>{const c=t.money||"UAH";byCur[c]=(byCur[c]||0)+t.smoney});
+  const byGeo={};exp.forEach(t=>{const g=t.geo;if(!g||g==="="||g==="-")return;byGeo[g]=(byGeo[g]||0)+t.amt});
+  const geoS=Object.entries(byGeo).map(([g,v])=>({g,v})).sort((a,b)=>b.v-a.v);
+  const yrs=aY();const byYr=yrs.map(y=>({y,uah:T.filter(t=>t.cat==="Продаж, Експорт"&&t.yr===y).reduce((s,t)=>s+t.amt,0)}));
+  el.innerHTML=`<div class="kpis"><div class="kpi"><div class="l">Экспорт ${yr!=="ALL"?yr:""}</div><div class="v" style="color:#10b981">${fm(exp.reduce((s,t)=>s+t.amt,0))} ₴</div></div><div class="kpi"><div class="l">EUR</div><div class="v" style="color:#3b82f6">${ff(byCur.EUR||0)} €</div></div><div class="kpi"><div class="l">USD</div><div class="v" style="color:#f59e0b">${ff(byCur.USD||0)} $</div></div></div>
+    <div class="row"><div class="cc"><h3>Экспорт по годам</h3><canvas id="ce1" height="160"></canvas></div><div class="cc"><h3>Страны</h3><table class="tbl"><tr><th>Страна</th><th class="r">Сумма ₴</th></tr>${geoS.map(g=>'<tr><td>'+g.g+'</td><td class="r g">'+ff(g.v)+'</td></tr>').join("")}</table></div></div>`;
+  dc("ce1");CH.ce1=new Chart(document.getElementById("ce1"),{type:"bar",data:{labels:yrs,datasets:[{label:"₴",data:byYr.map(x=>x.uah),backgroundColor:"#10b981",borderRadius:3}]},options:CO});
+}
+
+function rShop(){
+  const el=document.getElementById("t-shop");
+  if(!WO.length){el.innerHTML='<div class="cc"><h3>Магазин</h3><p style="color:#7d8196">Не удалось загрузить данные WooCommerce</p></div>';return}
+  const yr=getY();
+  const orders=yr==="ALL"?WO:WO.filter(o=>{const d=o.date_created||"";return d.startsWith(yr)});
+  const totalRev=orders.reduce((s,o)=>s+parseFloat(o.total||0),0);
+  const avgCheck=orders.length?totalRev/orders.length:0;
+  // By month
+  const byM={};orders.forEach(o=>{const d=o.date_created||"";const m=d.substring(0,7);if(!byM[m])byM[m]={rev:0,cnt:0};byM[m].rev+=parseFloat(o.total||0);byM[m].cnt++});
+  const ms=Object.keys(byM).sort();
+  // Top products
+  const prods={};orders.forEach(o=>{(o.line_items||[]).forEach(li=>{if(li.total&&parseFloat(li.total)>0){const n=li.name||"?";if(!prods[n])prods[n]={rev:0,qty:0};prods[n].rev+=parseFloat(li.total);prods[n].qty+=li.quantity||1}})});
+  const topP=Object.entries(prods).map(([n,d])=>({n,...d})).sort((a,b)=>b.rev-a.rev).slice(0,10);
+  // UTM sources
+  const srcs={};orders.forEach(o=>{const meta=o.meta_data||[];const src=meta.find(m=>m.key==="_metorik_utm_source");const s=src?src.value:"direct";srcs[s]=(srcs[s]||0)+1});
+  const srcS=Object.entries(srcs).map(([s,c])=>({s,c})).sort((a,b)=>b.c-a.c).slice(0,5);
+  // Recent orders
+  const recent=orders.slice(0,5);
+  // Cities
+  const cities={};orders.forEach(o=>{const c=o.shipping?.city||o.billing?.city||"";if(c){cities[c]=(cities[c]||0)+1}});
+  const topCities=Object.entries(cities).map(([c,n])=>({c,n})).sort((a,b)=>b.n-a.n).slice(0,8);
 
   el.innerHTML=`
     <div class="kpis">
-      <div class="kpi"><div class="l">Экспорт ${yr!=="ALL"?yr:""}</div><div class="v" style="color:#10b981">${fm(totalExp)} ₴</div></div>
-      <div class="kpi"><div class="l">EUR</div><div class="v" style="color:#3b82f6">${ff(byCur["EUR"]||0)} €</div></div>
-      <div class="kpi"><div class="l">USD</div><div class="v" style="color:#f59e0b">${ff(byCur["USD"]||0)} $</div></div>
+      <div class="kpi"><div class="l">Выручка магазин</div><div class="v" style="color:#10b981">${ff(totalRev)} ₴</div></div>
+      <div class="kpi"><div class="l">Заказов</div><div class="v">${orders.length}</div></div>
+      <div class="kpi"><div class="l">Средний чек</div><div class="v">${ff(avgCheck)} ₴</div></div>
+      <div class="kpi"><div class="l">Всего загружено</div><div class="v">${WO.length}</div><div class="s">заказов из WC</div></div>
     </div>
+    <div class="cc"><h3>Заказы и выручка помесячно</h3><canvas id="cs1" height="100"></canvas></div>
     <div class="row">
-      <div class="cc"><h3>Экспорт по годам (₴)</h3><canvas id="ce1" height="160"></canvas></div>
-      <div class="cc"><h3>Страны</h3>
-        <table class="tbl"><tr><th>Страна</th><th class="r">Сумма ₴</th></tr>
-        ${geoSorted.map(g=>'<tr><td>'+g.g+'</td><td class="r g">'+ff(g.v)+'</td></tr>').join("")}</table>
+      <div class="cc"><h3>Топ-10 товаров</h3><table class="tbl"><tr><th>Товар</th><th class="r">Выручка</th><th class="r">Шт</th></tr>${topP.map(p=>'<tr><td>'+p.n.substring(0,30)+'</td><td class="r g">'+ff(p.rev)+'</td><td class="r">'+p.qty+'</td></tr>').join("")}</table></div>
+      <div class="cc"><h3>Источники трафика</h3><table class="tbl"><tr><th>UTM Source</th><th class="r">Заказов</th></tr>${srcS.map(s=>'<tr><td>'+s.s+'</td><td class="r">'+s.c+'</td></tr>').join("")}</table>
+        <h3 style="margin-top:14px">Города</h3><table class="tbl"><tr><th>Город</th><th class="r">Заказов</th></tr>${topCities.map(c=>'<tr><td>'+c.c+'</td><td class="r">'+c.n+'</td></tr>').join("")}</table>
       </div>
-    </div>`;
-  dc("ce1");CH.ce1=new Chart(document.getElementById("ce1"),{type:"bar",data:{labels:yrs,datasets:[{label:"₴",data:byYr.map(x=>x.uah),backgroundColor:"#10b981",borderRadius:3},{label:"€",data:byYr.map(x=>x.eur),backgroundColor:"#3b82f6",borderRadius:3}]},options:CO});
+    </div>
+    <div class="cc"><h3>Последние заказы</h3>${recent.map(o=>{const d=o.date_created||"";const items=(o.line_items||[]).map(l=>l.name).join(", ").substring(0,60);return'<div class="ord"><span>#'+o.number+' · '+(o.billing?.first_name||"")+' '+(o.billing?.last_name||"")+'</span><span>'+items+'</span><span class="on">'+d.substring(0,10)+'</span><span style="color:#10b981;font-weight:600">'+ff(parseFloat(o.total))+'₴</span></div>'}).join("")}</div>`;
+  dc("cs1");CH.cs1=new Chart(document.getElementById("cs1"),{type:"bar",data:{labels:ms,datasets:[{label:"Выручка",data:ms.map(m=>byM[m].rev),backgroundColor:"#10b981",borderRadius:3,yAxisID:"y"},{label:"Заказов",data:ms.map(m=>byM[m].cnt),type:"line",borderColor:"#f59e0b",backgroundColor:"transparent",pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2,yAxisID:"y1"}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+(c.dataset.label==="Выручка"?ff(c.raw)+" ₴":c.raw)}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{position:"left",ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y1:{position:"right",ticks:{color:"#f59e0b",font:{size:9}},grid:{display:false}}}}});
 }
 
 function rStock(){
   const el=document.getElementById("t-stock");
-  const it=SK.map(s=>{const w=gv(s,"вино")||gv(s,"wine")||"";const vi=gv(s,"урожай")||"";const st=pn(gv(s,"остаток")||"0");const so=pn(gv(s,"продано")||"0");const av=pn(gv(s,"сред")||"0");const mr=gv(s,"запас")||"";const mo=mr&&mr!=="N/A"?parseFloat(mr):null;return{w,vi,st,so,av,mo}}).filter(s=>s.st>0);
+  const it=SK.map(s=>{const w=gv(s,"вино")||"";const vi=gv(s,"урожай")||"";const st=pn(gv(s,"остаток")||"0");const so=pn(gv(s,"продано")||"0");const av=pn(gv(s,"сред")||"0");const mr=gv(s,"запас")||"";const mo=mr&&mr!=="N/A"?parseFloat(mr):null;return{w,vi,st,so,av,mo}}).filter(s=>s.st>0);
   it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
   const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<2).length,lo3=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
-  el.innerHTML=`
-    <div class="kpis">
-      <div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div>
-      <div class="kpi"><div class="l">Бутылок</div><div class="v">${ff(tb)}</div></div>
-      <div class="kpi"><div class="l">Критично</div><div class="v" style="color:#ef4444">${lo}</div><div class="s">&lt;2 мес</div></div>
-      <div class="kpi"><div class="l">Заканчив.</div><div class="v" style="color:#e11d48">${lo3}</div><div class="s">&lt;3 мес</div></div>
-      <div class="kpi"><div class="l">Застряли</div><div class="v" style="color:#f59e0b">${sk}</div><div class="s">&gt;15 мес</div></div>
-    </div>
-    <div class="lgd"><span><i style="background:#ef4444"></i>Критично(&lt;2м)</span><span><i style="background:#e11d48"></i>Заканч.(&lt;3м)</span><span><i style="background:#f59e0b"></i>Застряло</span><span><i style="background:#10b981"></i>Норма</span></div>
-    ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const crit=i.mo!==null&&i.mo<2;const low=i.mo!==null&&i.mo<3;const stk=i.mo!==null&&i.mo>15;const cl=crit||low?"low":stk?"stk":"";const co=crit?"#ef4444":low?"#e11d48":stk?"#f59e0b":"#10b981";
-      return'<div class="si '+cl+'"><div class="top"><span class="nm">'+i.w+' '+i.vi+'</span><span style="color:'+co+';font-weight:600">'+ff(i.st)+' · '+(i.mo!==null?i.mo.toFixed(1)+'м':'N/A')+'</span></div><div class="bar"><div class="bf" style="width:'+p+'%;background:'+co+'"></div></div><div class="bot"><span>Продано: '+ff(i.so)+'</span><span>~'+i.av+'/мес</span></div></div>'}).join("")}`;
+  el.innerHTML=`<div class="kpis"><div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div><div class="kpi"><div class="l">Бутылок</div><div class="v">${ff(tb)}</div></div><div class="kpi"><div class="l">Критично</div><div class="v" style="color:#ef4444">${lo}</div><div class="s">&lt;2м</div></div><div class="kpi"><div class="l">Заканч.</div><div class="v" style="color:#e11d48">${lo3}</div><div class="s">&lt;3м</div></div><div class="kpi"><div class="l">Застряли</div><div class="v" style="color:#f59e0b">${sk}</div><div class="s">&gt;15м</div></div></div>
+    <div class="lgd"><span><i style="background:#ef4444"></i>Крит(&lt;2м)</span><span><i style="background:#e11d48"></i>Заканч.</span><span><i style="background:#f59e0b"></i>Застряло</span><span><i style="background:#10b981"></i>Норма</span></div>
+    ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const cr=i.mo!==null&&i.mo<2;const lw=i.mo!==null&&i.mo<3;const st=i.mo!==null&&i.mo>15;const cl=cr||lw?"low":st?"stk":"";const co=cr?"#ef4444":lw?"#e11d48":st?"#f59e0b":"#10b981";return'<div class="si '+cl+'"><div class="top"><span class="nm">'+i.w+' '+i.vi+'</span><span style="color:'+co+';font-weight:600">'+ff(i.st)+' · '+(i.mo!==null?i.mo.toFixed(1)+'м':'N/A')+'</span></div><div class="bar"><div class="bf" style="width:'+p+'%;background:'+co+'"></div></div><div class="bot"><span>Продано: '+ff(i.so)+'</span><span>~'+i.av+'/мес</span></div></div>'}).join("")}`;
 }
 
 function rCash(){
-  const el=document.getElementById("t-cash"),yr=getY(),sy=selY();
-  const uah=BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH");const eur=BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR");const usd=BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD");const gb=r=>r?pn(gv(r,"баланс")||gv(r,"balance")||"0"):0;
-  // Monthly in/out
+  const el=document.getElementById("t-cash"),yr=getY();
+  const uahB=pn(gv(BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH")||{},"баланс")||"0");
+  const eurB=pn(gv(BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR")||{},"баланс")||"0");
+  const usdB=pn(gv(BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD")||{},"баланс")||"0");
   const ft=yr==="ALL"?T:T.filter(t=>t.yr===yr);
-  const byM={};ft.forEach(t=>{if(!byM[t.ym])byM[t.ym]={i:0,o:0};if(t.amt>0)byM[t.ym].i+=t.amt;else byM[t.ym].o+=Math.abs(t.amt)});
-  const ms=Object.keys(byM).sort();
-
-  el.innerHTML=`
-    <div class="kpis">
-      <div class="kpi"><div class="l">UAH</div><div class="v" style="color:#f59e0b">${uah?ff(gb(uah)):"—"} ₴</div></div>
-      <div class="kpi"><div class="l">EUR</div><div class="v" style="color:#3b82f6">${eur?ff(gb(eur)):"—"} €</div></div>
-      <div class="kpi"><div class="l">USD</div><div class="v" style="color:#10b981">${usd?ff(gb(usd)):"—"} $</div></div>
-    </div>
-    <div class="cc"><h3>Входящие vs Исходящие помесячно</h3><canvas id="cc1" height="120"></canvas></div>
-    <div class="cc"><h3>Нетто помесячно (входящие - исходящие)</h3><canvas id="cc2" height="90"></canvas></div>
-    <p style="font-size:10px;color:#7d8196;margin-top:8px">* Для тренда баланса нужны исторические данные балансов по месяцам. Сейчас есть только текущий баланс.</p>`;
-
+  const byM={};ft.forEach(t=>{if(!byM[t.ym])byM[t.ym]={i:0,o:0};if(t.amt>0)byM[t.ym].i+=t.netto;else byM[t.ym].o+=Math.abs(t.netto)});
+  const ms=Object.keys(byM).sort();const netto=ms.map(m=>byM[m].i-byM[m].o);
+  el.innerHTML=`<div class="kpis"><div class="kpi"><div class="l">UAH</div><div class="v" style="color:#f59e0b">${ff(uahB)} ₴</div></div><div class="kpi"><div class="l">EUR (×${FX.EUR.toFixed(2)})</div><div class="v" style="color:#3b82f6">${ff(eurB)} €</div><div class="s">= ${ff(eurB*FX.EUR)} ₴</div></div><div class="kpi"><div class="l">USD (×${FX.USD.toFixed(2)})</div><div class="v" style="color:#10b981">${ff(usdB)} $</div><div class="s">= ${ff(usdB*FX.USD)} ₴</div></div></div>
+    <div class="cc"><h3>Входящие vs Исходящие (нетто)</h3><canvas id="cc1" height="120"></canvas></div>
+    <div class="cc"><h3>Нетто помесячно</h3><canvas id="cc2" height="90"></canvas></div>
+    <p style="font-size:10px;color:#7d8196;margin-top:8px">Курсы НБУ: €1 = ${FX.EUR.toFixed(2)}₴ · $1 = ${FX.USD.toFixed(2)}₴</p>`;
   dc("cc1");CH.cc1=new Chart(document.getElementById("cc1"),{type:"bar",data:{labels:ms,datasets:[{label:"Входящие",data:ms.map(m=>byM[m].i),backgroundColor:"#10b981",borderRadius:2},{label:"Исходящие",data:ms.map(m=>byM[m].o),backgroundColor:"rgba(239,68,68,.55)",borderRadius:2}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},maxTicksLimit:15},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
-  const netto=ms.map(m=>byM[m].i-byM[m].o);
   dc("cc2");CH.cc2=new Chart(document.getElementById("cc2"),{type:"bar",data:{labels:ms,datasets:[{data:netto,backgroundColor:netto.map(v=>v>=0?"#10b981":"#ef4444"),borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},maxTicksLimit:15},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
 }
 
