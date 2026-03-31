@@ -57,9 +57,7 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
   <button class="tab" onclick="sw('sales',this)">Продажи</button>
   <button class="tab" onclick="sw('exp',this)">Расходы</button>
   <button class="tab" onclick="sw('stock',this)">Склад</button>
-  <select class="yf" id="yf" onchange="render()">
-    <option value="ALL">Все годы</option>
-  </select>
+  <select class="yf" id="yf" onchange="render()"><option value="ALL">Все годы</option></select>
 </div>
 <div id="ld" class="ld"><h2>Загрузка данных из Google Sheets...</h2><p>Dashboard_Data + 3_Stock + 6_Balances</p></div>
 <div id="t-pl" class="hidden"></div>
@@ -69,7 +67,7 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
 
 <script>
 const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
-const IGNORE=["#ignore","Конвертація","ІГНОР!!!","Банк???"];
+const IGNORE=["#ignore","Конвертація","ІГНОР!!!","Банк???","Банк, Еквайринг"];
 let T=[],SK=[],BL=[],CH={};
 
 function pn(s){
@@ -83,9 +81,16 @@ function pn(s){
   if(isNaN(n))return 0;
   return neg?-n:n;
 }
-
 const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};
 const ff=n=>n?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n):"0";
+
+// Find object value by partial key match
+function gv(obj,search){
+  for(const k of Object.keys(obj)){
+    if(k.trim().toLowerCase().startsWith(search.toLowerCase()))return obj[k];
+  }
+  return "";
+}
 
 async function csv(sh){
   const r=await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);
@@ -94,34 +99,41 @@ async function csv(sh){
     if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}
     else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}
   if(f||c.length){c.push(f);rows.push(c)}
-  if(rows.length<2)return[];const h=rows[0];
-  return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k.trim()]=r[i]!==undefined?r[i].trim():""});return o})
+  if(rows.length<2)return[];
+  const h=rows[0].map(x=>x.trim());
+  return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})
 }
 
 async function load(){
   try{
     const[t,s,b]=await Promise.all([csv("Dashboard_Data"),csv("3_Stock"),csv("6_Balances")]);
+    
+    // Debug: log first row keys
+    if(t.length>0) console.log("Keys:",Object.keys(t[0]));
+    if(t.length>0) console.log("First row:",t[0]);
+    
     let raw=t.map(x=>{
-      const mo=String(pn(x.Month)||x.Month||"");
-      const cat=x.Category||"";
-      const amt=pn(x.SUM_UAH);
-      return{mo,money:x.money||"",name:x.NAME||"",alias:x.ALIAS||"",cat,geo:x.GEO||"",mgr:x["Менеджер"]||x.Manager||"",amt,com:pn(x.Commission),sumMoney:pn(x.SUM_money),src:x.Source||""};
+      const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");
+      const cat=gv(x,"category")||"";
+      const amt=pn(gv(x,"sum_uah"));
+      const com=pn(gv(x,"commission"));
+      const mgr=gv(x,"менеджер")||gv(x,"manager")||"";
+      return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat,geo:gv(x,"geo")||"",mgr,amt,com,sumMoney:pn(gv(x,"sum_money")),src:gv(x,"source")||""};
     });
-    // Filter
-    T=raw.filter(x=>x.mo>=202001 && !IGNORE.includes(x.cat) && x.cat!=="");
-    // Derive year, type
+    T=raw.filter(x=>{
+      const moNum=parseInt(x.mo);
+      return moNum>=202001 && !IGNORE.includes(x.cat) && x.cat!=="";
+    });
     T.forEach(x=>{
       x.yr=String(x.mo).substring(0,4);
       x.ym=String(x.mo).substring(0,4)+"-"+String(x.mo).substring(4,6);
       x.tp=x.amt>0?"Доход":"Расход";
     });
     SK=s;BL=b;
-    // Populate year filter
     const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020"&&y<="2030").sort();
     const sel=document.getElementById("yf");
     sel.innerHTML='<option value="ALL">Все годы</option>';
     yrs.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o)});
-    
     document.getElementById("status").textContent="● Connected";
     document.getElementById("status").style.color="#10b981";
     document.getElementById("subtitle").textContent=ff(T.length)+" операций · Google Sheets live";
@@ -129,7 +141,7 @@ async function load(){
     render();
   }catch(e){
     document.getElementById("status").textContent="● Ошибка";document.getElementById("status").style.color="#ef4444";
-    document.getElementById("ld").innerHTML=`<h2 style="color:#ef4444">Ошибка загрузки</h2><p>${e.message}</p>`;
+    document.getElementById("ld").innerHTML='<h2 style="color:#ef4444">Ошибка загрузки</h2><p>'+e.message+'</p>';
   }
 }
 
@@ -151,34 +163,30 @@ function rPL(){
   const el=document.getElementById("t-pl");
   const yrs=[...new Set(T.map(x=>x.yr))].sort();
   const d=yrs.map(y=>{const yt=T.filter(t=>t.yr===y);const rev=yt.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.amt,0);const exp=yt.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.amt,0);return{y,rev,exp:Math.abs(exp),pr:rev+exp}});
-  
-  const curY=yrs[yrs.length-1]||"2025";
-  const prevY=yrs[yrs.length-2]||"2024";
-  const curD=d.find(x=>x.y===curY)||{rev:0,exp:0,pr:0};
-  const prevD=d.find(x=>x.y===prevY)||{rev:0,exp:0,pr:0};
+  const curY=yrs[yrs.length-1]||"2025";const prevY=yrs[yrs.length-2]||"2024";
+  const curD=d.find(x=>x.y===curY)||{rev:0,exp:0,pr:0};const prevD=d.find(x=>x.y===prevY)||{rev:0,exp:0,pr:0};
   const gr=prevD.rev?((curD.rev-prevD.rev)/prevD.rev*100).toFixed(1):0;
   const mg=curD.rev?(curD.pr/curD.rev*100).toFixed(1):0;
   const tr=d.reduce((s,x)=>s+x.rev,0),te=d.reduce((s,x)=>s+x.exp,0);
-  const uah=BL.find(b=>(b["Валюта"]||"")==="UAH");
-  const eur=BL.find(b=>(b["Валюта"]||"")==="EUR");
-  const usd=BL.find(b=>(b["Валюта"]||"")==="USD");
+  const uah=BL.find(b=>gv(b,"валют")==="UAH"||gv(b,"currency")==="UAH");
+  const eur=BL.find(b=>gv(b,"валют")==="EUR"||gv(b,"currency")==="EUR");
+  const usd=BL.find(b=>gv(b,"валют")==="USD"||gv(b,"currency")==="USD");
+  const getBal=r=>r?pn(gv(r,"баланс")||gv(r,"balance")||"0"):0;
 
   el.innerHTML=`
     <div class="kpis">
       <div class="kpi"><div class="l">Выручка ${curY}</div><div class="v" style="color:#10b981">${fm(curD.rev)} ₴</div><div class="s">${gr>0?"+":""}${gr}% vs ${prevY}</div></div>
       <div class="kpi"><div class="l">Прибыль ${curY}</div><div class="v" style="color:${curD.pr>0?'#10b981':'#ef4444'}">${fm(curD.pr)} ₴</div><div class="s">Маржа ${mg}%</div></div>
       <div class="kpi"><div class="l">Всего</div><div class="v">${fm(tr)} ₴</div><div class="s">Расходы: ${fm(te)} ₴</div></div>
-      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${uah?ff(pn(uah["Баланс"]||0)):"—"} ₴</div><div class="s">${eur?"€"+ff(pn(eur["Баланс"]||0)):""} · ${usd?"$"+ff(pn(usd["Баланс"]||0)):""}</div></div>
+      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${uah?ff(getBal(uah)):"—"} ₴</div><div class="s">${eur?"€"+ff(getBal(eur)):""} · ${usd?"$"+ff(getBal(usd)):""}</div></div>
     </div>
     <div class="cc"><h3>Выручка · Расходы · Прибыль</h3><canvas id="c1" height="120"></canvas></div>
     <div class="cc"><h3>Выручка помесячно</h3><canvas id="c2" height="80"></canvas></div>`;
-
   dc("c1");CH.c1=new Chart(document.getElementById("c1"),{type:"bar",data:{labels:yrs,datasets:[
     {label:"Выручка",data:d.map(x=>x.rev),backgroundColor:"#10b981",borderRadius:3},
     {label:"Расходы",data:d.map(x=>x.exp),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},
     {label:"Прибыль",data:d.map(x=>x.pr),backgroundColor:"#8b5cf6",borderRadius:3}
   ]},options:CO});
-
   const bm={};T.filter(t=>t.tp==="Доход").forEach(t=>{bm[t.ym]=(bm[t.ym]||0)+t.amt});
   const ms=Object.keys(bm).sort();
   dc("c2");CH.c2=new Chart(document.getElementById("c2"),{type:"line",data:{labels:ms,datasets:[{data:ms.map(m=>bm[m]),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.08)",fill:true,tension:.3,pointRadius:0,borderWidth:1.5}]},
@@ -191,24 +199,18 @@ function rSales(){
   const pd=CHS.map((c,i)=>({n:CSH[c]||c,v:ft.filter(t=>t.cat===c).reduce((s,t)=>s+t.amt,0)})).filter(x=>x.v>5000);
   const bm={};ft.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||m===""||m==="0")return;if(!bm[m])bm[m]={s:0,c:0};bm[m].s+=t.amt;bm[m].c+=t.com});
   const ms=Object.entries(bm).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,6);
-
-  // Channel by year stacked
   const chYrs=[...new Set(T.filter(t=>t.tp==="Доход").map(t=>t.yr))].sort();
   const chData=chYrs.map(y=>{const yt=T.filter(t=>t.yr===y&&t.tp==="Доход");const o={year:y};CHS.forEach(c=>{o[CSH[c]||c]=yt.filter(t=>t.cat===c).reduce((s,t)=>s+t.amt,0)});return o});
-
   el.innerHTML=`
     <div class="cc"><h3>Каналы по годам</h3><canvas id="c5" height="140"></canvas>
-      <div style="display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:8px">${CHS.map((c,i)=>`<span style="display:flex;align-items:center;gap:4px;font-size:9px;color:#7d8196"><i style="width:6px;height:6px;border-radius:2px;display:inline-block;background:${CC[i]}"></i>${CSH[c]}</span>`).join("")}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:8px">${CHS.map((c,i)=>'<span style="display:flex;align-items:center;gap:4px;font-size:9px;color:#7d8196"><i style="width:6px;height:6px;border-radius:2px;display:inline-block;background:'+CC[i]+'"></i>'+CSH[c]+'</span>').join("")}</div>
     </div>
     <div class="row">
       <div class="cc"><h3>Каналы ${yr!=="ALL"?yr:chYrs[chYrs.length-1]||""}</h3><canvas id="c3" height="200"></canvas></div>
-      <div class="cc"><h3>Менеджеры ${yr!=="ALL"?yr:""}</h3>${ms.map(m=>`<div class="mg"><div><div class="n">${m.n}</div><div class="s">КМ: ${m.s?(m.c/m.s*100).toFixed(1):0}%</div></div><div><div class="v">${ff(m.s)} ₴</div><div class="s">${ff(m.c)} ₴</div></div></div>`).join("")}</div>
+      <div class="cc"><h3>Менеджеры ${yr!=="ALL"?yr:""}</h3>${ms.map(m=>'<div class="mg"><div><div class="n">'+m.n+'</div><div class="s">КМ: '+(m.s?(m.c/m.s*100).toFixed(1):0)+'%</div></div><div><div class="v">'+ff(m.s)+' ₴</div><div class="s">'+ff(m.c)+' ₴</div></div></div>').join("")}</div>
     </div>`;
-
   dc("c5");
-  const datasets=CHS.map((c,i)=>({label:CSH[c],data:chData.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}));
-  CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
-
+  CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets:CHS.map((c,i)=>({label:CSH[c],data:chData.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}))},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:10}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
   dc("c3");CH.c3=new Chart(document.getElementById("c3"),{type:"doughnut",data:{labels:pd.map(x=>x.n),datasets:[{data:pd.map(x=>x.v),backgroundColor:CC.slice(0,pd.length),borderWidth:0}]},
     options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:9},boxWidth:8,padding:6}},tooltip:{callbacks:{label:c=>c.label+": "+ff(c.raw)+" ₴"}}}}});
 }
@@ -218,22 +220,27 @@ function rExp(){
   const ft=yr==="ALL"?T.filter(t=>t.tp==="Расход"):T.filter(t=>t.tp==="Расход"&&t.yr===yr);
   const bc={};ft.forEach(t=>{const c=t.cat||"???";bc[c]=(bc[c]||0)+t.amt});
   const so=Object.entries(bc).map(([c,v])=>({c,a:v})).sort((a,b)=>a.a-b.a).slice(0,15);
-
   el.innerHTML=`
     <div class="cc"><h3>Топ расходов ${yr!=="ALL"?yr:""}</h3><canvas id="c4" height="${Math.max(140,so.length*16)}"></canvas></div>
-    <div class="cc"><h3>Детализация</h3>${so.map(e=>`<div class="er"><span class="c">${e.c}</span><span class="a">${ff(Math.abs(e.a))} ₴</span></div>`).join("")}</div>`;
-
+    <div class="cc"><h3>Детализация</h3>${so.map(e=>'<div class="er"><span class="c">'+e.c+'</span><span class="a">'+ff(Math.abs(e.a))+' ₴</span></div>').join("")}</div>`;
   dc("c4");CH.c4=new Chart(document.getElementById("c4"),{type:"bar",data:{labels:so.map(e=>e.c.substring(0,25)),datasets:[{data:so.map(e=>Math.abs(e.a)),backgroundColor:"rgba(239,68,68,.55)",borderRadius:2}]},
     options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>ff(c.raw)+" ₴"}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9}},grid:{display:false}}}}});
 }
 
 function rStock(){
   const el=document.getElementById("t-stock");
-  const it=SK.map(s=>({w:s["Вино"]||"",vi:s["Урожай"]||"",st:pn(s["Остаток"]),so:pn(s["Продано"]),av:pn(s["Сред/мес"]),
-    mo:s["Запас мес"]&&s["Запас мес"]!=="N/A"?parseFloat(s["Запас мес"]):null})).filter(s=>s.st>0);
+  const it=SK.map(s=>{
+    const w=gv(s,"вино")||gv(s,"wine")||"";
+    const vi=gv(s,"урожай")||gv(s,"vintage")||"";
+    const st=pn(gv(s,"остаток")||gv(s,"stock")||"0");
+    const so=pn(gv(s,"продано")||gv(s,"sold")||"0");
+    const av=pn(gv(s,"сред")||"0");
+    const moRaw=gv(s,"запас")||"";
+    const mo=moRaw&&moRaw!=="N/A"?parseFloat(moRaw):null;
+    return{w,vi,st,so,av,mo};
+  }).filter(s=>s.st>0);
   it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
   const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
-
   el.innerHTML=`
     <div class="kpis">
       <div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div>
@@ -244,7 +251,7 @@ function rStock(){
     <div class="lgd"><span><i style="background:#ef4444"></i>Заканч.</span><span><i style="background:#f59e0b"></i>Застряло</span><span><i style="background:#10b981"></i>Норма</span></div>
     ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const cl=i.mo!==null&&i.mo<3?"low":i.mo!==null&&i.mo>15?"stk":"";
       const co=cl==="low"?"#ef4444":cl==="stk"?"#f59e0b":"#10b981";
-      return`<div class="si ${cl}"><div class="top"><span class="nm">${i.w} ${i.vi}</span><span style="color:${co};font-weight:600">${ff(i.st)} · ${i.mo!==null?i.mo.toFixed(1)+"м":"N/A"}</span></div><div class="bar"><div class="bf" style="width:${p}%;background:${co}"></div></div><div class="bot"><span>Продано: ${ff(i.so)}</span><span>~${i.av}/мес</span></div></div>`}).join("")}`;
+      return'<div class="si '+cl+'"><div class="top"><span class="nm">'+i.w+' '+i.vi+'</span><span style="color:'+co+';font-weight:600">'+ff(i.st)+' · '+(i.mo!==null?i.mo.toFixed(1)+'м':'N/A')+'</span></div><div class="bar"><div class="bf" style="width:'+p+'%;background:'+co+'"></div></div><div class="bot"><span>Продано: '+ff(i.so)+'</span><span>~'+i.av+'/мес</span></div></div>'}).join("")}`;
 }
 
 load();
