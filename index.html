@@ -68,7 +68,7 @@ function gv(o,s){for(const k of Object.keys(o)){if(k.trim().toLowerCase().starts
 function toCur(v){if(SETS.dispCur==="EUR")return v/FX.EUR;if(SETS.dispCur==="USD")return v/FX.USD;return v}
 function cs(){return SETS.dispCur==="EUR"?"€":SETS.dispCur==="USD"?"$":"₴"}
 async function csvF(sh){const r=await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}
-async function wcF(ep,p=""){let all=[],pg=1;while(pg<=10){try{const r=await fetch(`${WC}/${ep}?${WCK}&per_page=100&page=${pg}&${p}`);if(!r.ok)break;const d=await r.json();if(!d.length)break;all=all.concat(d);if(d.length<100)break;pg++}catch(e){break}}return all}
+async function wcF(ep,p=""){let all=[],pg=1;while(pg<=100){try{const r=await fetch(`${WC}/${ep}?${WCK}&per_page=100&page=${pg}&${p}`);if(!r.ok)break;const d=await r.json();if(!d.length)break;all=all.concat(d);if(d.length<100)break;pg++}catch(e){break}}return all}
 async function nbuF(){try{const r=await fetch("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json");const d=await r.json();const e=d.find(x=>x.cc==="EUR"),u=d.find(x=>x.cc==="USD");if(e)FX.EUR=e.rate;if(u)FX.USD=u.rate}catch(e){}}
 function net(t){
   if(t.tp==="Доход"&&(t.src==="PRIVAT"||t.src==="VOSTOK")&&t.cat!=="Продаж, Експорт")return t.amt/1.2;
@@ -85,7 +85,8 @@ async function load(){
     T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),sm:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});
     T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход";x.nt=net(x);x.st=sT(x)});
     SK=s;BL=b;
-    try{WO=await wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed")}catch(e){WO=[]}
+    const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
+    try{WO=await wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr)}catch(e){WO=[]}
     try{WP=await wcF("products","")}catch(e){WP=[]}
     try{WCU=await wcF("customers","")}catch(e){WCU=[]}
     const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
