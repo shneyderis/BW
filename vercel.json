@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/wc/:path*",
+      "destination": "https://beykush.com/wp-json/wc/v3/:path*"
+    }
+  ]
+}
