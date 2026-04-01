@@ -32,10 +32,25 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
 .sh-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}@media(max-width:700px){.sh-grid3{grid-template-columns:1fr 1fr}}
 .stock-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:600}.stock-in{background:rgba(16,185,129,.15);color:#10b981}.stock-low{background:rgba(245,158,11,.15);color:#f59e0b}.stock-out{background:rgba(239,68,68,.15);color:#ef4444}
 .bar-h{display:flex;height:6px;border-radius:3px;overflow:hidden;margin:3px 0}.bar-seg{height:100%}
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh}
+#login-screen .logo{font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:4px}
+#login-screen .logo-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#9f1239;margin-right:6px}
+#login-screen input{background:#151821;border:1px solid #232738;color:#e4e5ea;padding:10px 14px;border-radius:6px;font-size:13px;font-family:inherit;width:220px;margin:10px 0;text-align:center}
+#login-screen button{background:#9f1239;color:#fff;border:none;padding:8px 24px;border-radius:6px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+#login-screen .err{color:#ef4444;font-size:10px;margin-top:6px;height:14px}
+.logout-btn{background:none;border:1px solid #232738;color:#7d8196;font-size:9px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit;margin-left:auto}
 </style>
 </head>
 <body>
-<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span></div>
+<div id="login-screen">
+  <span class="logo"><span class="logo-dot"></span>BEYKUSH WINERY</span>
+  <div style="font-size:10px;color:#7d8196;margin-bottom:16px">Dashboard</div>
+  <input type="password" id="login-pass" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">Войти</button>
+  <div class="err" id="login-err"></div>
+</div>
+<div id="app" class="hidden">
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><button class="logout-btn" onclick="doLogout()">Выход</button></div>
 <div class="sub" id="subtitle">Загрузка...</div>
 <div class="tabs" id="tabs">
   <button class="tab on" onclick="sw('pl',this)">P&L</button>
@@ -52,8 +67,38 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
 <div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Загрузка данных...</p></div>
 <div id="t-pl" class="hidden"></div><div id="t-sales" class="hidden"></div><div id="t-exp" class="hidden"></div><div id="t-assets" class="hidden"></div><div id="t-shop" class="hidden"></div><div id="t-stock" class="hidden"></div><div id="t-cash" class="hidden"></div><div id="t-unrec" class="hidden"></div><div id="t-settings" class="hidden"></div>
 <div id="modal" class="modal hidden"></div>
+</div><!-- /app -->
 
 <script>
+// ========== AUTH ==========
+const ROLES={
+  owner:{password:"beykush2024",tabs:["pl","sales","exp","assets","shop","stock","cash","unrec","settings"]},
+  manager:{password:"sales2024",tabs:["sales","shop","stock"]},
+  accountant:{password:"acc2024",tabs:["pl","exp","assets","cash"]}
+};
+let currentRole=null;
+function doLogin(){
+  const p=document.getElementById("login-pass").value;
+  for(const[role,cfg]of Object.entries(ROLES)){
+    if(cfg.password===p){currentRole=role;sessionStorage.setItem("bw_role",role);showApp(cfg.tabs);return}
+  }
+  document.getElementById("login-err").textContent="Неверный пароль";
+}
+function doLogout(){sessionStorage.removeItem("bw_role");currentRole=null;document.getElementById("app").classList.add("hidden");document.getElementById("login-screen").classList.remove("hidden");document.getElementById("login-pass").value=""}
+function showApp(tabs){
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.querySelectorAll('.tab').forEach(btn=>{
+    const id=btn.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];
+    if(id){btn.classList.toggle("hidden",!tabs.includes(id));if(!tabs.includes(id)&&btn.classList.contains("on")){btn.classList.remove("on")}}
+  });
+  // Activate first visible tab
+  const firstVisible=document.querySelector('.tab:not(.hidden)');
+  if(firstVisible&&!document.querySelector('.tab.on:not(.hidden)')){firstVisible.classList.add("on");const id=firstVisible.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];if(id){['pl','sales','exp','assets','shop','stock','cash','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden')}}
+  load();
+}
+// Auto-login from session
+(function(){const r=sessionStorage.getItem("bw_role");if(r&&ROLES[r]){currentRole=r;showApp(ROLES[r].tabs)}})();
 const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
 const WC="/api/wc";
 const WCK="consumer_key=ck_5b87215529858139d17b602945170ae4d9c8adbd&consumer_secret=cs_3ad054a505185162e849a92bf019979e6c037c93";
@@ -80,21 +125,36 @@ function sT(t){return(t.src==="2fMK"||t.src==="2fKiev")?"2Ф":"1Ф"}
 
 async function load(){
   try{
+    // Phase 1: Sheets + NBU (fast) → render immediately
     await nbuF();
     const[t,s,b]=await Promise.all([csvF("Dashboard_Data"),csvF("3_Stock"),csvF("6_Balances")]);
     T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),sm:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});
     T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход";x.nt=net(x);x.st=sT(x)});
     SK=s;BL=b;
-    const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
-    try{WO=await wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr)}catch(e){WO=[]}
-    try{WP=await wcF("products","")}catch(e){WP=[]}
-    try{WCU=await wcF("customers","")}catch(e){WCU=[]}
     const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
     const lastTxn=T.length?T.reduce((a,b)=>a.mo>b.mo?a:b).ym:"?";
     document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";
-    document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2);
+    document.getElementById("subtitle").textContent=ff(T.length)+" опер · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+" · ⏳ WC...";
     document.getElementById("ld").classList.add("hidden");
     bldFlt(yrs);render();
+
+    // Phase 2: WooCommerce in background (with localStorage cache)
+    const WC_CACHE_KEY="bw_wc_cache",WC_TTL=15*60*1000;
+    let cached=null;
+    try{const raw=localStorage.getItem(WC_CACHE_KEY);if(raw){cached=JSON.parse(raw);if(Date.now()-cached.ts>WC_TTL)cached=null}}catch(e){}
+    if(cached){WO=cached.orders||[];WP=cached.products||[];WCU=cached.customers||[]}
+    else{
+      const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
+      const[wo,wp,wcu]=await Promise.all([
+        wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr).catch(()=>[]),
+        wcF("products","").catch(()=>[]),
+        wcF("customers","").catch(()=>[])
+      ]);
+      WO=wo;WP=wp;WCU=wcu;
+      try{localStorage.setItem(WC_CACHE_KEY,JSON.stringify({ts:Date.now(),orders:WO,products:WP,customers:WCU}))}catch(e){}
+    }
+    document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2);
+    render();
   }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>'}
 }
 
@@ -670,7 +730,7 @@ function rSettings(){
     <div class="cc"><h3>Источники данных</h3><p style="font-size:10px;color:#7d8196">Google Sheet: ${SID}<br>WooCommerce: beykush.com (${WO.length} заказов, ${WP.length} товаров, ${WCU.length} клиентов)<br>НБУ API: bank.gov.ua</p></div>`;
 }
 
-load();
+// load() is called by showApp() after auth
 </script>
 </body>
 </html>
