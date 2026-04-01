@@ -84,7 +84,7 @@ function doLogin(){
   }
   document.getElementById("login-err").textContent="Неверный пароль";
 }
-function doLogout(){sessionStorage.removeItem("bw_role");currentRole=null;document.getElementById("app").classList.add("hidden");document.getElementById("login-screen").classList.remove("hidden");document.getElementById("login-pass").value=""}
+function doLogout(){sessionStorage.removeItem("bw_role");currentRole=null;wcLoaded=false;wcError="";WO=[];WP=[];WCU=[];document.getElementById("app").classList.add("hidden");document.getElementById("login-screen").classList.remove("hidden");document.getElementById("login-pass").value=""}
 function showApp(tabs){
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
@@ -105,7 +105,7 @@ const WCK="consumer_key=ck_5b87215529858139d17b602945170ae4d9c8adbd&consumer_sec
 const IGN=["#ignore","Конвертація","ІГНОР!!!","Банк???","Банк, Еквайринг"];
 const ZP=["ЗП менеджерів","ЗП Виноградник","ЗП Виноробня","ЗП Готель","ЗП Цибак","BW Света","BW Наташа","BW Таня"];
 const ACATS=["Обладнання виноробні","Обладнання виноградник","Обладнання, власний транспорт"];
-let T=[],SK=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"};
+let T=[],SK=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},wcLoaded=false,wcError="";
 function pn(s){if(!s||s==="")return 0;s=String(s).trim();let ng=false;if(s.startsWith("(")&&s.endsWith(")")){ng=true;s=s.slice(1,-1)}if(s.startsWith("-")){ng=true;s=s.slice(1)}s=s.replace(/[₴$€\s]/g,"").replace(/,/g,"");let n=parseFloat(s);return isNaN(n)?0:ng?-n:n}
 const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};
 const ff=n=>n?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n):"0";
@@ -141,17 +141,20 @@ async function load(){
     // Phase 2: WooCommerce in background (with localStorage cache)
     const WC_CACHE_KEY="bw_wc_cache",WC_TTL=15*60*1000;
     let cached=null;
-    try{const raw=localStorage.getItem(WC_CACHE_KEY);if(raw){cached=JSON.parse(raw);if(Date.now()-cached.ts>WC_TTL)cached=null}}catch(e){}
-    if(cached){WO=cached.orders||[];WP=cached.products||[];WCU=cached.customers||[]}
+    try{const raw=localStorage.getItem(WC_CACHE_KEY);if(raw){cached=JSON.parse(raw);if(Date.now()-cached.ts>WC_TTL)cached=null;else if(!cached.orders||!cached.orders.length)cached=null}}catch(e){localStorage.removeItem(WC_CACHE_KEY)}
+    if(cached){WO=cached.orders||[];WP=cached.products||[];WCU=cached.customers||[];wcLoaded=true}
     else{
       const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
-      const[wo,wp,wcu]=await Promise.all([
-        wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr).catch(()=>[]),
-        wcF("products","").catch(()=>[]),
-        wcF("customers","").catch(()=>[])
-      ]);
-      WO=wo;WP=wp;WCU=wcu;
-      try{localStorage.setItem(WC_CACHE_KEY,JSON.stringify({ts:Date.now(),orders:WO,products:WP,customers:WCU}))}catch(e){}
+      try{
+        const[wo,wp,wcu]=await Promise.all([
+          wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr),
+          wcF("products",""),
+          wcF("customers","")
+        ]);
+        WO=wo;WP=wp;WCU=wcu;
+        if(WO.length)try{localStorage.setItem(WC_CACHE_KEY,JSON.stringify({ts:Date.now(),orders:WO,products:WP,customers:WCU}))}catch(e){}
+      }catch(e){wcError=e.message;console.error("WC load error:",e)}
+      wcLoaded=true;
     }
     document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2);
     render();
@@ -390,7 +393,8 @@ let shopSub="sales";
 function shopSw(s){shopSub=s;render()}
 function rShop(f){
   const el=document.getElementById("t-shop"),c$=cs();
-  if(!WO.length){el.innerHTML='<div class="warn">WooCommerce не загрузился. Проверьте Vercel proxy и ключи API.</div>';return}
+  if(!WO.length&&!wcLoaded){el.innerHTML='<div class="info">⏳ WooCommerce загружается...</div>';return}
+  if(!WO.length&&wcLoaded){el.innerHTML='<div class="warn">WooCommerce: нет данных.'+(wcError?' Ошибка: '+wcError:'')+'<br><button class="flt" style="margin-top:6px" onclick="localStorage.removeItem(\'bw_wc_cache\');location.reload()">Сбросить кэш и перезагрузить</button></div>';return}
 
   // Filter orders by year
   const yr=f.yr;
