@@ -1,1 +1,66 @@
 
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beykush Winery Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="login-screen">
+  <span class="logo"><span class="logo-dot"></span>BEYKUSH WINERY</span>
+  <div style="font-size:10px;color:#7d8196;margin-bottom:16px">Dashboard</div>
+  <input type="password" id="login-pass" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">Войти</button>
+  <div class="err" id="login-err"></div>
+</div>
+<div id="app" class="hidden">
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><button class="logout-btn" onclick="doLogout()">Выход</button></div>
+<div class="sub" id="subtitle">Загрузка...</div>
+<div class="tabs" id="tabs">
+  <button class="tab on" onclick="sw('pl',this)">P&L</button>
+  <button class="tab" onclick="sw('sales',this)">Продажи</button>
+  <button class="tab" onclick="sw('exp',this)">Расходы</button>
+  <button class="tab" onclick="sw('assets',this)">Осн.фонды</button>
+  <button class="tab" onclick="sw('shop',this)">Магазин</button>
+  <button class="tab" onclick="sw('stock',this)">Склад</button>
+  <button class="tab" onclick="sw('cash',this)">Кэш-фло</button>
+  <button class="tab" onclick="sw('mkt',this)">Маркетинг</button>
+  <button class="tab" onclick="sw('unrec',this)">⚠️</button>
+  <button class="tab" onclick="sw('settings',this)">⚙</button>
+</div>
+<div id="filterbar" class="filters"></div>
+<div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Загрузка данных...</p></div>
+<div id="t-pl" class="hidden"></div>
+<div id="t-sales" class="hidden"></div>
+<div id="t-exp" class="hidden"></div>
+<div id="t-assets" class="hidden"></div>
+<div id="t-shop" class="hidden"></div>
+<div id="t-stock" class="hidden"></div>
+<div id="t-cash" class="hidden"></div>
+<div id="t-mkt" class="hidden"></div>
+<div id="t-unrec" class="hidden"></div>
+<div id="t-settings" class="hidden"></div>
+<div id="modal" class="modal hidden"></div>
+</div>
+
+<!-- Data & Utils -->
+<script src="js/data.js"></script>
+<!-- Tab modules -->
+<script src="js/tabs/pl.js"></script>
+<script src="js/tabs/sales.js"></script>
+<script src="js/tabs/exp.js"></script>
+<script src="js/tabs/assets.js"></script>
+<script src="js/tabs/shop.js"></script>
+<script src="js/tabs/stock.js"></script>
+<script src="js/tabs/cash.js"></script>
+<script src="js/tabs/mkt.js"></script>
+<script src="js/tabs/unrec.js"></script>
+<script src="js/tabs/settings.js"></script>
+<!-- App (auth, load, filters, render) — must be last -->
+<script src="js/app.js"></script>
+</body>
+</html>
