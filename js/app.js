@@ -12,7 +12,7 @@ const COB={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9
 
 // ========== GLOBALS ==========
 let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
-let wcLoaded=false,wcError="",SP={},META={},mktLoaded=false,mktError="";
+let wcLoaded=false,wcError="",SP={},mktLoaded=false,mktError="";
 
 // ========== AUTH ==========
 const ROLES={

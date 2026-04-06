@@ -7,10 +7,6 @@
     {
       "source": "/api/sp/:path*",
       "destination": "https://api.sendpulse.com/:path*"
-    },
-    {
-      "source": "/api/meta/:path*",
-      "destination": "https://graph.facebook.com/v19.0/:path*"
     }
   ]
 }
