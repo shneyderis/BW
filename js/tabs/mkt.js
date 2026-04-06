@@ -31,9 +31,6 @@ async function loadMkt(){
 
     SP.totalSubs=SP.lists.reduce((s,l)=>s+l.all_email_qty,0);
 
-    // Meta/IG — пока нет данных в Sheets, оставим пустым
-    META.pages=[];META.media=[];META.ig={};
-
   }catch(e){mktError=e.message;console.error("MKT load error:",e)}
   mktLoaded=true;
 }
@@ -132,7 +129,5 @@ function rMkt(){
       </tr>`}).join("")}</table>
     </div>
 
-    ${correlHTML}
-
-    <div class="cc"><h3>📸 Meta / Instagram</h3><p style="font-size:10px;color:#7d8196">Поки не підключено. Потрібно: перегенерувати токен Meta з правильними permissions, додати лист IG_Posts в sync.gs.</p></div>`;
+    ${correlHTML}`;
 }
