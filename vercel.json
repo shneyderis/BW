@@ -6,15 +6,5 @@
         { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/wc/:path*",
-      "destination": "https://beykush.com/wp-json/wc/v3/:path*"
-    },
-    {
-      "source": "/api/sp/:path*",
-      "destination": "https://api.sendpulse.com/:path*"
-    }
   ]
 }

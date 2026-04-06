@@ -21,7 +21,7 @@ let currentRole=null;
 function doLogin(){
   const p=document.getElementById("login-pass").value;
   for(const[role,cfg]of Object.entries(ROLES)){
-    if(cfg.password===p){currentRole=role;sessionStorage.setItem("bw_role",role);showApp(cfg.tabs);return}
+    if(cfg.password===p){currentRole=role;sessionStorage.setItem("bw_role",role);sessionStorage.setItem("bw_ts",String(Date.now()));showApp(cfg.tabs);return}
   }
   document.getElementById("login-err").textContent="Неверный пароль";
 }
@@ -40,10 +40,18 @@ function showApp(tabs){
   load();
 }
 
-// Auto-login from session
-(function(){const r=sessionStorage.getItem("bw_role");if(r&&ROLES[r]){currentRole=r;showApp(ROLES[r].tabs)}})();
+// Auto-login from session with 30-min timeout
+(function(){
+  const r=sessionStorage.getItem("bw_role");
+  const ts=parseInt(sessionStorage.getItem("bw_ts")||"0");
+  if(r&&ROLES[r]&&(Date.now()-ts<30*60*1000)){currentRole=r;showApp(ROLES[r].tabs)}
+  else{sessionStorage.removeItem("bw_role");sessionStorage.removeItem("bw_ts")}
+})();
+// Reset timeout on activity
+["click","keydown","scroll"].forEach(e=>document.addEventListener(e,()=>{if(currentRole)sessionStorage.setItem("bw_ts",String(Date.now()))}));
 
 // ========== HELPERS ==========
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function net(t){
   if(t.tp==="Доход"&&(t.src==="PRIVAT"||t.src==="VOSTOK")&&t.cat!=="Продаж, Експорт")return t.amt/1.2;
   if(t.tp==="Расход"&&(t.src==="PRIVAT"||t.src==="VOSTOK")&&!ZP.some(z=>t.cat.includes(z))&&!t.cat.includes("Податки")&&!t.cat.includes("Банківська"))return t.amt/1.2;
@@ -116,8 +124,11 @@ async function load(){
       wcLoaded=true;
       console.log("WC from Sheets:",WO.length,"orders,",WP.length,"products");
     }catch(e){wcError="Sheets: "+e.message;console.error("WC Sheets error:",e);wcLoaded=true}
+    const warns=[];
+    if(!WO.length)warns.push("WC_Orders порожній");
+    if(!BL.length)warns.push("Баланси не завантажені");
     const subEl=document.getElementById("subtitle");
-    subEl.innerHTML=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(daysStr?` · <span style="${daysClr?"color:"+daysClr:""}">${daysStr.trim().substring(3)}</span>`:"")+(wcError?" · ⚠ "+wcError:"");
+    subEl.innerHTML=ff(T.length)+" опер · "+WO.length+" WC · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(daysStr?` · <span style="${daysClr?"color:"+daysClr:""}">${daysStr.trim().substring(3)}</span>`:"")+(warns.length?' · <span style="color:#f59e0b">⚠ '+warns.join(", ")+'</span>':"")+(wcError?' · <span style="color:#ef4444">'+wcError+'</span>':"");
     render();
   }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>'}
 }
@@ -158,11 +169,11 @@ window.showMgr=function(n){
   const byCat={};ft.forEach(t=>{const c=CSH[t.cat]||t.cat;byCat[c]=(byCat[c]||0)+toCur(t.nt)});
   const byC={};ft.forEach(t=>{const a=t.alias||t.name;byC[a]=(byC[a]||0)+toCur(t.nt)});
   const byM={};ft.forEach(t=>{byM[t.ym]=(byM[t.ym]||0)+toCur(t.nt)});
-  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${n}</h2>
-    <div class="kpis"><div class="kpi"><div class="l">Продажи</div><div class="v g">${ff(rev)}${c$}</div></div><div class="kpi"><div class="l">Комиссия</div><div class="v">${ff(com)}${c$}</div><div class="s">${rev?(com/rev*100).toFixed(1):0}%</div></div><div class="kpi"><div class="l">Операций</div><div class="v">${ft.length}</div></div></div>
-    <div class="sec">По каналам</div><table class="tbl">${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<tr><td>'+c+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
-    <div class="sec">Топ контрагентов</div><table class="tbl">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,v])=>'<tr><td>'+n.substring(0,28)+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
-    <div class="sec">По месяцам</div><table class="tbl">${Object.entries(byM).sort().map(([m,v])=>'<tr><td>'+m+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
+  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${esc(n)}</h2>
+    <div class="kpis"><div class="kpi"><div class="l">Продажі</div><div class="v g">${ff(rev)}${c$}</div></div><div class="kpi"><div class="l">Комісія</div><div class="v">${ff(com)}${c$}</div><div class="s">${rev?(com/rev*100).toFixed(1):0}%</div></div><div class="kpi"><div class="l">Операцій</div><div class="v">${ft.length}</div></div></div>
+    <div class="sec">По каналах</div><table class="tbl">${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<tr><td>'+esc(c)+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
+    <div class="sec">Топ контрагентів</div><table class="tbl">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,v])=>'<tr><td>'+esc(n.substring(0,28))+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
+    <div class="sec">По місяцях</div><table class="tbl">${Object.entries(byM).sort().map(([m,v])=>'<tr><td>'+m+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
   </div>`;document.getElementById("modal").classList.remove("hidden");
 };
 window.showContr=function(n){
@@ -170,10 +181,10 @@ window.showContr=function(n){
   const rev=ft.filter(t=>t.tp==="Доход").reduce((s,t)=>s+toCur(t.nt),0);
   const byYr={};ft.filter(t=>t.tp==="Доход").forEach(t=>{byYr[t.yr]=(byYr[t.yr]||0)+toCur(t.nt)});
   const byM={};ft.filter(t=>t.tp==="Доход").forEach(t=>{byM[t.ym]=(byM[t.ym]||0)+toCur(t.nt)});
-  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${n}</h2>
-    <div class="kpi" style="margin-bottom:10px"><div class="l">Всего</div><div class="v g">${ff(rev)}${c$}</div></div>
-    <div class="sec">По годам</div><table class="tbl">${Object.entries(byYr).sort().map(([y,v])=>'<tr><td>'+y+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
-    <div class="sec">По месяцам</div><table class="tbl">${Object.entries(byM).sort().map(([m,v])=>'<tr><td>'+m+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
+  document.getElementById("modal").innerHTML=`<div class="modal-c"><button class="modal-close" onclick="closeModal()">✕</button><h2>${esc(n)}</h2>
+    <div class="kpi" style="margin-bottom:10px"><div class="l">Всього</div><div class="v g">${ff(rev)}${c$}</div></div>
+    <div class="sec">По роках</div><table class="tbl">${Object.entries(byYr).sort().map(([y,v])=>'<tr><td>'+y+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
+    <div class="sec">По місяцях</div><table class="tbl">${Object.entries(byM).sort().map(([m,v])=>'<tr><td>'+m+'</td><td class="r g">'+ff(v)+c$+'</td></tr>').join("")}</table>
   </div>`;document.getElementById("modal").classList.remove("hidden");
 };
 window.closeModal=function(){document.getElementById("modal").classList.add("hidden")};

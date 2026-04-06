@@ -37,6 +37,5 @@ function rSettings(){
     </table></div>
     ${settingsHTML}
     <div class="cc"><h3>Курсы НБУ</h3><p style="font-size:11px">€1 = ${FX.EUR.toFixed(4)} ₴ · $1 = ${FX.USD.toFixed(4)} ₴</p></div>
-    <div class="cc"><h3>Источники данных</h3><p style="font-size:10px;color:#7d8196">Google Sheet: ${SID}<br>Балансы: PRIVAT_BALANCES (BW_Accounts)<br>Склад: Stock_Data (${SD.length}) + 3_Stock (${SK.length})<br>WooCommerce: ${WO.length} заказов, ${WP.length} товаров<br>Settings: ${SETTINGS.length} записей</p></div>
-    <div class="cc"><h3>Кэш WC</h3><button class="flt" onclick="localStorage.removeItem('bw_wc_cache');location.reload()">Сбросить кэш WC</button></div>`;
+    <div class="cc"><h3>Джерела даних</h3><p style="font-size:10px;color:#7d8196">Google Sheet: ${SID}<br>Баланси: PRIVAT_BALANCES (BW_Accounts)<br>Склад: Stock_Data (${SD.length}) + 3_Stock (${SK.length})<br>WC замовлень: ${WO.length}, товарів: ${WP.length}<br>IG постів: ${IG.posts.length}, Meta Ads: ${MA.campaigns.length}<br>Settings: ${SETTINGS.length} записів</p></div>`;
 }

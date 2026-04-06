@@ -5,7 +5,7 @@ function shopSw(s){shopSub=s;shopCityFlt="ALL";render()}
 function rShop(f){
   const el=document.getElementById("t-shop"),c$=cs();
   if(!WO.length&&!wcLoaded){el.innerHTML='<div class="info">⏳ WooCommerce загружается...</div>';return}
-  if(!WO.length&&wcLoaded){el.innerHTML='<div class="warn">WooCommerce: нет данных.'+(wcError?' Ошибка: '+wcError:'')+'<br><button class="flt" style="margin-top:6px" onclick="localStorage.removeItem(\'bw_wc_cache\');location.reload()">Сбросить кэш</button></div>';return}
+  if(!WO.length&&wcLoaded){el.innerHTML='<div class="warn">WooCommerce: немає даних.'+(wcError?' Помилка: '+wcError:'')+'<br><button class="flt" style="margin-top:6px" onclick="location.reload()">Оновити</button></div>';return}
   const yr=f.yr;
   const allOrd=yr==="ALL"?WO:WO.filter(o=>(o.date_created||"").startsWith(yr));
   const completed=allOrd.filter(o=>o.status==="completed"||o.status==="processing");
