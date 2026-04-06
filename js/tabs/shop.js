@@ -43,7 +43,7 @@ function rShopSales(el,tabs,orders,allOrd,f,c$){
   const ws=Object.keys(byW).sort().slice(-12);
   const payM={};orders.forEach(o=>{const m=o.payment_method_title||o.payment_method||"Не указан";payM[m]=(payM[m]||0)+parseFloat(o.total||0)});
   const payS=Object.entries(payM).sort((a,b)=>b[1]-a[1]);const payTotal=payS.reduce((s,[,v])=>s+v,0);
-  const srcs={};orders.forEach(o=>{const s=((o.meta_data||[]).find(x=>x.key==="_metorik_utm_source")||{}).value||"direct";srcs[s]=(srcs[s]||0)+1});
+  const srcs={};orders.forEach(o=>{const s=o.utm_source||((o.meta_data||[]).find(x=>x.key==="_metorik_utm_source")||{}).value||"direct";srcs[s]=(srcs[s]||0)+1});
   const srcS=Object.entries(srcs).sort((a,b)=>b[1]-a[1]).slice(0,8);
   el.innerHTML=`${tabs}
     <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">

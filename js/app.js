@@ -96,6 +96,7 @@ async function load(){
             shipping:{city:gv(r,"shipping_city")||r["shipping_city"]||""},
             payment_method:gv(r,"payment_method")||r["payment_method"]||"",
             payment_method_title:gv(r,"payment_method_title")||gv(r,"payment_method")||r["payment_method_title"]||"",
+            utm_source:gv(r,"utm_source")||gv(r,"metorik_utm_source")||r["utm_source"]||"",
             line_items:li,meta_data:md
           }});
         console.log("WC_Orders mapped[0]:",JSON.stringify(WO[0]));
