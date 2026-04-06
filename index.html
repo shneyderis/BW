@@ -5,306 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beykush Winery Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0c0e13;--card:#151821;--border:#232738;--text:#e4e5ea;--muted:#7d8196;--accent:#9f1239;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',-apple-system,sans-serif;min-height:100vh}
-.header{padding:24px 24px 0;margin-bottom:20px}
-.header h1{font-size:20px;font-weight:700;letter-spacing:-0.5px;display:inline}
-.header .badge{font-size:11px;color:var(--muted);background:var(--card);padding:2px 9px;border-radius:16px;margin-left:10px}
-.header .status{font-size:10px;color:var(--green);float:right;margin-top:6px}
-.header .sub{font-size:12px;color:var(--muted);margin-top:4px}
-.tabs{display:flex;gap:4px;padding:0 24px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.tab{padding:7px 16px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;background:var(--card);color:var(--muted);transition:all .15s}
-.tab.active{background:var(--accent);color:#fff}
-.year-select{margin-left:auto;padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-family:inherit;cursor:pointer}
-.content{padding:0 24px}
-.kpis{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.kpi{background:var(--card);border-radius:10px;padding:16px 18px;border:1px solid var(--border);flex:1 1 170px;min-width:155px}
-.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
-.kpi .value{font-size:24px;font-weight:700}
-.kpi .sub{font-size:11px;color:var(--muted);margin-top:3px}
-.chart-card{background:var(--card);border-radius:10px;padding:18px;border:1px solid var(--border);margin-bottom:16px}
-.chart-card h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:14px}
-.row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-.row > div{flex:1 1 280px}
-.stock-item{margin-bottom:8px;padding:9px 12px;background:var(--card);border-radius:7px;border:1px solid var(--border)}
-.stock-item.low{border-color:rgba(239,68,68,.27)}
-.stock-item.stuck{border-color:rgba(245,158,11,.27)}
-.stock-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
-.stock-header .name{font-weight:600}
-.stock-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.stock-bar-fill{height:100%;border-radius:3px}
-.stock-footer{display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:10px}
-.legend span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
-.legend i{width:7px;height:7px;border-radius:2px;display:inline-block}
-.mgr{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
-.mgr:last-child{border-bottom:none}
-.mgr .n{font-size:13px;font-weight:600}
-.mgr .s{font-size:10px;color:var(--muted)}
-.mgr .v{font-size:13px;font-weight:600;color:var(--green);text-align:right}
-.exp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(35,39,56,.5);font-size:12px}
-.exp-row .cat{font-weight:500;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exp-row .amt{color:var(--red);font-weight:600}
-.loading{display:flex;align-items:center;justify-content:center;min-height:80vh;flex-direction:column}
-.loading h2{font-size:18px;font-weight:600;margin-bottom:8px}
-.loading p{font-size:13px;color:var(--muted)}
-.insight{background:rgba(159,18,57,.13);border:1px solid rgba(159,18,57,.25);border-radius:10px;padding:14px;font-size:12px;line-height:1.6;margin-top:16px}
-.insight strong{color:#e11d48}
-.hidden{display:none}
-</style>
 </head>
 <body>
-
-<div class="header">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
-    <h1>BEYKUSH WINERY</h1>
-    <span class="badge">Live Dashboard</span>
-    <span class="status" id="status">⏳ Loading...</span>
-  </div>
-  <div class="sub" id="subtitle">Загрузка данных...</div>
+<div id="login-screen">
+  <span class="logo"><span class="logo-dot"></span>BEYKUSH WINERY</span>
+  <div style="font-size:10px;color:#7d8196;margin-bottom:16px">Dashboard</div>
+  <input type="password" id="login-pass" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">Войти</button>
+  <div class="err" id="login-err"></div>
+</div>
+<div id="app" class="hidden">
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><button class="logout-btn" onclick="doLogout()">Выход</button></div>
+<div class="sub" id="subtitle">Загрузка...</div>
+<div class="tabs" id="tabs">
+  <button class="tab on" onclick="sw('pl',this)">P&L</button>
+  <button class="tab" onclick="sw('sales',this)">Продажи</button>
+  <button class="tab" onclick="sw('exp',this)">Расходы</button>
+  <button class="tab" onclick="sw('assets',this)">Осн.фонды</button>
+  <button class="tab" onclick="sw('shop',this)">Магазин</button>
+  <button class="tab" onclick="sw('stock',this)">Склад</button>
+  <button class="tab" onclick="sw('cash',this)">Кэш-фло</button>
+  <button class="tab" onclick="sw('mkt',this)">Маркетинг</button>
+  <button class="tab" onclick="sw('unrec',this)">⚠️</button>
+  <button class="tab" onclick="sw('settings',this)">⚙</button>
+</div>
+<div id="filterbar" class="filters"></div>
+<div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Загрузка данных...</p></div>
+<div id="t-pl" class="hidden"></div>
+<div id="t-sales" class="hidden"></div>
+<div id="t-exp" class="hidden"></div>
+<div id="t-assets" class="hidden"></div>
+<div id="t-shop" class="hidden"></div>
+<div id="t-stock" class="hidden"></div>
+<div id="t-cash" class="hidden"></div>
+<div id="t-mkt" class="hidden"></div>
+<div id="t-unrec" class="hidden"></div>
+<div id="t-settings" class="hidden"></div>
+<div id="modal" class="modal hidden"></div>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('pl',this)">P&L</button>
-  <button class="tab" onclick="switchTab('sales',this)">Продажи</button>
-  <button class="tab" onclick="switchTab('expenses',this)">Расходы</button>
-  <button class="tab" onclick="switchTab('stock',this)">Склад</button>
-  <select class="year-select" id="yearFilter" onchange="applyFilter()">
-    <option value="ALL">Все годы</option>
-    <option value="2021">2021</option>
-    <option value="2022">2022</option>
-    <option value="2023">2023</option>
-    <option value="2024">2024</option>
-    <option value="2025">2025</option>
-  </select>
-</div>
-
-<div class="content">
-  <div id="loading" class="loading">
-    <h2>Загрузка данных из Google Sheets...</h2>
-    <p>Подключение к таблице BW_Looker_Data</p>
-  </div>
-
-  <div id="tab-pl" class="hidden"></div>
-  <div id="tab-sales" class="hidden"></div>
-  <div id="tab-expenses" class="hidden"></div>
-  <div id="tab-stock" class="hidden"></div>
-</div>
-
-<script>
-const SHEET_ID = "1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
-let allTxns = [], stockData = [], balData = [];
-let charts = {};
-
-const fmt = n => { if (!n && n !== 0) return "—"; const a = Math.abs(n); if (a >= 1e6) return (n/1e6).toFixed(1)+"M"; if (a >= 1e3) return (n/1e3).toFixed(0)+"K"; return n.toFixed(0); };
-const fmtF = n => n ? new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n) : "0";
-
-async function fetchCSV(sheet) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const rows = []; let cur = []; let inQ = false; let f = "";
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQ) { if (c === '"' && text[i+1] === '"') { f += '"'; i++; } else if (c === '"') inQ = false; else f += c; }
-    else { if (c === '"') inQ = true; else if (c === ',') { cur.push(f); f = ""; } else if (c === '\n' || (c === '\r' && text[i+1] === '\n')) { cur.push(f); f = ""; rows.push(cur); cur = []; if (c === '\r') i++; } else f += c; }
-  }
-  if (f || cur.length) { cur.push(f); rows.push(cur); }
-  if (rows.length < 2) return [];
-  const h = rows[0];
-  return rows.slice(1).map(r => { const o = {}; h.forEach((k, i) => { o[k.trim()] = r[i] !== undefined ? r[i].trim() : ""; }); return o; });
-}
-
-async function loadData() {
-  try {
-    const [txns, stk, bal] = await Promise.all([fetchCSV("1_Transactions"), fetchCSV("3_Stock"), fetchCSV("6_Balances")]);
-    allTxns = txns.map(t => ({...t, amount: parseFloat(t.Amount_UAH)||0, year: t.Year||"", month: t.Month||"", type: t.Type||"", category: t.Category||"", manager: t.Manager||"", commission: parseFloat(t.Commission)||0 }));
-    stockData = stk; balData = bal;
-    document.getElementById("status").textContent = "● Google Sheets connected";
-    document.getElementById("status").style.color = "var(--green)";
-    document.getElementById("subtitle").textContent = fmtF(allTxns.length) + " транзакций · Данные из Google Sheets";
-    document.getElementById("loading").classList.add("hidden");
-    renderAll();
-  } catch(e) {
-    document.getElementById("status").textContent = "● Ошибка";
-    document.getElementById("status").style.color = "var(--red)";
-    document.getElementById("loading").innerHTML = `<h2 style="color:var(--red)">Ошибка загрузки</h2><p>${e.message}</p><p style="margin-top:12px">Убедись что таблица расшарена: Anyone with link → Viewer</p>`;
-  }
-}
-
-function getFiltered() {
-  const yr = document.getElementById("yearFilter").value;
-  return yr === "ALL" ? allTxns : allTxns.filter(t => t.year === yr);
-}
-
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  ['pl','sales','expenses','stock'].forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
-  document.getElementById('tab-'+id).classList.remove('hidden');
-  renderAll();
-}
-
-function applyFilter() { renderAll(); }
-
-function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
-
-const CHANNELS = ["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ"];
-const CH_SHORT = {"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса"};
-const CH_COLORS = ["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1"];
-
-function renderAll() {
-  renderPL(); renderSales(); renderExpenses(); renderStock();
-}
-
-function renderPL() {
-  const el = document.getElementById("tab-pl");
-  const yrs = ["2021","2022","2023","2024","2025"];
-  const plD = yrs.map(y => {
-    const yt = allTxns.filter(t => t.year === y);
-    const rev = yt.filter(t => t.type==="Доход").reduce((s,t) => s+t.amount, 0);
-    const exp = yt.filter(t => t.type==="Расход").reduce((s,t) => s+t.amount, 0);
-    return { year: y, rev, exp: Math.abs(exp), profit: rev+exp };
-  });
-  const r25 = plD[4].rev, r24 = plD[3].rev, p25 = plD[4].profit;
-  const growth = r24 ? ((r25-r24)/r24*100).toFixed(1) : 0;
-  const margin = r25 ? (p25/r25*100).toFixed(1) : 0;
-  const totalR = plD.reduce((s,d) => s+d.rev, 0);
-  const totalE = plD.reduce((s,d) => s+d.exp, 0);
-  const uah = balData.find(b => (b["Валюта"]||b.Currency||"") === "UAH");
-  const eur = balData.find(b => (b["Валюта"]||b.Currency||"") === "EUR");
-  const usd = balData.find(b => (b["Валюта"]||b.Currency||"") === "USD");
-
-  el.innerHTML = `
-    <div class="kpis">
-      <div class="kpi"><div class="label">Выручка 2025</div><div class="value" style="color:var(--green)">${fmt(r25)} ₴</div><div class="sub">${growth>0?"+":""}${growth}% vs 2024</div></div>
-      <div class="kpi"><div class="label">Прибыль 2025</div><div class="value" style="color:${p25>0?'var(--green)':'var(--red)'}">${fmt(p25)} ₴</div><div class="sub">Маржа ${margin}%</div></div>
-      <div class="kpi"><div class="label">Всего 2021-25</div><div class="value">${fmt(totalR)} ₴</div><div class="sub">Расходы: ${fmt(totalE)} ₴</div></div>
-      <div class="kpi"><div class="label">Баланс</div><div class="value" style="color:var(--amber)">${uah ? fmtF(parseFloat(uah["Баланс"]||uah.Balance||0)) : "—"} ₴</div><div class="sub">${eur?"€"+fmtF(parseFloat(eur["Баланс"]||eur.Balance||0)):""} · ${usd?"$"+fmtF(parseFloat(usd["Баланс"]||usd.Balance||0)):""}</div></div>
-    </div>
-    <div class="chart-card"><h3>ВЫРУЧКА · РАСХОДЫ · ПРИБЫЛЬ</h3><canvas id="plChart" height="130"></canvas></div>
-    <div class="chart-card"><h3>ВЫРУЧКА ПОМЕСЯЧНО</h3><canvas id="monthChart" height="100"></canvas></div>
-  `;
-
-  destroyChart("plChart");
-  charts.plChart = new Chart(document.getElementById("plChart"), {
-    type: "bar", data: { labels: yrs, datasets: [
-      { label: "Выручка", data: plD.map(d=>d.rev), backgroundColor: "#10b981" },
-      { label: "Расходы", data: plD.map(d=>d.exp), backgroundColor: "rgba(239,68,68,.65)" },
-      { label: "Прибыль", data: plD.map(d=>d.profit), backgroundColor: "#8b5cf6" },
-    ]},
-    options: { responsive: true, plugins: { legend: { labels: { color: "#7d8196", font: { size: 11 } } } }, scales: { x: { ticks: { color: "#7d8196" }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } } } }
-  });
-
-  const byMonth = {};
-  allTxns.filter(t => t.type==="Доход" && t.month>="2021").forEach(t => { byMonth[t.month] = (byMonth[t.month]||0)+t.amount; });
-  const months = Object.keys(byMonth).sort();
-  destroyChart("monthChart");
-  charts.monthChart = new Chart(document.getElementById("monthChart"), {
-    type: "line", data: { labels: months, datasets: [{ label: "Выручка", data: months.map(m=>byMonth[m]), borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.1)", fill: true, tension: .3, pointRadius: 0 }] },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#7d8196", maxTicksLimit: 12, font: { size: 9 } }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } } } }
-  });
-}
-
-function renderSales() {
-  const el = document.getElementById("tab-sales");
-  const yr = document.getElementById("yearFilter").value;
-  const pieYr = yr === "ALL" ? "2025" : yr;
-  const ft = allTxns.filter(t => t.type === "Доход" && (yr === "ALL" || t.year === yr));
-
-  const chData = CHANNELS.map((c,i) => ({ name: CH_SHORT[c], value: ft.filter(t => t.category.includes(c.substring(0,15))).reduce((s,t) => s+t.amount, 0) })).filter(d => d.value > 5000);
-
-  // Managers
-  const byMgr = {};
-  ft.forEach(t => { if (!t.manager || t.manager==="-" || t.manager==="=") return; if (!byMgr[t.manager]) byMgr[t.manager]={sales:0,comm:0}; byMgr[t.manager].sales+=t.amount; byMgr[t.manager].comm+=t.commission; });
-  const mgrs = Object.entries(byMgr).map(([n,d])=>({name:n,...d})).sort((a,b)=>b.sales-a.sales).slice(0,5);
-
-  el.innerHTML = `
-    <div class="row">
-      <div class="chart-card"><h3>КАНАЛЫ ПРОДАЖ ${yr!=="ALL"?yr:""}</h3><canvas id="pieChart" height="200"></canvas>
-        <div class="legend">${chData.map((d,i)=>`<span><i style="background:${CH_COLORS[i]}"></i>${d.name}</span>`).join("")}</div>
-      </div>
-      <div class="chart-card"><h3>МЕНЕДЖЕРЫ</h3>
-        ${mgrs.map(m => `<div class="mgr"><div><div class="n">${m.name}</div><div class="s">Комиссия: ${m.sales?(m.comm/m.sales*100).toFixed(1):0}%</div></div><div><div class="v">${fmtF(m.sales)} ₴</div><div class="s">КМ: ${fmtF(m.comm)} ₴</div></div></div>`).join("")}
-      </div>
-    </div>
-  `;
-
-  destroyChart("pieChart");
-  charts.pieChart = new Chart(document.getElementById("pieChart"), {
-    type: "doughnut", data: { labels: chData.map(d=>d.name), datasets: [{ data: chData.map(d=>d.value), backgroundColor: CH_COLORS.slice(0, chData.length), borderWidth: 0 }] },
-    options: { responsive: true, cutout: "55%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label+": "+fmtF(ctx.raw)+" ₴" } } } }
-  });
-}
-
-function renderExpenses() {
-  const el = document.getElementById("tab-expenses");
-  const yr = document.getElementById("yearFilter").value;
-  const ft = yr === "ALL" ? allTxns.filter(t=>t.type==="Расход") : allTxns.filter(t=>t.type==="Расход"&&t.year===yr);
-  const byCat = {};
-  ft.forEach(t => { byCat[t.category||"???"] = (byCat[t.category||"???"]||0)+t.amount; });
-  const sorted = Object.entries(byCat).map(([c,v])=>({cat:c,amt:v})).sort((a,b)=>a.amt-b.amt).slice(0,20);
-
-  el.innerHTML = `
-    <div class="chart-card"><h3>ТОП РАСХОДОВ ${yr!=="ALL"?yr:"ЗА ВСЁ ВРЕМЯ"}</h3><canvas id="expChart" height="${Math.max(200, sorted.length*18)}"></canvas></div>
-    <div class="chart-card"><h3>ДЕТАЛИЗАЦИЯ</h3>
-      ${sorted.map(e => `<div class="exp-row"><span class="cat">${e.cat}</span><span class="amt">${fmtF(Math.abs(e.amt))} ₴</span></div>`).join("")}
-    </div>
-  `;
-
-  destroyChart("expChart");
-  charts.expChart = new Chart(document.getElementById("expChart"), {
-    type: "bar", data: { labels: sorted.map(e=>e.cat.substring(0,25)), datasets: [{ data: sorted.map(e=>Math.abs(e.amt)), backgroundColor: "rgba(239,68,68,.6)", borderRadius: 3 }] },
-    options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtF(ctx.raw)+" ₴" } } }, scales: { x: { ticks: { color: "#7d8196", callback: v => fmt(v) }, grid: { color: "#232738" } }, y: { ticks: { color: "#7d8196", font: { size: 10 } }, grid: { display: false } } } }
-  });
-}
-
-function renderStock() {
-  const el = document.getElementById("tab-stock");
-  const items = stockData.map(s => ({
-    wine: s["Вино"]||"", vintage: s["Урожай"]||"",
-    stock: parseInt(s["Остаток"])||0, sold: parseInt(s["Продано"])||0,
-    avg: parseInt(s["Сред/мес"])||0,
-    months: s["Запас мес"] && s["Запас мес"] !== "N/A" ? parseFloat(s["Запас мес"]) : null,
-    status: s["Статус"]||""
-  })).filter(s => s.stock > 0);
-
-  items.sort((a,b) => { if (a.months===null) return 1; if (b.months===null) return -1; return a.months-b.months; });
-
-  const totalBtl = items.reduce((s,i)=>s+i.stock,0);
-  const low = items.filter(i=>i.months!==null&&i.months<3).length;
-  const stuck = items.filter(i=>i.months!==null&&i.months>15).length;
-
-  el.innerHTML = `
-    <div class="kpis">
-      <div class="kpi"><div class="label">Позиций</div><div class="value">${items.length}</div></div>
-      <div class="kpi"><div class="label">Бутылок</div><div class="value">${fmtF(totalBtl)}</div></div>
-      <div class="kpi"><div class="label">Заканчиваются</div><div class="value" style="color:var(--red)">${low}</div><div class="sub">&lt;3 мес</div></div>
-      <div class="kpi"><div class="label">Застряли</div><div class="value" style="color:var(--amber)">${stuck}</div><div class="sub">&gt;15 мес</div></div>
-    </div>
-    <div class="legend" style="margin-bottom:12px">
-      <span><i style="background:var(--red)"></i>Заканчивается</span>
-      <span><i style="background:var(--amber)"></i>Застряло</span>
-      <span><i style="background:var(--green)"></i>Норма</span>
-    </div>
-    ${items.map(i => {
-      const total = i.stock+i.sold; const pct = total>0?(i.stock/total*100):0;
-      const cls = i.months!==null&&i.months<3?"low":i.months!==null&&i.months>15?"stuck":"";
-      const col = cls==="low"?"var(--red)":cls==="stuck"?"var(--amber)":"var(--green)";
-      return `<div class="stock-item ${cls}">
-        <div class="stock-header"><span class="name">${i.wine} ${i.vintage}</span><span style="color:${col};font-weight:600;font-size:11px">${fmtF(i.stock)} бут · ${i.months!==null?i.months.toFixed(1)+" мес":"N/A"}</span></div>
-        <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${col}"></div></div>
-        <div class="stock-footer"><span>Продано: ${fmtF(i.sold)}</span><span>~${i.avg}/мес</span></div>
-      </div>`;
-    }).join("")}
-  `;
-}
-
-loadData();
-</script>
+<!-- Data & Utils -->
+<script src="js/data.js"></script>
+<!-- Tab modules -->
+<script src="js/tabs/pl.js"></script>
+<script src="js/tabs/sales.js"></script>
+<script src="js/tabs/exp.js"></script>
+<script src="js/tabs/assets.js"></script>
+<script src="js/tabs/shop.js"></script>
+<script src="js/tabs/stock.js"></script>
+<script src="js/tabs/cash.js"></script>
+<script src="js/tabs/mkt.js"></script>
+<script src="js/tabs/unrec.js"></script>
+<script src="js/tabs/settings.js"></script>
+<!-- App (auth, load, filters, render) — must be last -->
+<script src="js/app.js"></script>
 </body>
 </html>
