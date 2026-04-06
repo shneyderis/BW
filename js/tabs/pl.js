@@ -66,7 +66,7 @@ function rPL(f){
       <div class="kpi"><div class="l">OPEX ${sy}</div><div class="v rd">${fm(toCur(Math.abs(se)))}${c$}</div></div>
       <div class="kpi"><div class="l">Осн.фонды</div><div class="v" style="color:#3b82f6">${fm(toCur(assetY))}${c$}</div></div>
       <div class="kpi"><div class="l">Прибыль</div><div class="v" style="color:${sp>0?'#10b981':'#ef4444'}">${fm(toCur(sp))}${c$}</div><div class="s">Маржа ${sm}%</div></div>
-      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${ff(toCur(totalB))}${c$}</div><div class="s">₴${ff(uahB)} €${ff(eurB)} $${ff(usdB)}</div></div>
+      <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${ff(toCur(totalB))}${c$}</div><div class="s">${BL.length?`₴${ff(uahB)} €${ff(eurB)} $${ff(usdB)}`:'<span style="color:#7d8196">(дані не завантажені)</span>'}</div></div>
     </div>${chartHTML}${detailHTML}`;
   if(!yearSelected){
     const yrs=aY();const bd=yrs.map(y=>{const ox=opex.filter(t=>t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.nt,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.nt,0);return{y,r:toCur(r),e:toCur(Math.abs(e)),p:toCur(r+e),m:r?((r+e)/r*100):0}});
