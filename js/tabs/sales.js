@@ -1,40 +1,168 @@
-// js/tabs/sales.js — Sales tab
+// js/tabs/sales.js — Sales tab v2: Channels + Drill-down + Settings-aware FOP
+
+// Channel mapping: source category → clean channel name
+const CHAN_MAP={
+  "Продаж, Мережі":"Сети",
+  "Продаж, Horeca & Shops":"HoReCa",
+  "Продаж,  Дістрібʼютор Укр":"Дистрибьюторы",
+  "Продаж, Експорт":"Экспорт",
+  "Доход, ФОП":"Інтернет-магазин",
+  "Продаж, Інтернет магазини":"Інтернет-магазин",
+  "Продаж, Корп клієнт":"Корп.клієнти",
+  "Доход, каса БВ":"Каса БВ",
+  "Продаж, на виноробні":"Продажі на виноробні"
+};
+const CHAN_ORDER=["Сети","HoReCa","Дистрибьюторы","Экспорт","Інтернет-магазин","Корп.клієнти","Каса БВ","Продажі на виноробні"];
+const CHAN_CLR={"Сети":"#3b82f6","HoReCa":"#10b981","Дистрибьюторы":"#f59e0b","Экспорт":"#8b5cf6","Інтернет-магазин":"#ef4444","Корп.клієнти":"#06b6d4","Каса БВ":"#ec4899","Продажі на виноробні":"#f97316"};
+
+function getChan(cat){return CHAN_MAP[cat]||"Інше"}
+
+// FOP net amount using Settings from Google Sheet
+function fopNet(sum,date){
+  const taxR=getSettingValue("fop_tax",date);
+  const bankR=getSettingValue("fop_bank",date);
+  const tax=taxR!==null?taxR:5;
+  const bank=bankR!==null?bankR:2.5;
+  return sum*(1-(tax+bank)/100);
+}
+
+// Sales state
+let _ss={year:null,month:0,chan:null,view:"channels"};
+
 function rSales(f){
-  const el=document.getElementById("t-sales"),c$=cs();
-  const ft=fl(T,f,"Доход");
-  const pd=CHS.map(c=>{const v=ft.filter(t=>t.cat===c).reduce((s,t)=>s+toCur(t.nt),0);return{n:CSH[c]||c,c,v}}).filter(x=>x.v>1000);
-  const bm={};ft.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||!m.trim())return;if(!bm[m])bm[m]={s:0,c:0,cnt:0};bm[m].s+=toCur(t.nt);bm[m].c+=toCur(t.com);bm[m].cnt++});
-  const mgrs=Object.entries(bm).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s);
-  const bc={};ft.forEach(t=>{const a=t.alias||t.name;if(!a||a==="#ignore")return;if(!bc[a])bc[a]={s:0,cnt:0,src:t.st};bc[a].s+=toCur(t.nt);bc[a].cnt++});
-  const topC=Object.entries(bc).map(([n,d])=>({n,...d})).sort((a,b)=>b.s-a.s).slice(0,15);
-  const expFt=ft.filter(t=>t.cat==="Продаж, Експорт");
-  const expEUR=expFt.filter(t=>t.money==="EUR").reduce((s,t)=>s+t.sm,0);
-  const expUSD=expFt.filter(t=>t.money==="USD").reduce((s,t)=>s+t.sm,0);
-  const r1f=ft.filter(t=>t.st==="1Ф").reduce((s,t)=>s+toCur(t.nt),0);
-  const r2f=ft.filter(t=>t.st==="2Ф").reduce((s,t)=>s+toCur(t.nt),0);
-  const totalR=ft.reduce((s,t)=>s+toCur(t.nt),0);
-  const chYrs=aY();const chD=chYrs.map(y=>{const yt=T.filter(t=>t.yr===y&&t.tp==="Доход");const o={};CHS.forEach(c=>{o[CSH[c]]=toCur(yt.filter(t=>t.cat===c).reduce((s,t)=>s+t.nt,0))});return{year:y,...o}});
+  const el=document.getElementById("t-sales");if(!el)return;
+  const c$=cs();
+  const allInc=T.filter(t=>t.tp==="Доход");
+  // Init state with current year/month
+  if(!_ss.year){const now=new Date();_ss.year=String(now.getFullYear());_ss.month=now.getMonth()+1}
+  // Available years
+  const yrs=[...new Set(allInc.map(t=>t.yr))].sort();
+
+  // Controls
   el.innerHTML=`
-    <div class="kpis">
-      <div class="kpi"><div class="l">Всего</div><div class="v g">${fm(totalR)}${c$}</div></div>
-      <div class="kpi"><div class="l">1Ф</div><div class="v">${fm(r1f)}${c$}</div><div class="s">${totalR?(r1f/totalR*100).toFixed(0):'0'}%</div></div>
-      <div class="kpi"><div class="l">2Ф</div><div class="v">${fm(r2f)}${c$}</div><div class="s">${totalR?(r2f/totalR*100).toFixed(0):'0'}%</div></div>
-      ${expFt.length?'<div class="kpi"><div class="l">Экспорт €</div><div class="v" style="color:#3b82f6">'+ff(expEUR)+'€</div></div><div class="kpi"><div class="l">Экспорт $</div><div class="v" style="color:#f59e0b">'+ff(expUSD)+'$</div></div>':''}
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div><div style="color:#7d8196;font-size:10px;margin-bottom:2px">Рік</div>
+        <select class="flt" id="sY">${yrs.map(y=>`<option ${y===_ss.year?"selected":""}>${y}</option>`).join("")}</select></div>
+      <div><div style="color:#7d8196;font-size:10px;margin-bottom:2px">Місяць</div>
+        <select class="flt" id="sM"><option value="0" ${_ss.month===0?"selected":""}>Всі</option>${MN.map((m,i)=>`<option value="${i+1}" ${(i+1)===_ss.month?"selected":""}>${m}</option>`).join("")}</select></div>
+      <div style="margin-left:auto"><button class="flt" id="sBack" style="display:${_ss.view==="drilldown"?"inline":"none"}">← Канали</button></div>
     </div>
-    <div class="cc"><h3>Каналы по годам</h3><canvas id="c5" height="120"></canvas><div style="display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:6px">${CHS.map((c,i)=>'<span style="display:flex;align-items:center;gap:3px;font-size:8px;color:#7d8196"><i style="width:5px;height:5px;border-radius:2px;display:inline-block;background:'+CC[i]+'"></i>'+CSH[c]+'</span>').join("")}</div></div>
-    <div class="cc"><h3>Сезонность: выручка ${sY(f)} vs ${pYr(sY(f))}</h3><canvas id="cSeas" height="80"></canvas></div>
-    <div class="row">
-      <div class="cc"><h3>Каналы</h3><canvas id="c3" height="180"></canvas></div>
-      <div class="cc"><h3>Менеджеры</h3>${mgrs.map(m=>'<div class="mg" onclick="showMgr(\''+m.n.replace(/'/g,"\\'")+'\')"><div><div class="n">'+m.n+'</div><div class="s">КМ '+(m.s?(m.c/m.s*100).toFixed(1):0)+'% · '+m.cnt+' опер</div></div><div><div class="v">'+ff(m.s)+c$+'</div><div class="s">'+ff(m.c)+c$+'</div></div></div>').join("")}
-        ${mgrs.length?'<div class="mg" style="cursor:default"><div><div class="n">Итого</div></div><div><div class="v">'+ff(mgrs.reduce((s,m)=>s+m.s,0))+c$+'</div></div></div>':''}</div>
-    </div>
-    <div class="cc"><h3>Топ контрагентов</h3><table class="tbl"><tr><th>Контрагент</th><th class="r">1Ф/2Ф</th><th class="r">Сумма</th><th class="r">Опер.</th></tr>
-      ${topC.map(c=>'<tr class="click" onclick="showContr(\''+c.n.replace(/'/g,"\\'")+'\')"><td>'+c.n.substring(0,30)+'</td><td class="r" style="color:#7d8196">'+c.src+'</td><td class="r g">'+ff(c.s)+c$+'</td><td class="r">'+c.cnt+'</td></tr>').join("")}
-      <tr class="tot"><td>Итого (топ-15)</td><td></td><td class="r g">${ff(topC.reduce((s,c)=>s+c.s,0))}${c$}</td><td class="r">${topC.reduce((s,c)=>s+c.cnt,0)}</td></tr></table></div>`;
-  dc("c5");CH.c5=new Chart(document.getElementById("c5"),{type:"bar",data:{labels:chYrs,datasets:CHS.map((c,i)=>({label:CSH[c],data:chD.map(d=>d[CSH[c]]||0),backgroundColor:CC[i],borderRadius:2}))},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
-  dc("c3");CH.c3=new Chart(document.getElementById("c3"),{type:"doughnut",data:{labels:pd.map(x=>x.n),datasets:[{data:pd.map(x=>x.v),backgroundColor:CC.slice(0,pd.length),borderWidth:0}]},options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:8},boxWidth:7,padding:4}},tooltip:{callbacks:{label:c=>c.label+": "+ff(c.raw)+cs()}}}}});
-  const sy_s=sY(f),py_s=pYr(sy_s);const sR1={},sR2={};
-  T.filter(t=>t.yr===sy_s&&t.tp==="Доход").forEach(t=>{sR1[t.mm]=(sR1[t.mm]||0)+toCur(t.nt)});
-  T.filter(t=>t.yr===py_s&&t.tp==="Доход").forEach(t=>{sR2[t.mm]=(sR2[t.mm]||0)+toCur(t.nt)});
-  dc("cSeas");CH.cSeas=new Chart(document.getElementById("cSeas"),{type:"line",data:{labels:MN,datasets:[{label:sy_s,data:MMa.map(m=>sR1[m]||0),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.1)",fill:true,tension:.3,pointRadius:3,pointBackgroundColor:"#10b981",borderWidth:2},{label:py_s,data:MMa.map(m=>sR2[m]||0),borderColor:"rgba(139,92,246,.6)",borderDash:[4,3],tension:.3,pointRadius:2,pointBackgroundColor:"#8b5cf6",borderWidth:1.5,fill:false}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+cs()}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+    <div id="s-summary"></div>
+    <div id="s-chart" style="margin:14px 0"></div>
+    <div id="s-detail"></div>`;
+  document.getElementById("sY").onchange=e=>{_ss.year=e.target.value;_ss.chan=null;_ss.view="channels";rSalesBody()};
+  document.getElementById("sM").onchange=e=>{_ss.month=parseInt(e.target.value);_ss.chan=null;_ss.view="channels";rSalesBody()};
+  document.getElementById("sBack").onclick=()=>{_ss.chan=null;_ss.view="channels";rSalesBody()};
+  rSalesBody();
+}
+
+function rSalesBody(){
+  const c$=cs();
+  const allInc=T.filter(t=>t.tp==="Доход");
+  // Filter by period
+  let pd=allInc.filter(t=>t.yr===_ss.year);
+  if(_ss.month)pd=pd.filter(t=>parseInt(t.mm)===_ss.month);
+  // Back button
+  const bb=document.getElementById("sBack");if(bb)bb.style.display=_ss.view==="drilldown"?"inline":"none";
+
+  if(_ss.view==="drilldown"&&_ss.chan)renderDrill(pd,allInc,c$);
+  else renderChans(pd,allInc,c$);
+}
+
+function renderChans(pd,allInc,c$){
+  // Aggregate by channel
+  const agg={};CHAN_ORDER.forEach(ch=>{agg[ch]={sum:0,net:0,cnt:0}});agg["Інше"]={sum:0,net:0,cnt:0};
+  pd.forEach(t=>{const ch=getChan(t.cat);if(!agg[ch])agg[ch]={sum:0,net:0,cnt:0};const s=toCur(t.nt);agg[ch].sum+=s;agg[ch].cnt++;agg[ch].net+=ch==="Інтернет-магазин"?toCur(fopNet(t.nt,t.ym+"-01")):s});
+  const total=Object.values(agg).reduce((s,a)=>s+a.sum,0);
+  const chans=CHAN_ORDER.filter(ch=>agg[ch].sum>0);
+  if(agg["Інше"].sum>0)chans.push("Інше");
+  const ml=_ss.month?MN[_ss.month-1]+" "+_ss.year:_ss.year;
+
+  // Summary
+  document.getElementById("s-summary").innerHTML=`
+    <div style="background:linear-gradient(135deg,#151821,#1a1f2e);border:1px solid #232738;border-radius:10px;padding:16px;margin-bottom:14px">
+      <div style="color:#7d8196;font-size:11px">Загальні продажі · ${ml}</div>
+      <div style="font-size:26px;font-weight:700;margin-top:4px;color:#e4e5ea">${ff(total)}${c$}</div>
+      <div style="color:#7d8196;font-size:10px;margin-top:2px">${pd.length} транзакцій</div>
+    </div>`;
+
+  // Channel cards
+  document.getElementById("s-detail").innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+      ${chans.map(ch=>{const a=agg[ch];const pct=total>0?(a.sum/total*100):0;const clr=CHAN_CLR[ch]||"#6b7280";
+      return`<div style="background:#151821;border:1px solid #232738;border-radius:8px;padding:14px;cursor:pointer" onclick="_ss.chan='${ch}';_ss.view='drilldown';rSalesBody()">
+        <div style="color:#7d8196;font-size:11px">${ch}</div>
+        <div style="font-size:18px;font-weight:700;color:#e4e5ea;margin-top:3px">${ff(a.sum)}${c$}</div>
+        ${ch==="Інтернет-магазин"?`<div style="font-size:10px;color:#ef4444;margin-top:1px">нетто ${ff(a.net)}${c$}</div>`:""}
+        <div style="color:#7d8196;font-size:10px;margin-top:2px">${pct.toFixed(1)}% · ${a.cnt} опер</div>
+        <div style="height:4px;background:#232738;border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${clr};border-radius:2px"></div></div>
+      </div>`}).join("")}
+    </div>`;
+
+  // Chart: monthly bars current year + prev year line
+  const yr=_ss.year,py=String(parseInt(yr)-1);
+  const m1={},m2={};
+  allInc.filter(t=>t.yr===yr).forEach(t=>{m1[t.mm]=(m1[t.mm]||0)+toCur(t.nt)});
+  allInc.filter(t=>t.yr===py).forEach(t=>{m2[t.mm]=(m2[t.mm]||0)+toCur(t.nt)});
+  document.getElementById("s-chart").innerHTML=`<canvas id="sCh" height="90"></canvas>`;
+  dc("sCh");CH.sCh=new Chart(document.getElementById("sCh"),{type:"bar",data:{labels:MN,datasets:[
+    {label:yr,data:MMa.map(m=>m1[m]||0),backgroundColor:"#10b981aa",borderColor:"#10b981",borderWidth:1,borderRadius:3},
+    {label:py,data:MMa.map(m=>m2[m]||0),type:"line",borderColor:"#7d8196",borderDash:[4,4],pointRadius:2,pointBackgroundColor:"#7d8196",borderWidth:1.5,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+cs()}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+}
+
+function renderDrill(pd,allInc,c$){
+  const ch=_ss.chan,clr=CHAN_CLR[ch]||"#6b7280";
+  const chData=pd.filter(t=>getChan(t.cat)===ch);
+  const sum=chData.reduce((s,t)=>s+toCur(t.nt),0);
+  const net=ch==="Інтернет-магазин"?chData.reduce((s,t)=>s+toCur(fopNet(t.nt,t.ym+"-01")),0):sum;
+  const ml=_ss.month?MN[_ss.month-1]+" "+_ss.year:_ss.year;
+
+  // Summary
+  document.getElementById("s-summary").innerHTML=`
+    <div style="background:linear-gradient(135deg,#151821,#1a1f2e);border:1px solid #232738;border-left:4px solid ${clr};border-radius:10px;padding:16px;margin-bottom:14px">
+      <div style="color:#7d8196;font-size:11px">${ch} · ${ml}</div>
+      <div style="font-size:26px;font-weight:700;color:#e4e5ea;margin-top:4px">${ff(sum)}${c$}</div>
+      ${ch==="Інтернет-магазин"?`<div style="color:#ef4444;font-size:11px;margin-top:2px">Нетто (мінус ФОП+банк): ${ff(net)}${c$}</div>`:""}
+      <div style="color:#7d8196;font-size:10px;margin-top:2px">${chData.length} транзакцій</div>
+    </div>`;
+
+  // Clients
+  const clients={};chData.forEach(t=>{const n=t.alias||t.name||"(невідомо)";clients[n]=(clients[n]||0)+toCur(t.nt)});
+  const sortedC=Object.entries(clients).sort((a,b)=>b[1]-a[1]);
+
+  // Cities (for HoReCa and Internet)
+  const showCities=(ch==="HoReCa"||ch==="Інтернет-магазин");
+  const cities={};if(showCities)chData.forEach(t=>{if(t.geo&&t.geo!=="="&&t.geo!=="-")cities[t.geo]=(cities[t.geo]||0)+toCur(t.nt)});
+  const sortedG=Object.entries(cities).sort((a,b)=>b[1]-a[1]);
+
+  const hasGeo=showCities&&sortedG.length>0;
+
+  document.getElementById("s-detail").innerHTML=`
+    <div style="display:grid;grid-template-columns:${hasGeo?"1fr 1fr":"1fr"};gap:14px">
+      ${hasGeo?`<div>
+        <div style="color:#7d8196;font-size:11px;font-weight:500;margin-bottom:8px">По містах</div>
+        <div style="background:#151821;border:1px solid #232738;border-radius:8px;overflow:hidden">
+          ${sortedG.map(([c,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #1a1d28"><span style="color:#e4e5ea;font-size:12px">${c}</span><span style="color:#10b981;font-size:12px;font-weight:500">${ff(v)}${c$}</span></div>`).join("")}
+        </div>
+      </div>`:""}
+      <div>
+        <div style="color:#7d8196;font-size:11px;font-weight:500;margin-bottom:8px">Клієнти</div>
+        <div style="background:#151821;border:1px solid #232738;border-radius:8px;overflow:hidden">
+          ${sortedC.slice(0,30).map(([n,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #1a1d28"><span style="color:#e4e5ea;font-size:12px">${n.substring(0,30)}</span><span style="color:#10b981;font-size:12px;font-weight:500">${ff(v)}${c$}</span></div>`).join("")}
+          ${sortedC.length>30?`<div style="padding:8px 12px;color:#7d8196;font-size:10px">+ ще ${sortedC.length-30}</div>`:""}
+        </div>
+      </div>
+    </div>`;
+
+  // Chart: this channel monthly dynamics
+  const yr=_ss.year,py=String(parseInt(yr)-1);
+  const m1={},m2={};
+  allInc.filter(t=>t.yr===yr&&getChan(t.cat)===ch).forEach(t=>{m1[t.mm]=(m1[t.mm]||0)+toCur(t.nt)});
+  allInc.filter(t=>t.yr===py&&getChan(t.cat)===ch).forEach(t=>{m2[t.mm]=(m2[t.mm]||0)+toCur(t.nt)});
+  document.getElementById("s-chart").innerHTML=`<canvas id="sCh" height="90"></canvas>`;
+  dc("sCh");CH.sCh=new Chart(document.getElementById("sCh"),{type:"bar",data:{labels:MN,datasets:[
+    {label:yr,data:MMa.map(m=>m1[m]||0),backgroundColor:clr+"99",borderColor:clr,borderWidth:1,borderRadius:3},
+    {label:py,data:MMa.map(m=>m2[m]||0),type:"line",borderColor:"#7d8196",borderDash:[4,4],pointRadius:2,pointBackgroundColor:"#7d8196",borderWidth:1.5,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+ff(c.raw)+cs()}}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
 }
