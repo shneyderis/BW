@@ -86,7 +86,14 @@ async function load(){
         WP=(wcProdSheet||[]).map(r=>{
           let cats=[];try{const c=gv(r,"categories");if(c)cats=JSON.parse(c)}catch(e){const c=gv(r,"categories");if(c)cats=c.split(",").map(n=>({name:n.trim()}))}
           return{id:pn(gv(r,"id")),name:gv(r,"name")||"",stock_status:gv(r,"stock_status")||"instock",stock_quantity:gv(r,"stock_quantity")?pn(gv(r,"stock_quantity")):null,categories:cats}});
-        wcLoaded=true;console.log("WC from Sheets:",WO.length,"orders,",WP.length,"products");
+        // Validate: at least some orders must have status and total
+        const validOrders=WO.filter(o=>o.status&&parseFloat(o.total)>0);
+        if(validOrders.length){
+          wcLoaded=true;console.log("WC from Sheets:",WO.length,"orders (",validOrders.length,"valid),",WP.length,"products");
+        }else{
+          console.warn("WC Sheets: loaded",WO.length,"rows but 0 valid orders, falling back to API");
+          WO=[];WP=[];
+        }
       }
     }catch(e){console.warn("WC Sheets failed:",e)}
     if(!wcLoaded){
