@@ -1,8 +1,5 @@
 // js/data.js — Data loading: CSV, WooCommerce, NBU, Settings
-const SID="1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ";
-const SID2="1NGC2iicXsEZRzOASBz2KZY46Lu7EO7jNd28UOWmQK7w";
-const WC="/api/wc";
-const WCK="consumer_key=ck_5b87215529858139d17b602945170ae4d9c8adbd&consumer_secret=cs_3ad054a505185162e849a92bf019979e6c037c93";
+// SID, SID2, WC, WCK defined in config.js
 
 function pn(s){if(!s||s==="")return 0;s=String(s).trim();let ng=false;if(s.startsWith("(")&&s.endsWith(")")){ng=true;s=s.slice(1,-1)}if(s.startsWith("-")){ng=true;s=s.slice(1)}s=s.replace(/[₴$€\s]/g,"").replace(/,/g,"");let n=parseFloat(s);return isNaN(n)?0:ng?-n:n}
 const fm=n=>{if(!n&&n!==0)return"—";const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(1)+"M";if(a>=1e3)return(n/1e3).toFixed(0)+"K";return n.toFixed(0)};

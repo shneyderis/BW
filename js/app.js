@@ -15,11 +15,7 @@ let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fop
 let wcLoaded=false,wcError="",SP={},mktLoaded=false,mktError="";
 
 // ========== AUTH ==========
-const ROLES={
-  owner:{password:"beykush2024",tabs:["pl","sales","exp","assets","shop","stock","cash","mkt","unrec","settings"]},
-  manager:{password:"sales2024",tabs:["sales","shop","stock","mkt"]},
-  accountant:{password:"acc2024",tabs:["pl","exp","assets","cash"]}
-};
+// ROLES defined in config.js
 let currentRole=null;
 
 function doLogin(){
