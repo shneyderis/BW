@@ -35,7 +35,7 @@ async function loadMkt(){
   mktLoaded=true;
 }
 
-function rMkt(){
+async function rMkt(){
   const el=document.getElementById("t-mkt");if(!el)return;
   if(!mktLoaded){el.innerHTML='<div class="info">⏳ Загрузка маркетингових даних...</div>';loadMkt().then(()=>rMkt());return}
   const c$=cs();
@@ -59,16 +59,18 @@ function rMkt(){
   const avgOpenReal=campWithStats.length?campWithStats.reduce((s,c)=>s+(c.opened_email_qty/c.all_email_qty*100),0)/campWithStats.length:0;
   const avgClickReal=campWithStats.length?campWithStats.reduce((s,c)=>s+(c.clicked_email_qty/c.all_email_qty*100),0)/campWithStats.length:0;
 
-  // Correlation with WC orders
+  // Correlation with WC orders (from WO[] or fallback to Sheets)
   let correlHTML="";
-  if(recentCamp.length&&WO.length){
+  let corrOrders=WO;
+  if(!corrOrders.length){try{const shOrd=await csvF("WC_Orders").catch(()=>[]);if(shOrd.length)corrOrders=shOrd.map(r=>({status:gv(r,"status")||"",date_created:gv(r,"date_created")||"",total:gv(r,"total")||"0"}))}catch(e){}}
+  if(recentCamp.length&&corrOrders.length){
     const corrData=recentCamp.filter(c=>c.send_date&&c.all_email_qty>100).slice(0,12).map(c=>{
       const d=c.send_date.substring(0,10);
       const dObj=new Date(d);if(isNaN(dObj))return null;
       const after3d=new Date(dObj);after3d.setDate(after3d.getDate()+3);
       const before=new Date(dObj);before.setDate(before.getDate()-3);
-      const ordAfter=WO.filter(o=>{const od=new Date((o.date_created||"").substring(0,10));return od>=dObj&&od<=after3d&&(o.status==="completed"||o.status==="processing")});
-      const ordBefore=WO.filter(o=>{const od=new Date((o.date_created||"").substring(0,10));return od>=before&&od<dObj&&(o.status==="completed"||o.status==="processing")});
+      const ordAfter=corrOrders.filter(o=>{const od=new Date((o.date_created||"").substring(0,10));return od>=dObj&&od<=after3d&&(o.status==="completed"||o.status==="processing")});
+      const ordBefore=corrOrders.filter(o=>{const od=new Date((o.date_created||"").substring(0,10));return od>=before&&od<dObj&&(o.status==="completed"||o.status==="processing")});
       const revAfter=ordAfter.reduce((s,o)=>s+parseFloat(o.total||0),0);
       const revBefore=ordBefore.reduce((s,o)=>s+parseFloat(o.total||0),0);
       const lift=revBefore>0?((revAfter-revBefore)/revBefore*100):0;
