@@ -79,25 +79,25 @@ async function load(){
         console.log("WC_Orders columns:",Object.keys(wcOrdSheet[0]));
         console.log("WC_Orders row[0]:",JSON.stringify(wcOrdSheet[0]));
         WO=wcOrdSheet.map(r=>{
-          let li=[];try{const raw=gv(r,"line_items")||r["line_items"]||"";if(raw)li=JSON.parse(raw)}catch(e){}
-          let md=[];try{const raw=gv(r,"meta_data")||r["meta_data"]||"";if(raw)md=JSON.parse(raw)}catch(e){}
           return{
-            id:pn(gv(r,"id")||r["id"]),
-            status:gv(r,"status")||r["status"]||"",
-            date_created:gv(r,"date_created")||gv(r,"date")||r["date_created"]||"",
-            total:gv(r,"total")||r["total"]||"0",
+            id:pn(gv(r,"id")),
+            status:gv(r,"status")||"",
+            date_created:gv(r,"date_created")||"",
+            total:gv(r,"total")||"0",
             billing:{
-              first_name:gv(r,"billing_first_name")||gv(r,"billing_first")||gv(r,"first_name")||r["billing_first_name"]||"",
-              last_name:gv(r,"billing_last_name")||gv(r,"billing_last")||gv(r,"last_name")||r["billing_last_name"]||"",
-              email:gv(r,"billing_email")||gv(r,"email")||r["billing_email"]||"",
-              city:gv(r,"billing_city")||gv(r,"city")||r["billing_city"]||"",
-              country:gv(r,"billing_country")||gv(r,"country")||r["billing_country"]||""
+              first_name:gv(r,"billing_first_name")||"",
+              last_name:gv(r,"billing_last_name")||"",
+              email:gv(r,"billing_email")||"",
+              city:gv(r,"billing_city")||"",
+              country:gv(r,"billing_country")||"",
+              phone:gv(r,"billing_phone")||""
             },
-            shipping:{city:gv(r,"shipping_city")||r["shipping_city"]||""},
-            payment_method:gv(r,"payment_method")||r["payment_method"]||"",
-            payment_method_title:gv(r,"payment_method_title")||gv(r,"payment_method")||r["payment_method_title"]||"",
-            utm_source:gv(r,"utm_source")||gv(r,"metorik_utm_source")||r["utm_source"]||"",
-            line_items:li,meta_data:md
+            shipping:{city:gv(r,"shipping_city")||"",country:gv(r,"shipping_country")||""},
+            payment_method:gv(r,"payment_method")||"",
+            payment_method_title:gv(r,"payment_method_title")||"",
+            utm_source:gv(r,"utm_source")||"",
+            items_count:pn(gv(r,"items_count")),
+            line_items:[],meta_data:[]
           }});
         console.log("WC_Orders mapped[0]:",JSON.stringify(WO[0]));
       }
