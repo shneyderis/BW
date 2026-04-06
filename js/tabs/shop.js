@@ -68,30 +68,47 @@ function rShopSales(el,tabs,orders,allOrd,f,c$){
 }
 
 function rShopProducts(el,tabs,orders,c$){
+  // Sales per product from line_items (may be empty if loaded from Sheets)
   const prods={};orders.forEach(o=>{(o.line_items||[]).forEach(li=>{if(parseFloat(li.total||0)>=0){const n=li.name||"?";const pid=li.product_id||0;if(!prods[pid])prods[pid]={n,r:0,q:0,orders:0};prods[pid].r+=parseFloat(li.total);prods[pid].q+=li.quantity||1;prods[pid].orders++}})});
   const prodArr=Object.values(prods).sort((a,b)=>b.r-a.r);const totalR=prodArr.reduce((s,p)=>s+p.r,0);const totalQ=prodArr.reduce((s,p)=>s+p.q,0);
-  let cum=0;prodArr.forEach(p=>{cum+=p.r;const pct=totalR>0?(cum/totalR*100):0;p.abc=pct<=80?"A":pct<=95?"B":"C"});
-  const aCount=prodArr.filter(p=>p.abc==="A").length,bCount=prodArr.filter(p=>p.abc==="B").length,cCount=prodArr.filter(p=>p.abc==="C").length;
-  const cats={};orders.forEach(o=>{(o.line_items||[]).forEach(li=>{const wp=WP.find(p=>p.id===li.product_id);const catNames=wp&&wp.categories?wp.categories.map(c=>c.name):["Без категории"];catNames.forEach(cn=>{if(!cats[cn])cats[cn]={r:0,q:0};cats[cn].r+=parseFloat(li.total||0);cats[cn].q+=li.quantity||1})})});
-  const catArr=Object.entries(cats).map(([n,d])=>({n,...d})).sort((a,b)=>b.r-a.r);
+  const hasLineItems=prodArr.length>0;
+
   const inStock=WP.filter(p=>p.stock_status==="instock").length,outStock=WP.filter(p=>p.stock_status==="outofstock").length;
   const stockAlerts=WP.filter(p=>(p.stock_quantity!==null&&p.stock_quantity>0&&p.stock_quantity<=5)||p.stock_status==="outofstock").sort((a,b)=>(a.stock_quantity||0)-(b.stock_quantity||0));
-  el.innerHTML=`${tabs}
-    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
-      <div class="sh-kpi"><div class="l">Позиций продано</div><div class="v">${prodArr.length}</div></div>
-      <div class="sh-kpi"><div class="l">Всего шт</div><div class="v">${ff(totalQ)}</div></div>
-      <div class="sh-kpi"><div class="l">В наличии</div><div class="v g">${inStock}</div></div>
-      <div class="sh-kpi"><div class="l">Мало / Нет</div><div class="v rd">${outStock}</div></div>
-    </div>
-    <div class="row">
-      <div class="cc"><h3>ABC-анализ</h3><div style="display:flex;gap:6px;margin-bottom:8px;font-size:10px"><span style="color:#10b981;font-weight:600">A: ${aCount}</span><span style="color:#f59e0b;font-weight:600">B: ${bCount}</span><span style="color:#7d8196;font-weight:600">C: ${cCount}</span></div><canvas id="csABC" height="100"></canvas></div>
-      <div class="cc"><h3>По категориям</h3><canvas id="csCat" height="100"></canvas></div>
-    </div>
-    <div class="cc"><h3>Топ товаров</h3><table class="tbl"><tr><th>ABC</th><th>Товар</th><th class="r">Выручка</th><th class="r">Шт</th><th class="r">%</th></tr>
-      ${prodArr.slice(0,20).map(p=>{const abcC=p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196";return`<tr><td style="color:${abcC};font-weight:700">${p.abc}</td><td>${p.n.substring(0,30)}</td><td class="r g">${ff(toCur(p.r))}${c$}</td><td class="r">${p.q}</td><td class="r" style="color:#7d8196">${totalR>0?(p.r/totalR*100).toFixed(1):0}%</td></tr>`}).join("")}</table></div>
-    ${stockAlerts.length?`<div class="cc"><h3>⚠ Stock Alerts</h3><table class="tbl"><tr><th>Товар</th><th class="r">Остаток</th><th class="r">Статус</th></tr>${stockAlerts.slice(0,15).map(p=>{const sq=p.stock_quantity;const cls=p.stock_status==="outofstock"?"stock-out":"stock-low";return`<tr><td>${(p.name||"?").substring(0,35)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${cls}">${p.stock_status==="outofstock"?"Нет":"Мало"}</span></td></tr>`}).join("")}</table></div>`:""}`;
-  dc("csABC");CH.csABC=new Chart(document.getElementById("csABC"),{type:"bar",data:{labels:prodArr.slice(0,15).map(p=>p.n.substring(0,12)),datasets:[{data:prodArr.slice(0,15).map(p=>toCur(p.r)),backgroundColor:prodArr.slice(0,15).map(p=>p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196"),borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
-  if(catArr.length){dc("csCat");CH.csCat=new Chart(document.getElementById("csCat"),{type:"doughnut",data:{labels:catArr.map(c=>c.n),datasets:[{data:catArr.map(c=>toCur(c.r)),backgroundColor:CC.concat(["#64748b","#0ea5e9","#d946ef"])}]},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:8},boxWidth:8,padding:4}}}}})}
+  const wpSorted=WP.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+
+  if(hasLineItems){
+    // Full view with ABC analysis
+    let cum=0;prodArr.forEach(p=>{cum+=p.r;const pct=totalR>0?(cum/totalR*100):0;p.abc=pct<=80?"A":pct<=95?"B":"C"});
+    const aCount=prodArr.filter(p=>p.abc==="A").length,bCount=prodArr.filter(p=>p.abc==="B").length,cCount=prodArr.filter(p=>p.abc==="C").length;
+    el.innerHTML=`${tabs}
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
+        <div class="sh-kpi"><div class="l">Позиций продано</div><div class="v">${prodArr.length}</div></div>
+        <div class="sh-kpi"><div class="l">Всего шт</div><div class="v">${ff(totalQ)}</div></div>
+        <div class="sh-kpi"><div class="l">В наличии</div><div class="v g">${inStock}</div></div>
+        <div class="sh-kpi"><div class="l">Мало / Нет</div><div class="v rd">${outStock}</div></div>
+      </div>
+      <div class="row">
+        <div class="cc"><h3>ABC-анализ</h3><div style="display:flex;gap:6px;margin-bottom:8px;font-size:10px"><span style="color:#10b981;font-weight:600">A: ${aCount}</span><span style="color:#f59e0b;font-weight:600">B: ${bCount}</span><span style="color:#7d8196;font-weight:600">C: ${cCount}</span></div><canvas id="csABC" height="100"></canvas></div>
+        <div class="cc"><h3>По категориям</h3><canvas id="csCat" height="100"></canvas></div>
+      </div>
+      <div class="cc"><h3>Топ товаров</h3><table class="tbl"><tr><th>ABC</th><th>Товар</th><th class="r">Выручка</th><th class="r">Шт</th><th class="r">%</th></tr>
+        ${prodArr.slice(0,20).map(p=>{const abcC=p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196";return`<tr><td style="color:${abcC};font-weight:700">${p.abc}</td><td>${p.n.substring(0,30)}</td><td class="r g">${ff(toCur(p.r))}${c$}</td><td class="r">${p.q}</td><td class="r" style="color:#7d8196">${totalR>0?(p.r/totalR*100).toFixed(1):0}%</td></tr>`}).join("")}</table></div>
+      ${stockAlerts.length?`<div class="cc"><h3>⚠ Stock Alerts</h3><table class="tbl"><tr><th>Товар</th><th class="r">Остаток</th><th class="r">Статус</th></tr>${stockAlerts.slice(0,15).map(p=>{const sq=p.stock_quantity;const cls=p.stock_status==="outofstock"?"stock-out":"stock-low";return`<tr><td>${(p.name||"?").substring(0,35)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${cls}">${p.stock_status==="outofstock"?"Нет":"Мало"}</span></td></tr>`}).join("")}</table></div>`:""}`;
+    dc("csABC");CH.csABC=new Chart(document.getElementById("csABC"),{type:"bar",data:{labels:prodArr.slice(0,15).map(p=>p.n.substring(0,12)),datasets:[{data:prodArr.slice(0,15).map(p=>toCur(p.r)),backgroundColor:prodArr.slice(0,15).map(p=>p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196"),borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
+  } else {
+    // No line_items — show product catalog from WP
+    el.innerHTML=`${tabs}
+      <div class="info">Дані про продажі по товарах недоступні (line_items не в Sheets). Каталог з WC_Products.</div>
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
+        <div class="sh-kpi"><div class="l">Товарів</div><div class="v">${WP.length}</div></div>
+        <div class="sh-kpi"><div class="l">В наявності</div><div class="v g">${inStock}</div></div>
+        <div class="sh-kpi"><div class="l">Немає / Мало</div><div class="v rd">${outStock}</div></div>
+      </div>
+      ${WP.length?`<div class="cc"><h3>Каталог товарів</h3><table class="tbl"><tr><th>Товар</th><th class="r">Залишок</th><th class="r">Статус</th></tr>
+        ${wpSorted.map(p=>{const sq=p.stock_quantity;const sc=p.stock_status==="outofstock"?"stock-out":sq!==null&&sq<=5?"stock-low":"stock-in";const sl=p.stock_status==="outofstock"?"Немає":sq!==null&&sq<=5?"Мало":"Є";return`<tr><td>${(p.name||"?").substring(0,40)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${sc}">${sl}</span></td></tr>`}).join("")}</table></div>`:'<div class="warn">WC_Products порожній або колонки не співпадають. Перевірте консоль (F12).</div>'}
+      ${stockAlerts.length?`<div class="cc"><h3>⚠ Stock Alerts</h3><table class="tbl"><tr><th>Товар</th><th class="r">Залишок</th><th class="r">Статус</th></tr>${stockAlerts.slice(0,15).map(p=>{const sq=p.stock_quantity;const cls=p.stock_status==="outofstock"?"stock-out":"stock-low";return`<tr><td>${(p.name||"?").substring(0,35)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${cls}">${p.stock_status==="outofstock"?"Немає":"Мало"}</span></td></tr>`}).join("")}</table></div>`:""}`;
+  }
 }
 
 function rShopCustomers(el,tabs,orders,c$){
@@ -136,19 +153,31 @@ function rShopOrders(el,tabs,allOrd,completed,cancelled,refunded,pending,c$){
   const byMSt={};allOrd.forEach(o=>{const m=(o.date_created||"").substring(0,7);const s=o.status;if(!byMSt[m])byMSt[m]={};byMSt[m][s]=(byMSt[m][s]||0)+1});
   const oMs=Object.keys(byMSt).sort().slice(-12);const mainSt=["completed","processing","cancelled","refunded"];
   const recent=allOrd.sort((a,b)=>(b.date_created||"").localeCompare(a.date_created||"")).slice(0,20);
+  // City distribution from completed orders
+  const byCityOrd={},byCityRev={};completed.forEach(o=>{const city=o.billing?.city||o.shipping?.city||"";if(!city)return;byCityOrd[city]=(byCityOrd[city]||0)+1;byCityRev[city]=(byCityRev[city]||0)+parseFloat(o.total||0)});
+  const cityArr=Object.entries(byCityOrd).map(([c,n])=>({c,n,r:byCityRev[c]||0})).sort((a,b)=>b.r-a.r);
+  const topCitiesOrd=cityArr.slice(0,12);
+
   el.innerHTML=`${tabs}
     <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
       <div class="sh-kpi"><div class="l">Всего</div><div class="v">${totalOrd}</div></div>
       <div class="sh-kpi"><div class="l">Выполнено</div><div class="v g">${completed.length}</div></div>
       <div class="sh-kpi"><div class="l">Refund</div><div class="v" style="color:#ec4899">${refundRate.toFixed(1)}%</div></div>
       <div class="sh-kpi"><div class="l">Cancel</div><div class="v rd">${cancelRate.toFixed(1)}%</div></div>
+      <div class="sh-kpi"><div class="l">Міст</div><div class="v">${cityArr.length}</div></div>
     </div>
     <div class="row">
       <div class="cc"><h3>Воронка</h3>${funnel.map(f=>{const w=totalOrd>0?(f.v/totalOrd*100):0;return`<div style="margin-bottom:5px"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span>${f.l}</span><span style="font-weight:600">${f.v} (${w.toFixed(0)}%)</span></div><div style="height:5px;background:#1e2130;border-radius:3px"><div style="height:100%;width:${w}%;background:${f.c};border-radius:3px"></div></div></div>`}).join("")}</div>
       <div class="cc"><h3>Статусы</h3><canvas id="csStatus" height="100"></canvas></div>
     </div>
+    ${topCitiesOrd.length?`<div class="row">
+      <div class="cc"><h3>По містах (виручка)</h3><canvas id="csCityBar" height="100"></canvas></div>
+      <div class="cc"><h3>Топ міст</h3><table class="tbl"><tr><th>Місто</th><th class="r">Замовл.</th><th class="r">Виручка</th></tr>
+        ${topCitiesOrd.map(x=>`<tr><td>${x.c}</td><td class="r">${x.n}</td><td class="r g">${ff(toCur(x.r))}${c$}</td></tr>`).join("")}</table></div>
+    </div>`:""}
     <div class="cc"><h3>По статусам (помесячно)</h3><canvas id="csOrdM" height="80"></canvas></div>
     <div class="cc"><h3>Последние заказы</h3><table class="tbl"><tr><th>#</th><th>Дата</th><th>Клиент</th><th class="r">Сумма</th><th class="r">Статус</th></tr>${recent.map(o=>{const sc=statColors[o.status]||"#7d8196";return`<tr><td style="color:#7d8196">${o.id}</td><td style="font-size:9px">${(o.date_created||"").substring(0,10)}</td><td style="font-size:9px">${(o.billing?.first_name||"")} ${(o.billing?.last_name||"").substring(0,1)}.</td><td class="r g">${ff(toCur(parseFloat(o.total||0)))}${c$}</td><td class="r"><span style="color:${sc};font-weight:600;font-size:9px">${o.status}</span></td></tr>`}).join("")}</table></div>`;
   dc("csStatus");CH.csStatus=new Chart(document.getElementById("csStatus"),{type:"doughnut",data:{labels:statArr.map(([s])=>s),datasets:[{data:statArr.map(([,v])=>v),backgroundColor:statArr.map(([s])=>statColors[s]||"#64748b")}]},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:8},boxWidth:8,padding:4}}}}});
   dc("csOrdM");CH.csOrdM=new Chart(document.getElementById("csOrdM"),{type:"bar",data:{labels:oMs,datasets:mainSt.map(s=>({label:s,data:oMs.map(m=>byMSt[m]?.[s]||0),backgroundColor:statColors[s]||"#64748b",borderRadius:1}))},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}}}}});
+  if(topCitiesOrd.length){dc("csCityBar");CH.csCityBar=new Chart(document.getElementById("csCityBar"),{type:"bar",data:{labels:topCitiesOrd.map(x=>x.c),datasets:[{data:topCitiesOrd.map(x=>toCur(x.r)),backgroundColor:"#3b82f6",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}})}
 }
