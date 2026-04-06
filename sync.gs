@@ -7,13 +7,11 @@ var WC_BASE = "https://beykush.com/wp-json/wc/v3";
 var WC_CK = "ck_5b87215529858139d17b602945170ae4d9c8adbd";
 var WC_CS = "cs_3ad054a505185162e849a92bf019979e6c037c93";
 
-// Meta/Instagram — заменить на свой long-lived token
-// Получить: https://developers.facebook.com/tools/explorer/
-// Permissions: pages_read_engagement, instagram_basic, instagram_manage_insights, ads_read
-var META_TOKEN = "YOUR_META_TOKEN_HERE";
-var IG_ACCOUNT_ID = "YOUR_IG_BUSINESS_ACCOUNT_ID";  // Instagram Business Account ID
-var META_AD_ACCOUNT_ID = "YOUR_AD_ACCOUNT_ID";       // act_XXXXXXXXX
-var META_PAGE_ID = "YOUR_PAGE_ID";                    // Facebook Page ID
+// Meta/Instagram
+var META_TOKEN = "EAAQr51VWS9QBRP1YCHPZBHGqtwjwBPqfJFbY19NAZCl8adUM5drLWq8czwpHFxYgIzGUZBg4CQXucKuSVRK5W69QshnxPHBbefPS1A23ZAyWIIMbo1mQEJa8rOjuwzmZAwdIBn85cckI6lSF2loNZC2CcyrZB2dAlHqJth6ZCt70sdJ2rDIIuD75zvaBUZBbYJMPPQmvJ77LBSvDA1Jf7A0SYXkJRlyFFiy9w3H8ZD";
+var IG_ACCOUNT_ID = "";   // Будет определён автоматически через discoverMetaIds()
+var META_AD_ACCOUNT_ID = "";
+var META_PAGE_ID = "";
 
 /**
  * Синхронизация WC заказов в лист WC_Orders
@@ -276,11 +274,102 @@ function metaFetch_(path) {
 }
 
 /**
+ * Автовизначення Page ID, IG Account ID, Ad Account ID з токену
+ * Запусти один раз — покаже ID в Logger
+ */
+function discoverMetaIds() {
+  // Сторінки
+  var pages = metaFetch_("me/accounts?fields=id,name,instagram_business_account");
+  if (pages && pages.data) {
+    pages.data.forEach(function(p) {
+      Logger.log("FB Page: " + p.name + " → PAGE_ID: " + p.id);
+      if (p.instagram_business_account) {
+        Logger.log("  IG Account → IG_ACCOUNT_ID: " + p.instagram_business_account.id);
+      }
+    });
+  } else {
+    Logger.log("No pages found. Check token permissions: pages_read_engagement");
+  }
+  // Рекламні акаунти
+  var adAccounts = metaFetch_("me/adaccounts?fields=id,name,account_status");
+  if (adAccounts && adAccounts.data) {
+    adAccounts.data.forEach(function(a) {
+      Logger.log("Ad Account: " + a.name + " → AD_ACCOUNT_ID: " + a.id + " (status:" + a.account_status + ")");
+    });
+  } else {
+    Logger.log("No ad accounts found. Check token permissions: ads_read");
+  }
+}
+
+/**
+ * Синхронізація FB постів → лист FB_Posts
+ * Бере останні 100 постів зі сторінки з insights
+ */
+function syncFBPosts() {
+  if (!META_PAGE_ID) { Logger.log("Set META_PAGE_ID first. Run discoverMetaIds()"); return; }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("FB_Posts");
+  if (!sheet) sheet = ss.insertSheet("FB_Posts");
+
+  var headers = [
+    "id", "created_time", "message", "type", "permalink_url",
+    "likes", "comments", "shares",
+    "reach", "impressions", "engaged_users", "clicks"
+  ];
+
+  // Отримуємо пости з реакціями
+  var data = metaFetch_(META_PAGE_ID + "/posts?fields=id,created_time,message,type,permalink_url,likes.summary(true),comments.summary(true),shares&limit=100");
+  if (!data || !data.data) { Logger.log("No FB posts"); return; }
+
+  var posts = data.data;
+  var rows = [];
+
+  posts.forEach(function(p) {
+    var likes = (p.likes && p.likes.summary) ? p.likes.summary.total_count : 0;
+    var comments = (p.comments && p.comments.summary) ? p.comments.summary.total_count : 0;
+    var shares = (p.shares) ? p.shares.count : 0;
+
+    // Post insights
+    var reach = 0, impressions = 0, engaged = 0, clicks = 0;
+    try {
+      var ins = metaFetch_(p.id + "/insights?metric=post_impressions,post_reach,post_engaged_users,post_clicks");
+      if (ins && ins.data) {
+        ins.data.forEach(function(m) {
+          var val = m.values && m.values[0] ? m.values[0].value : 0;
+          if (m.name === "post_reach") reach = val;
+          if (m.name === "post_impressions") impressions = val;
+          if (m.name === "post_engaged_users") engaged = val;
+          if (m.name === "post_clicks") clicks = val;
+        });
+      }
+    } catch(e) { /* insights may fail for some posts */ }
+
+    rows.push([
+      p.id || "",
+      p.created_time || "",
+      (p.message || "").substring(0, 200),
+      p.type || "",
+      p.permalink_url || "",
+      likes, comments, shares,
+      reach, impressions, engaged, clicks
+    ]);
+  });
+
+  sheet.clear();
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  if (rows.length) {
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  Logger.log("FB_Posts synced: " + rows.length + " posts");
+}
+
+/**
  * Синхронизація IG постів → лист IG_Posts
  * Бере останні 100 постів з insights (likes, comments, reach, impressions, saves)
  */
 function syncIGPosts() {
-  if (META_TOKEN === "YOUR_META_TOKEN_HERE") { Logger.log("Set META_TOKEN first"); return; }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("IG_Posts");
