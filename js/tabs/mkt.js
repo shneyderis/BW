@@ -16,7 +16,7 @@ async function loadMkt(){
     const recentCamps=SP.campaigns.slice(0,10);
     for(const c of recentCamps){if(c.id){try{const st=await spGet("campaigns/"+c.id);if(st){c.opened_email_qty=st.opened||st.opened_email_qty||c.opened_email_qty;c.clicked_email_qty=st.clicked||st.clicked_email_qty||c.clicked_email_qty;c.all_email_qty=st.sent||st.all_email_qty||c.all_email_qty}}catch(e){}}}
     const pages=await metaGet("me/accounts?fields=id,name,fan_count,access_token").catch(()=>null);META.pages=pages?.data||[];
-    if(META.pages.length){const page=META.pages[0];META.pageToken=page.access_token;const igRes=await metaGet(page.id+"?fields=instagram_business_account").catch(()=>null);if(igRes?.instagram_business_account?.id){const igId=igRes.instagram_business_account.id;META.ig=await metaGet(igId+"?fields=id,name,username,followers_count,media_count,biography").catch(()=>({});const media=await metaGet(igId+"/media?fields=id,caption,timestamp,like_count,comments_count,media_type&limit=20").catch(()=>null);META.media=media?.data||[]}}
+    if(META.pages.length){const page=META.pages[0];META.pageToken=page.access_token;const igRes=await metaGet(page.id+"?fields=instagram_business_account").catch(()=>null);if(igRes?.instagram_business_account?.id){const igId=igRes.instagram_business_account.id;META.ig=await metaGet(igId+"?fields=id,name,username,followers_count,media_count,biography").catch(()=>({}));const media=await metaGet(igId+"/media?fields=id,caption,timestamp,like_count,comments_count,media_type&limit=20").catch(()=>null);META.media=media?.data||[]}}
   }catch(e){mktError=e.message;console.error("MKT error:",e)}
   mktLoaded=true;
 }
