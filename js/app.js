@@ -63,6 +63,10 @@ async function load(){
     console.log("BL loaded:",BL.length,"rows");
     const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
     const lastTxn=T.length?T.reduce((a,b)=>a.mo>b.mo?a:b).ym:"?";
+    const lastTxnDate=lastTxn!=="?"?new Date(lastTxn.substring(0,4)+"-"+lastTxn.substring(5,7)+"-28"):null;
+    const daysSince=lastTxnDate?Math.floor((Date.now()-lastTxnDate.getTime())/(1000*60*60*24)):null;
+    const daysStr=daysSince!==null?` · останнє оновлення: ${daysSince} днів тому`:"";
+    const daysClr=daysSince>30?"#ef4444":daysSince>7?"#f59e0b":"";
     document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";
     document.getElementById("subtitle").textContent=ff(T.length)+" опер · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+" · ⏳ WC...";
     document.getElementById("ld").classList.add("hidden");
@@ -99,7 +103,8 @@ async function load(){
         wcLoaded=true;
       }
     }
-    document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(wcError?" · ⚠ "+wcError:"");
+    const subEl=document.getElementById("subtitle");
+    subEl.innerHTML=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(daysStr?` · <span style="${daysClr?"color:"+daysClr:""}">${daysStr.trim().substring(3)}</span>`:"")+(wcError?" · ⚠ "+wcError:"");
     render();
   }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>'}
 }
