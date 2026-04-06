@@ -18,8 +18,12 @@ function rStock(){
     const it=SK.map(s=>{const w=gv(s,"вино")||"";const vi=gv(s,"урожай")||"";const st=pn(gv(s,"остаток")||"0");const so=pn(gv(s,"продано")||"0");const av=pn(gv(s,"сред")||"0");const mr=gv(s,"запас")||"";const mo=mr&&mr!=="N/A"?parseFloat(mr):null;return{w,vi,st,so,av,mo}}).filter(s=>s.st>0);
     it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
     const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<2).length,lo3=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
+    const top10=it.slice().sort((a,b)=>b.st-a.st).slice(0,10);
     el.innerHTML=`<div class="info">3_Stock (старый). Stock_Data пуст.</div>
+      <div class="row"><div>
       <div class="kpis"><div class="kpi"><div class="l">Позиций</div><div class="v">${it.length}</div></div><div class="kpi"><div class="l">Бутылок</div><div class="v">${ff(tb)}</div></div><div class="kpi"><div class="l">Крит.</div><div class="v rd">${lo}</div><div class="s">&lt;2м</div></div><div class="kpi"><div class="l">Заканч.</div><div class="v" style="color:#e11d48">${lo3}</div></div><div class="kpi"><div class="l">Застр.</div><div class="v" style="color:#f59e0b">${sk}</div></div></div>
+      </div><div class="cc"><h3>Топ-10 по залишках</h3><canvas id="cStkD" height="160"></canvas></div></div>
       ${it.map(i=>{const t=i.st+i.so,p=t>0?(i.st/t*100):0;const cr=i.mo!==null&&i.mo<2;const lw=i.mo!==null&&i.mo<3;const st=i.mo!==null&&i.mo>15;const cl=cr||lw?"low":st?"stk":"";const co=cr?"#ef4444":lw?"#e11d48":st?"#f59e0b":"#10b981";return'<div class="si '+cl+'"><div class="top"><span class="nm">'+i.w+' '+i.vi+'</span><span style="color:'+co+';font-weight:600">'+ff(i.st)+' · '+(i.mo!==null?i.mo.toFixed(1)+'м':'N/A')+'</span></div><div class="bar"><div class="bf" style="width:'+p+'%;background:'+co+'"></div></div><div class="bot"><span>Продано: '+ff(i.so)+'</span><span>~'+i.av+'/мес</span></div></div>'}).join("")}`;
+    dc("cStkD");CH.cStkD=new Chart(document.getElementById("cStkD"),{type:"doughnut",data:{labels:top10.map(i=>(i.w+" "+i.vi).substring(0,18)),datasets:[{data:top10.map(i=>i.st),backgroundColor:CC.concat(["#64748b"])}]},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:8},boxWidth:8,padding:3}}}}});
   }
 }
