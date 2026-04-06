@@ -117,7 +117,7 @@ function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();rPL(f);rSales(f);rExp(f);rAssets(f);rShop(f);rStock();rCash(f);rMkt();rUnrec();rSettings()}
+function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn);rPL(f);rSales(f);rExp(f);rAssets(f);rShop(f);rStock();rCash(f);rMkt();rUnrec();rSettings()}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========
