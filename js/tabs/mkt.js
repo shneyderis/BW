@@ -107,6 +107,8 @@ async function rMkt(){
       <div class="kpi"><div class="l">🖱 Click rate (сер.)</div><div class="v" style="color:${avgClickReal>3?"#10b981":"#7d8196"}">${avgClickReal.toFixed(1)}%</div></div>
     </div>
 
+    <div class="cc"><h3>📊 Розсилки помісячно (opened vs не opened)</h3><canvas id="cMktM" height="100"></canvas></div>
+
     <div class="row">
       <div class="cc"><h3>📧 Списки розсилок</h3>
         <table class="tbl"><tr><th>Список</th><th class="r">Всього</th><th class="r">Активних</th></tr>
@@ -132,4 +134,14 @@ async function rMkt(){
     </div>
 
     ${correlHTML}`;
+
+  // Monthly campaigns chart (last 2 years)
+  const campByMo={};recentCamp.forEach(c=>{const m=(c.send_date||"").substring(0,7);if(!m)return;if(!campByMo[m])campByMo[m]={sent:0,opened:0};campByMo[m].sent+=c.all_email_qty;campByMo[m].opened+=c.opened_email_qty});
+  const cMos=Object.keys(campByMo).sort();
+  if(cMos.length>1){
+    dc("cMktM");CH.cMktM=new Chart(document.getElementById("cMktM"),{type:"bar",data:{labels:cMos,datasets:[
+      {label:"Opened",data:cMos.map(m=>campByMo[m].opened),backgroundColor:"#10b981",borderRadius:1},
+      {label:"Not opened",data:cMos.map(m=>campByMo[m].sent-campByMo[m].opened),backgroundColor:"rgba(125,129,150,.3)",borderRadius:1}
+    ]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+  }
 }
