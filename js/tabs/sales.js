@@ -142,11 +142,18 @@ function renderDrill(pd,allInc,c$){
     </table>`;
   }
 
+  // Monthly breakdown
+  const byMo={};chData.forEach(t=>{const m=t.mm;if(!byMo[m])byMo[m]={sum:0,cnt:0};byMo[m].sum+=toCur(t.nt);byMo[m].cnt++});
+  const moArr=Object.entries(byMo).sort((a,b)=>a[0].localeCompare(b[0]));
+  const moHTML=moArr.length>1?`<div class="cc"><h3>По місяцях</h3><table class="tbl"><tr><th>Місяць</th><th class="r">Сума</th><th class="r">Опер.</th></tr>
+    ${moArr.map(([m,d])=>`<tr><td>${MN[parseInt(m)-1]||m}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${d.cnt}</td></tr>`).join("")}
+    <tr class="tot"><td>Всього</td><td class="r g">${ff(moArr.reduce((s,[,d])=>s+d.sum,0))}${c$}</td><td class="r">${moArr.reduce((s,[,d])=>s+d.cnt,0)}</td></tr></table></div>`:"";
+
   document.getElementById("s-detail").innerHTML=`
     <div class="row">
       ${hasGeo?`<div class="cc"><h3>По містах</h3>${listHTML(sortedG,20)}</div>`:""}
       <div class="cc"><h3>Клієнти</h3>${listHTML(sortedC,30)}</div>
-    </div>`;
+    </div>${moHTML}`;
 
   renderSalesChart(allInc,ch);
 }
