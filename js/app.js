@@ -72,19 +72,36 @@ async function load(){
     document.getElementById("ld").classList.add("hidden");
     bldFlt(yrs);render();
 
-    // Phase 2: WooCommerce
-    const WC_CACHE_KEY="bw_wc_cache",WC_TTL=15*60*1000;
-    let cached=null;
-    try{const raw=localStorage.getItem(WC_CACHE_KEY);if(raw){cached=JSON.parse(raw);if(Date.now()-cached.ts>WC_TTL)cached=null;else if(!cached.orders||!cached.orders.length)cached=null}}catch(e){localStorage.removeItem(WC_CACHE_KEY)}
-    if(cached){WO=cached.orders||[];WP=cached.products||[];WCU=cached.customers||[];wcLoaded=true}
-    else{
-      const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
-      try{
-        const[wo,wp,wcu]=await Promise.all([wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr),wcF("products",""),wcF("customers","")]);
-        WO=wo;WP=wp;WCU=wcu;
-        if(WO.length)try{localStorage.setItem(WC_CACHE_KEY,JSON.stringify({ts:Date.now(),orders:WO,products:WP,customers:WCU}))}catch(e){}
-      }catch(e){wcError=e.message;console.error("WC load error:",e)}
-      wcLoaded=true;
+    // Phase 2: WooCommerce — Sheets first, API fallback
+    try{
+      const[wcOrdSheet,wcProdSheet]=await Promise.all([csvF("WC_Orders").catch(()=>[]),csvF("WC_Products").catch(()=>[])]);
+      if(wcOrdSheet.length){
+        WO=wcOrdSheet.map(r=>{
+          let li=[];try{li=JSON.parse(gv(r,"line_items")||"[]")}catch(e){}
+          let md=[];try{md=JSON.parse(gv(r,"meta_data")||"[]")}catch(e){}
+          return{id:pn(gv(r,"id")),status:gv(r,"status")||"",date_created:gv(r,"date_created")||"",total:gv(r,"total")||"0",
+            billing:{first_name:gv(r,"billing_first")||gv(r,"first_name")||"",last_name:gv(r,"billing_last")||gv(r,"last_name")||"",email:gv(r,"billing_email")||gv(r,"email")||"",city:gv(r,"billing_city")||gv(r,"city")||"",country:gv(r,"billing_country")||gv(r,"country")||""},
+            shipping:{city:gv(r,"shipping_city")||""},payment_method:gv(r,"payment_method")||"",payment_method_title:gv(r,"payment_method_title")||gv(r,"payment_method")||"",
+            line_items:li,meta_data:md}});
+        WP=(wcProdSheet||[]).map(r=>{
+          let cats=[];try{const c=gv(r,"categories");if(c)cats=JSON.parse(c)}catch(e){const c=gv(r,"categories");if(c)cats=c.split(",").map(n=>({name:n.trim()}))}
+          return{id:pn(gv(r,"id")),name:gv(r,"name")||"",stock_status:gv(r,"stock_status")||"instock",stock_quantity:gv(r,"stock_quantity")?pn(gv(r,"stock_quantity")):null,categories:cats}});
+        wcLoaded=true;console.log("WC from Sheets:",WO.length,"orders,",WP.length,"products");
+      }
+    }catch(e){console.warn("WC Sheets failed:",e)}
+    if(!wcLoaded){
+      const WC_CACHE_KEY="bw_wc_cache",WC_TTL=15*60*1000;let cached=null;
+      try{const raw=localStorage.getItem(WC_CACHE_KEY);if(raw){cached=JSON.parse(raw);if(Date.now()-cached.ts>WC_TTL)cached=null;else if(!cached.orders||!cached.orders.length)cached=null}}catch(e){localStorage.removeItem(WC_CACHE_KEY)}
+      if(cached){WO=cached.orders||[];WP=cached.products||[];WCU=cached.customers||[];wcLoaded=true}
+      else{
+        const wcAfter=new Date();wcAfter.setFullYear(wcAfter.getFullYear()-1);const wcDateStr=wcAfter.toISOString();
+        try{
+          const[wo,wp,wcu]=await Promise.all([wcF("orders","status=completed,processing,cancelled,refunded,pending,on-hold,failed&after="+wcDateStr),wcF("products",""),wcF("customers","")]);
+          WO=wo;WP=wp;WCU=wcu;
+          if(WO.length)try{localStorage.setItem(WC_CACHE_KEY,JSON.stringify({ts:Date.now(),orders:WO,products:WP,customers:WCU}))}catch(e){}
+        }catch(e){wcError=e.message;console.error("WC API fallback error:",e)}
+        wcLoaded=true;
+      }
     }
     document.getElementById("subtitle").textContent=ff(T.length)+" опер · "+WO.length+" WC заказов · "+WP.length+" товаров · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(wcError?" · ⚠ "+wcError:"");
     render();
