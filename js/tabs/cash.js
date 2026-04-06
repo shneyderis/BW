@@ -23,6 +23,8 @@ function rCash(f){
       <div class="kpi"><div class="l">€ счёт</div><div class="v">${ff(eurB)}</div><div class="s">=${ff(eurB*FX.EUR)}₴</div></div>
       <div class="kpi"><div class="l">$ счёт</div><div class="v">${ff(usdB)}</div><div class="s">=${ff(usdB*FX.USD)}₴</div></div>
     </div>
+    ${BL.length?`<div class="cc"><h3>Баланси по рахунках</h3><table class="tbl"><tr><th>Рахунок</th><th class="r">Валюта</th><th class="r">Баланс</th><th class="r">DPD</th></tr>
+      ${BL.map(b=>{const cur=gv(b,"валют")||"";const bal=pn(gv(b,"баланс"));const acc=gv(b,"рахунок")||gv(b,"account")||gv(b,"назва")||gv(b,"name")||"—";const dpd=gv(b,"dpd")||gv(b,"DPD")||"";const curClr=cur==="UAH"?"#f59e0b":cur==="EUR"?"#3b82f6":"#10b981";return`<tr><td style="font-size:9px">${acc}</td><td class="r" style="color:${curClr}">${cur}</td><td class="r" style="font-weight:600">${ff(bal)}</td><td class="r" style="color:#7d8196">${dpd||"—"}</td></tr>`}).join("")}</table></div>`:""}
     <div class="cc"><h3>Входящие vs Исходящие</h3><canvas id="cc1" height="100"></canvas></div>
     <div class="row">
       <div class="cc"><h3>Нетто помесячно</h3><canvas id="cc2" height="100"></canvas></div>
