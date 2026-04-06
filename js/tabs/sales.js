@@ -84,6 +84,13 @@ function renderChans(pd,allInc,c$){
       <div class="kpi"><div class="l">Продажі · ${ml}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${pd.length} транзакцій</div></div>
     </div>`;
 
+  // Managers
+  const mgrs={};pd.forEach(t=>{const m=t.mgr;if(!m||m==="-"||m==="="||!m.trim())return;if(!mgrs[m])mgrs[m]={sum:0,com:0,cnt:0};mgrs[m].sum+=toCur(t.nt);mgrs[m].com+=toCur(t.com);mgrs[m].cnt++});
+  const mgrArr=Object.entries(mgrs).sort((a,b)=>b[1].sum-a[1].sum);
+  const mgrHTML=mgrArr.length?`<div class="cc" style="margin-top:10px"><h3>Менеджери</h3>
+    <table class="tbl"><tr><th>Менеджер</th><th class="r">Продажі</th><th class="r">Комісія</th><th class="r">Опер.</th></tr>
+    ${mgrArr.map(([n,d])=>`<tr class="click" onclick="showMgr('${n.replace(/'/g,"\\'")}')"><td>${n}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${ff(d.com)}${c$}</td><td class="r">${d.cnt}</td></tr>`).join("")}</table></div>`:"";
+
   document.getElementById("s-detail").innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
       ${chans.map(ch=>{const a=agg[ch];const pct=total>0?(a.sum/total*100):0;const clr=CHAN_CLR[ch]||"#6b7280";
@@ -94,7 +101,7 @@ function renderChans(pd,allInc,c$){
         <div class="s">${pct.toFixed(1)}% · ${a.cnt} опер</div>
         <div style="height:3px;background:#232738;border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${clr};border-radius:2px"></div></div>
       </div>`}).join("")}
-    </div>`;
+    </div>${mgrHTML}`;
 
   document.querySelectorAll("[data-ch]").forEach(card=>{
     card.onclick=()=>{_ss.chan=card.dataset.ch;_ss.view="drilldown";rSalesBody()};
