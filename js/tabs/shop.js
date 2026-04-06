@@ -1,6 +1,6 @@
 // js/tabs/shop.js — Shop tab (4 sub-tabs: sales, products, customers, orders)
-let shopSub="sales";
-function shopSw(s){shopSub=s;render()}
+let shopSub="sales",shopCityFlt="ALL";
+function shopSw(s){shopSub=s;shopCityFlt="ALL";render()}
 
 function rShop(f){
   const el=document.getElementById("t-shop"),c$=cs();
@@ -96,7 +96,10 @@ function rShopProducts(el,tabs,orders,c$){
 
 function rShopCustomers(el,tabs,orders,c$){
   const custs={};orders.forEach(o=>{const email=(o.billing?.email||"").toLowerCase().trim();if(!email)return;if(!custs[email])custs[email]={name:(o.billing?.first_name||"")+" "+(o.billing?.last_name||""),email,orders:0,total:0,first:o.date_created,last:o.date_created,city:o.billing?.city||o.shipping?.city||"",country:o.billing?.country||""};custs[email].orders++;custs[email].total+=parseFloat(o.total||0);if(o.date_created<custs[email].first)custs[email].first=o.date_created;if(o.date_created>custs[email].last)custs[email].last=o.date_created});
-  const custArr=Object.values(custs);const totalCust=custArr.length;
+  const allCustArr=Object.values(custs);
+  const allCities=[...new Set(allCustArr.map(c=>c.city).filter(Boolean))].sort();
+  const custArr=shopCityFlt==="ALL"?allCustArr:allCustArr.filter(c=>c.city===shopCityFlt);
+  const totalCust=custArr.length;
   const returning=custArr.filter(c=>c.orders>1);const returningPct=totalCust>0?(returning.length/totalCust*100):0;
   const avgLTV=totalCust>0?custArr.reduce((s,c)=>s+c.total,0)/totalCust:0;
   const avgOrders=totalCust>0?custArr.reduce((s,c)=>s+c.orders,0)/totalCust:0;
@@ -108,6 +111,7 @@ function rShopCustomers(el,tabs,orders,c$){
   const ordByM={};orders.forEach(o=>{const m=(o.date_created||"").substring(0,7);if(!ordByM[m])ordByM[m]={total:0,ret:0};ordByM[m].total++;const email=(o.billing?.email||"").toLowerCase().trim();const cu=custs[email];if(cu&&cu.orders>1)ordByM[m].ret++});
   const cMs=Object.keys(ordByM).sort().slice(-12);
   el.innerHTML=`${tabs}
+    <div style="margin-bottom:8px"><select class="flt" id="shopCityFlt"><option value="ALL">Всі міста</option>${allCities.map(c=>`<option ${c===shopCityFlt?"selected":""}>${c}</option>`).join("")}</select></div>
     <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
       <div class="sh-kpi"><div class="l">Клиентов</div><div class="v">${totalCust}</div></div>
       <div class="sh-kpi"><div class="l">Повторные</div><div class="v" style="color:#8b5cf6">${returning.length}</div><div class="s">${returningPct.toFixed(1)}%</div></div>
@@ -120,6 +124,7 @@ function rShopCustomers(el,tabs,orders,c$){
       <div class="cc"><h3>География</h3><table class="tbl"><tr><th>Город</th><th class="r">Кл.</th></tr>${topCities.map(([c,n])=>`<tr><td>${c}</td><td class="r">${n}</td></tr>`).join("")}</table></div>
     </div>`;
   dc("csCust");CH.csCust=new Chart(document.getElementById("csCust"),{type:"bar",data:{labels:cMs,datasets:[{label:"Новые",data:cMs.map(m=>firstByM[m]||0),backgroundColor:"#3b82f6",borderRadius:2},{label:"Повт.",data:cMs.map(m=>ordByM[m]?.ret||0),backgroundColor:"#8b5cf6",borderRadius:2}]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{stacked:true,ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}}}}});
+  document.getElementById("shopCityFlt").onchange=e=>{shopCityFlt=e.target.value;render()};
 }
 
 function rShopOrders(el,tabs,allOrd,completed,cancelled,refunded,pending,c$){
