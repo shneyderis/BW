@@ -19,7 +19,7 @@ function rPL(f){
     const yrs=aY();
     const bd=yrs.map(y=>{const ox=opex.filter(t=>t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.nt,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.nt,0);const a=T.filter(t=>isA(t)&&t.yr===y&&t.tp==="Расход").reduce((s,t)=>s+Math.abs(t.nt),0);return{y,r:toCur(r),e:toCur(Math.abs(e)),p:toCur(r+e),a:toCur(a),m:r?((r+e)/r*100):0}});
     chartHTML=`<div class="row"><div class="cc"><h3>P&L по роках (без осн.фондів)</h3><canvas id="c1" height="150"></canvas></div><div class="cc"><h3>Маржинальність %</h3><canvas id="c1m" height="150"></canvas></div></div>`;
-    detailHTML=`<div class="cc"><h3>Зведена таблиця</h3><table class="tbl"><tr><th></th>${yrs.map(y=>'<th class="r">'+y+'</th>').join("")}<th class="r">Разом</th></tr>
+    detailHTML=`<div class="cc"><h3>Зведена таблиця <button class="flt" style="float:right;font-size:9px" onclick="exportPLcsv()">Експорт CSV</button></h3><table class="tbl"><tr><th></th>${yrs.map(y=>'<th class="r">'+y+'</th>').join("")}<th class="r">Разом</th></tr>
       <tr><td>Виручка нетто</td>${bd.map(d=>'<td class="r g">'+fm(d.r)+'</td>').join("")}<td class="r g">${fm(bd.reduce((s,d)=>s+d.r,0))}</td></tr>
       <tr><td>OPEX</td>${bd.map(d=>'<td class="r rd">'+fm(d.e)+'</td>').join("")}<td class="r rd">${fm(bd.reduce((s,d)=>s+d.e,0))}</td></tr>
       <tr><td>Осн.фонди</td>${bd.map(d=>'<td class="r" style="color:#3b82f6">'+fm(d.a)+'</td>').join("")}<td class="r" style="color:#3b82f6">${fm(bd.reduce((s,d)=>s+d.a,0))}</td></tr>
@@ -68,6 +68,12 @@ function rPL(f){
       <div class="kpi"><div class="l">Прибуток</div><div class="v" style="color:${sp>0?'#10b981':'#ef4444'}">${fm(toCur(sp))}${c$}</div><div class="s">Маржа ${sm}%</div></div>
       <div class="kpi"><div class="l">Баланс</div><div class="v" style="color:#f59e0b">${ff(toCur(totalB))}${c$}</div><div class="s">${BL.length?`₴${ff(uahB)} €${ff(eurB)} $${ff(usdB)}`:'<span style="color:#7d8196">(дані не завантажені)</span>'}</div></div>
     </div>${chartHTML}${detailHTML}`;
+  // P&L export
+  window.exportPLcsv=function(){
+    const yrs2=aY();const bd2=yrs2.map(y=>{const ox=T.filter(t=>!isA(t)&&t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.nt,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.nt,0);const a=T.filter(t=>isA(t)&&t.yr===y&&t.tp==="Расход").reduce((s,t)=>s+Math.abs(t.nt),0);return{y,r,e:Math.abs(e),p:r+e,a,m:r?((r+e)/r*100):0}});
+    exportCSV("pl.csv",["","...роки →",...yrs2],
+      [["Виручка",...bd2.map(d=>d.r.toFixed(0))],["OPEX",...bd2.map(d=>d.e.toFixed(0))],["Осн.фонди",...bd2.map(d=>d.a.toFixed(0))],["Прибуток",...bd2.map(d=>d.p.toFixed(0))],["Маржа %",...bd2.map(d=>d.m.toFixed(1))]]);
+  };
   if(!yearSelected){
     const yrs=aY();const bd=yrs.map(y=>{const ox=opex.filter(t=>t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.nt,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.nt,0);return{y,r:toCur(r),e:toCur(Math.abs(e)),p:toCur(r+e),m:r?((r+e)/r*100):0}});
     dc("c1");CH.c1=new Chart(document.getElementById("c1"),{type:"bar",data:{labels:yrs,datasets:[{label:"Виручка",data:bd.map(x=>x.r),backgroundColor:"#10b981",borderRadius:3},{label:"Витрати",data:bd.map(x=>x.e),backgroundColor:"rgba(239,68,68,.6)",borderRadius:3},{label:"Прибуток",data:bd.map(x=>x.p),backgroundColor:"#8b5cf6",borderRadius:3}]},options:COB});

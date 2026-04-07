@@ -107,7 +107,13 @@ function rPartners(){
       <div class="cc"><h3>Канали (склади)</h3>
         ${whArr.map(w=>{const pct=totalSold>0?(w.sum/totalSold*100):0;return`<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;cursor:pointer" onclick="_partView='channels';_partChannel='${w.w.replace(/'/g,"\\'")}';render()"><span>${w.w}</span><span class="g" style="font-weight:600">${ff(w.sum)}₴ <span style="color:#7d8196;font-weight:400">(${pct.toFixed(0)}%, ${w.pCnt} партн.)</span></span></div>`}).join("")}</div>
     </div>
-    <div class="cc"><h3>Топ-20 партнерів</h3><canvas id="cPartBar" height="140"></canvas></div>`;
+    <div class="cc"><h3>Топ-20 партнерів <button class="flt" style="float:right;font-size:9px" onclick="exportPartnersCSV()">Експорт CSV</button></h3><canvas id="cPartBar" height="140"></canvas></div>`;
+
+  // Export function
+  window.exportPartnersCSV=function(){
+    exportCSV("partners.csv",["Партнер","ЄДРПОУ","Тип","Продано","Оплачено","Борг","Ост.продаж","Ост.оплата","Канали"],
+      merged.filter(p=>p.sold>0).map(p=>[shortName(p.name),p.edrpou,p.type,p.sold.toFixed(0),p.paid.toFixed(0),(p.debt>0?p.debt:0).toFixed(0),fmtDate(p.lastSale),fmtDate(p.lastPay),p.warehouses.join("; ")]));
+  };
 
   if(yrArr.length>1){dc("cPYr");CH.cPYr=new Chart(document.getElementById("cPYr"),{type:"bar",data:{labels:yrArr.map(([y])=>y),datasets:[{data:yrArr.map(([,d])=>d.sum),backgroundColor:"#10b981",borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}})}
   const top20=merged.slice(0,20);
