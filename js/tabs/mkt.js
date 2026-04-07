@@ -74,7 +74,7 @@ async function loadMkt(){
 
 async function rMkt(){
   const el=document.getElementById("t-mkt");if(!el)return;
-  if(!mktLoaded){el.innerHTML='<div class="info">⏳ Загрузка маркетингових даних...</div>';loadMkt().then(()=>rMkt());return}
+  if(!mktLoaded){el.innerHTML='<div class="info">⏳ Завантаження маркетингових даних...</div>';loadMkt().then(()=>rMkt()).catch(e=>{el.innerHTML='<div class="warn">Помилка: '+e.message+'</div>';console.error("rMkt error:",e)});return}
   const c$=cs();
   const spLists=SP.lists||[];
   const spCamp=SP.campaigns||[];

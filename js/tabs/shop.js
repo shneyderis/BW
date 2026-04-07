@@ -39,7 +39,7 @@ function rShopSales(el,tabs,orders,allOrd,f,c$){
   const byM={};orders.forEach(o=>{const m=(o.date_created||"").substring(0,7);if(!byM[m])byM[m]={r:0,c:0,avg:0};byM[m].r+=parseFloat(o.total||0);byM[m].c++});
   Object.keys(byM).forEach(m=>{byM[m].avg=byM[m].c?byM[m].r/byM[m].c:0});
   const ms=Object.keys(byM).sort();
-  const byW={};orders.forEach(o=>{const d=new Date(o.date_created);const w=new Date(d);w.setDate(d.getDate()-d.getDay());const wk=w.toISOString().substring(0,10);if(!byW[wk])byW[wk]={r:0,c:0};byW[wk].r+=parseFloat(o.total||0);byW[wk].c++});
+  const byW={};orders.forEach(o=>{try{const ds=(o.date_created||"").replace(" ","T");const d=new Date(ds);if(isNaN(d))return;const w=new Date(d);w.setDate(d.getDate()-d.getDay());const wk=w.toISOString().substring(0,10);if(!byW[wk])byW[wk]={r:0,c:0};byW[wk].r+=parseFloat(o.total||0);byW[wk].c++}catch(e){}});
   const ws=Object.keys(byW).sort().slice(-12);
   const payM={};orders.forEach(o=>{const m=o.payment_method_title||o.payment_method||"Не указан";payM[m]=(payM[m]||0)+parseFloat(o.total||0)});
   const payS=Object.entries(payM).sort((a,b)=>b[1]-a[1]);const payTotal=payS.reduce((s,[,v])=>s+v,0);
