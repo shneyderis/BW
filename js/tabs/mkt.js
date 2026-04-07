@@ -199,9 +199,50 @@ async function rMkt(){
     }
   }
 
+  // ========== BUILD TIMELINE ==========
+  // Merge emails, IG posts, and orders on one date axis
+  const tlEvents=[];
+  // Emails
+  recentCamp.forEach(c=>{if(c.send_date)tlEvents.push({date:c.send_date.substring(0,10),type:"email",label:(c.name||"").substring(0,20),value:c.all_email_qty,detail:`Sent:${ff(c.all_email_qty)} Open:${(c.all_email_qty>0?(c.opened_email_qty/c.all_email_qty*100):0).toFixed(0)}%`})});
+  // IG posts
+  igPosts.forEach(p=>{if(p.date)tlEvents.push({date:p.date,type:"ig",label:(p.caption||"").substring(0,20),value:p.likes,detail:`❤${p.likes} Reach:${ff(p.reach)}`})});
+  // Orders by day
+  const ordByDay={};
+  corrOrders.filter(o=>o.status==="completed"||o.status==="processing").forEach(o=>{
+    const d=(o.date_created||"").replace(/ .*/,"").replace("T","").substring(0,10);
+    if(d.length===10){if(!ordByDay[d])ordByDay[d]={cnt:0,rev:0};ordByDay[d].cnt++;ordByDay[d].rev+=parseFloat(o.total||0)}
+  });
+
+  // Build timeline chart data (last 90 days)
+  const tlStart=new Date();tlStart.setDate(tlStart.getDate()-90);
+  const tlStartStr=tlStart.toISOString().substring(0,10);
+  const tlDays=[];for(let d=new Date(tlStart);d<=new Date();d.setDate(d.getDate()+1))tlDays.push(d.toISOString().substring(0,10));
+  const tlEmails={},tlIG={},tlOrd={};
+  tlEvents.filter(e=>e.date>=tlStartStr).forEach(e=>{
+    if(e.type==="email")tlEmails[e.date]=(tlEmails[e.date]||0)+1;
+    if(e.type==="ig")tlIG[e.date]=(tlIG[e.date]||0)+1;
+  });
+  // Weekly aggregation for readability
+  const tlWeeks=[];
+  for(let i=0;i<tlDays.length;i+=7){
+    const wDays=tlDays.slice(i,i+7);
+    const wLabel=wDays[0].substring(5);
+    tlWeeks.push({
+      label:wLabel,
+      emails:wDays.reduce((s,d)=>s+(tlEmails[d]||0),0),
+      ig:wDays.reduce((s,d)=>s+(tlIG[d]||0),0),
+      orders:wDays.reduce((s,d)=>s+(ordByDay[d]?.cnt||0),0),
+      revenue:wDays.reduce((s,d)=>s+(ordByDay[d]?.rev||0),0)
+    });
+  }
+  const hasTimeline=tlWeeks.some(w=>w.emails||w.ig||w.orders);
+
   // ========== RENDER ==========
   el.innerHTML=`
     ${mktError?'<div class="warn">⚠ '+mktError+'</div>':""}
+
+    ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline (90 днів)</div>
+    <div class="cc"><h3>Активності та замовлення по тижнях</h3><canvas id="cTimeline" height="130"></canvas></div>`:""}
 
     <div class="sec">📧 Email-маркетинг (SendPulse)</div>
     <div class="kpis">
@@ -312,6 +353,20 @@ async function rMkt(){
   `;
 
   // === CHARTS ===
+  // Timeline
+  if(hasTimeline&&document.getElementById("cTimeline")){
+    dc("cTimeline");CH.cTimeline=new Chart(document.getElementById("cTimeline"),{type:"bar",
+      data:{labels:tlWeeks.map(w=>w.label),datasets:[
+        {label:"Замовлення",data:tlWeeks.map(w=>w.orders),backgroundColor:"#10b981",borderRadius:2,yAxisID:"y"},
+        {label:"📧 Розсилки",data:tlWeeks.map(w=>w.emails),backgroundColor:"#3b82f6",borderRadius:2,yAxisID:"y"},
+        {label:"📸 IG пости",data:tlWeeks.map(w=>w.ig),backgroundColor:"#e11d48",borderRadius:2,yAxisID:"y"},
+        {label:"Виручка ₴",data:tlWeeks.map(w=>w.revenue),type:"line",borderColor:"#f59e0b",borderWidth:2,pointRadius:3,pointBackgroundColor:"#f59e0b",tension:.3,yAxisID:"y1"}
+      ]},
+      options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+(c.dataset.yAxisID==="y1"?ff(c.raw)+"₴":c.raw)}}},
+        scales:{x:{ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{position:"left",ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y1:{position:"right",ticks:{color:"#f59e0b",font:{size:9},callback:v=>fm(v)+"₴"},grid:{display:false}}}}
+    });
+  }
+
   // Email monthly
   const campByMo={};recentCamp.forEach(c=>{const m=(c.send_date||"").substring(0,7);if(!m)return;if(!campByMo[m])campByMo[m]={sent:0,opened:0};campByMo[m].sent+=c.all_email_qty;campByMo[m].opened+=c.opened_email_qty});
   const cMos=Object.keys(campByMo).sort();
