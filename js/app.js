@@ -129,16 +129,17 @@ async function load(){
 
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{
-      async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
+      async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");if(!r.ok)throw new Error(r.status);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
       const[sales1c,partners1c,products1c,osv1c,bank1c]=await Promise.all([
-        csv1C("продажи"),
-        csv1C("контрагенты"),
-        csv1C("номенклатура"),
-        csv1C("осв"),
-        csv1C("банк")
+        csv1C("sales"),
+        csv1C("partners"),
+        csv1C("products"),
+        csv1C("osv"),
+        csv1C("bank")
       ]);
+      function d2iso(d){if(!d)return"";const p=d.split(/[.\-\/]/);if(p.length>=3&&p[0].length<=2)return p[2].substring(0,4)+"-"+p[1]+"-"+p[0];return d.substring(0,10)}
       C1.sales=(sales1c||[]).map(r=>({
-        date:gv(r,"дата")||"",
+        date:d2iso(gv(r,"дата"))||"",
         num:gv(r,"номер")||"",
         type:gv(r,"вид")||"",
         sum:pn(gv(r,"сумма")),
@@ -154,7 +155,7 @@ async function load(){
         code:gv(r,"код")||"",
         fullname:gv(r,"полное")||"",
         type:gv(r,"вид")||"",
-        edrpou:gv(r,"едрпоу")||gv(r,"код по")||"",
+        edrpou:gv(r,"код по едрпоу")||gv(r,"едрпоу")||r["Код по ЕДРПОУ"]||"",
         tax:gv(r,"схема")||""
       }));
       C1.products=(products1c||[]).map(r=>({
@@ -217,7 +218,7 @@ function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn);[()=>rPL(f),()=>rSales(f),()=>rExp(f),()=>rAssets(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
+function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn);[()=>rPL(f),()=>rSales(f),()=>rExp(f),()=>rAssets(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========
