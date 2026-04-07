@@ -41,7 +41,6 @@ function syncPart2() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const log = [];
   try { log.push(['IG Posts', syncIGPosts(ss), new Date()]); } catch(e) { log.push(['IG Posts', 'ERROR: ' + e.message, new Date()]); }
-  try { log.push(['FB Posts', syncFBPosts(ss), new Date()]); } catch(e) { log.push(['FB Posts', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['Meta Ads', syncMetaAds(ss), new Date()]); } catch(e) { log.push(['Meta Ads', 'ERROR: ' + e.message, new Date()]); }
   writeLog(ss, log);
 }
