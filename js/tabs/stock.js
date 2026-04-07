@@ -47,61 +47,42 @@ function rStock1C(el,tabs){
   const acc36=osv.find(r=>r.account==="36")||{};
   const acc70=osv.find(r=>r.account==="70")||{};
 
-  // Filter only bottles (пляш.)
-  const bottles=products.filter(p=>p.unit==="пляш."&&p.name.length>3);
-  const other=products.filter(p=>p.unit!=="пляш."||p.name.length<=3);
+  // Only products with barcode (sku)
+  const withSKU=products.filter(p=>p.sku&&p.sku.length>5);
 
-  // Group wines by base name
-  const bases={};
-  bottles.forEach(p=>{
-    const m=p.name.match(/^(.+?)\s*(\d{4})/);
-    const base=m?m[1].trim():p.name;
-    const year=m?m[2]:"";
-    if(!bases[base])bases[base]={vintages:[],skus:new Set()};
-    bases[base].vintages.push({name:p.name,year,sku:p.sku});
-    if(p.sku)bases[base].skus.add(p.sku);
+  // Group by barcode → take last name per barcode
+  const bySKU={};
+  withSKU.forEach(p=>{
+    if(!bySKU[p.sku])bySKU[p.sku]={names:[],unit:p.unit};
+    bySKU[p.sku].names.push(p.name);
   });
-  const baseArr=Object.entries(bases).sort((a,b)=>b[1].vintages.length-a[1].vintages.length);
-
-  // Units breakdown
-  const byUnit={};products.forEach(p=>{const u=p.unit||"?";byUnit[u]=(byUnit[u]||0)+1});
-  const unitArr=Object.entries(byUnit).sort((a,b)=>b[1]-a[1]);
-
+  const wineArr=Object.entries(bySKU).map(([sku,d])=>({
+    sku,name:d.names[d.names.length-1],unit:d.unit,variants:d.names.length,allNames:d.names
+  })).sort((a,b)=>a.name.localeCompare(b.name));
   el.innerHTML=`${tabs}
-    <div class="info">1С Номенклатура: ${products.length} позицій, ${bottles.length} вин (пляш.), ${baseArr.length} базових назв</div>
+    <div class="info">Тільки товари зі штрих-кодом: ${wineArr.length} позицій (з ${products.length} в номенклатурі). Залишки по кожному товару потребують вигрузки ОСВ рах.28 по номенклатурі.</div>
     <div class="kpis">
-      <div class="kpi"><div class="l">Товари на складі (рах.28)</div><div class="v" style="color:#3b82f6">${ff(acc28.saldoEndDt||0)}₴</div></div>
+      <div class="kpi"><div class="l">Товари на складі (рах.28)</div><div class="v" style="color:#3b82f6">${ff(acc28.saldoEndDt||0)}₴</div><div class="s">загальна сума</div></div>
       <div class="kpi"><div class="l">Дебіторка (рах.36)</div><div class="v" style="color:#ef4444">${ff(acc36.saldoEndDt||0)}₴</div></div>
       <div class="kpi"><div class="l">Дохід (рах.70)</div><div class="v g">${ff(acc70.saldoEndKt||0)}₴</div></div>
-      <div class="kpi"><div class="l">Вин (пляш.)</div><div class="v">${bottles.length}</div><div class="s">${baseArr.length} назв</div></div>
+      <div class="kpi"><div class="l">Позицій</div><div class="v" style="color:#9f1239">${wineArr.length}</div></div>
     </div>
 
-    <div class="row">
-      <div class="cc"><h3>По одиницях виміру</h3>
-        ${unitArr.map(([u,n])=>{const pct=products.length?(n/products.length*100):0;return`<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span>${u}</span><span style="font-weight:600">${n} <span style="color:#7d8196">(${pct.toFixed(0)}%)</span></span></div>`}).join("")}</div>
-      <div class="cc"><h3>Вина по кількості врожаїв</h3><canvas id="cWineVint" height="140"></canvas></div>
-    </div>
+    <div class="cc"><h3>Каталог (${wineArr.length} позицій зі штрих-кодом)</h3>
+      <table class="tbl"><tr><th>Назва</th><th class="r">Штрих-код</th><th class="r">Од.</th><th class="r">Варіантів в 1С</th></tr>
+      ${wineArr.map(w=>`<tr>
+        <td style="font-size:10px;font-weight:600">${w.name.substring(0,35)}</td>
+        <td class="r" style="color:#7d8196;font-size:9px">${w.sku}</td>
+        <td class="r">${w.unit}</td>
+        <td class="r" style="color:#7d8196">${w.variants>1?w.variants:""}</td>
+      </tr>`).join("")}</table></div>
 
-    <div class="cc"><h3>Каталог вин (${baseArr.length} назв)</h3>
-      <table class="tbl"><tr><th>Вино</th><th class="r">Врожаї</th><th class="r">Штрих-код</th><th class="r">Роки</th></tr>
-      ${baseArr.map(([base,d])=>{const years=d.vintages.map(v=>v.year).filter(Boolean).sort();const sku=[...d.skus].join(", ");return`<tr>
-        <td style="font-size:9px;font-weight:600">${base.substring(0,30)}</td>
-        <td class="r">${d.vintages.length}</td>
-        <td class="r" style="color:#7d8196;font-size:8px">${sku.substring(0,15)}</td>
-        <td class="r" style="color:#7d8196;font-size:8px">${years.length>3?years[0]+"—"+years[years.length-1]:years.join(", ")}</td>
-      </tr>`}).join("")}</table></div>
-
-    ${other.length?`<div class="cc"><h3>Інша номенклатура (${other.length})</h3>
-      <table class="tbl"><tr><th>Назва</th><th class="r">Од.</th><th class="r">ПДВ</th></tr>
-      ${other.slice(0,20).map(p=>`<tr><td style="font-size:9px">${p.name.substring(0,35)}</td><td class="r">${p.unit}</td><td class="r">${p.vat}</td></tr>`).join("")}
-      ${other.length>20?`<tr><td colspan="3" style="color:#7d8196;font-size:9px">+ ще ${other.length-20}</td></tr>`:""}</table></div>`:""}
+    <div class="cc"><h3>Каталог</h3><canvas id="cWineCat" height="${Math.max(100,wineArr.length*16)}"></canvas></div>
   `;
 
-  // Top wines by vintage count
-  const topWines=baseArr.slice(0,15);
-  if(topWines.length){
-    dc("cWineVint");CH.cWineVint=new Chart(document.getElementById("cWineVint"),{type:"bar",
-      data:{labels:topWines.map(([b])=>b.substring(0,14)),datasets:[{data:topWines.map(([,d])=>d.vintages.length),backgroundColor:"#9f1239",borderRadius:2}]},
-      options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
+  if(wineArr.length){
+    dc("cWineCat");CH.cWineCat=new Chart(document.getElementById("cWineCat"),{type:"bar",
+      data:{labels:wineArr.map(w=>w.name.substring(0,20)),datasets:[{data:wineArr.map(w=>w.variants),backgroundColor:"#9f1239",borderRadius:2}]},
+      options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:"Варіантів назв",color:"#7d8196",font:{size:9}},ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
   }
 }
