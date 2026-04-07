@@ -7,14 +7,18 @@ function shortName(n){if(!n)return"";return n.replace(/Товариство з �
 const INTERNAL=["інтернет магазин","конечный потребитель","корпорат.клиент","садовой","кінцевий споживач"];
 const isInternal=n=>INTERNAL.some(x=>n.toLowerCase().includes(x));
 
-let _partView="overview",_partChannel=null;
+let _partView="overview",_partChannel=null,_partOrg="Бейкуш Вайнери";
 
 function rPartners(){
   const el=document.getElementById("t-partners");if(!el)return;
   if(!C1.loaded){el.innerHTML='<div class="info">⏳ Завантаження даних 1С...</div>';return}
   if(!C1.sales.length){el.innerHTML='<div class="warn">Дані 1С не завантажені.</div>';return}
 
-  const sales=C1.sales,partners=C1.partners,bank=C1.bank||[];
+  // Org filter
+  const allOrgs=[...new Set(C1.sales.map(s=>s.org).filter(Boolean))].sort();
+  const sales=_partOrg==="ALL"?C1.sales:C1.sales.filter(s=>s.org===_partOrg);
+  const partners=C1.partners;
+  const bank=_partOrg==="ALL"?C1.bank||[]:(_partOrg==="Бейкуш Ф2"?[]:(C1.bank||[]));
 
   // === Sales by partner ===
   const byP={};
@@ -54,17 +58,25 @@ function rPartners(){
   sales.forEach(s=>{const w=s.warehouse||"Інше";if(!byWH[w])byWH[w]={sum:0,cnt:0,partners:{}};byWH[w].sum+=s.sum;byWH[w].cnt++;const p=s.partner;if(!byWH[w].partners[p])byWH[w].partners[p]={sum:0,cnt:0,last:""};byWH[w].partners[p].sum+=s.sum;byWH[w].partners[p].cnt++;if(s.date>byWH[w].partners[p].last)byWH[w].partners[p].last=s.date});
   const whArr=Object.entries(byWH).map(([w,d])=>({w,sum:d.sum,cnt:d.cnt,pCnt:Object.keys(d.partners).length,partners:d.partners})).sort((a,b)=>b.sum-a.sum);
 
-  // === Sub-tabs ===
-  const tabs=`<div class="sh-tabs" style="margin-bottom:10px">
-    <button class="sh-tab ${_partView==="overview"?"on":""}" onclick="_partView='overview';_partChannel=null;render()">Огляд</button>
-    <button class="sh-tab ${_partView==="channels"?"on":""}" onclick="_partView='channels';_partChannel=null;render()">Канали</button>
-    <button class="sh-tab ${_partView==="debtors"?"on":""}" onclick="_partView='debtors';render()">Борги</button>
-    <button class="sh-tab ${_partView==="contacts"?"on":""}" onclick="_partView='contacts';render()">Контакти</button>
+  // === Sub-tabs + org filter ===
+  const tabs=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+    <div class="sh-tabs">
+      <button class="sh-tab ${_partView==="overview"?"on":""}" onclick="_partView='overview';_partChannel=null;render()">Огляд</button>
+      <button class="sh-tab ${_partView==="channels"?"on":""}" onclick="_partView='channels';_partChannel=null;render()">Канали</button>
+      <button class="sh-tab ${_partView==="debtors"?"on":""}" onclick="_partView='debtors';render()">Борги</button>
+      <button class="sh-tab ${_partView==="contacts"?"on":""}" onclick="_partView='contacts';render()">Контакти</button>
+    </div>
+    <select class="flt" id="partOrgFlt">
+      <option value="ALL" ${_partOrg==="ALL"?"selected":""}>Всі організації</option>
+      ${allOrgs.map(o=>`<option ${o===_partOrg?"selected":""}>${o}</option>`).join("")}
+    </select>
   </div>`;
 
-  if(_partView==="channels")return rPartChannels(el,tabs,whArr,merged);
-  if(_partView==="debtors")return rPartDebtors(el,tabs,debtors,now);
-  if(_partView==="contacts")return rPartContacts(el,tabs,merged,partners);
+  function bindOrgFlt(){const s=document.getElementById("partOrgFlt");if(s)s.onchange=e=>{_partOrg=e.target.value;render()}}
+
+  if(_partView==="channels"){rPartChannels(el,tabs,whArr,merged);bindOrgFlt();return}
+  if(_partView==="debtors"){rPartDebtors(el,tabs,debtors,now);bindOrgFlt();return}
+  if(_partView==="contacts"){rPartContacts(el,tabs,merged,partners);bindOrgFlt();return}
 
   // === OVERVIEW ===
   const byYr={};sales.forEach(s=>{const y=toISO(s.date).substring(0,4);if(y<"2015")return;if(!byYr[y])byYr[y]={sum:0,cnt:0};byYr[y].sum+=s.sum;byYr[y].cnt++});
@@ -98,6 +110,7 @@ function rPartners(){
   if(yrArr.length>1){dc("cPYr");CH.cPYr=new Chart(document.getElementById("cPYr"),{type:"bar",data:{labels:yrArr.map(([y])=>y),datasets:[{data:yrArr.map(([,d])=>d.sum),backgroundColor:"#10b981",borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}})}
   const top20=merged.slice(0,20);
   if(top20.length){dc("cPartBar");CH.cPartBar=new Chart(document.getElementById("cPartBar"),{type:"bar",data:{labels:top20.map(p=>shortName(p.name).substring(0,15)),datasets:[{label:"Продано",data:top20.map(p=>p.sold),backgroundColor:"#10b981",borderRadius:2},{label:"Оплачено",data:top20.map(p=>p.paid),backgroundColor:"#3b82f6",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}})}
+  bindOrgFlt();
 }
 
 // === CHANNELS VIEW ===
@@ -140,10 +153,12 @@ function rPartChannels(el,tabs,whArr,merged){
 // === DEBTORS VIEW ===
 function rPartDebtors(el,tabs,debtors,now){
   const sixMAgo=new Date();sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
-  const overdue=debtors.filter(p=>{const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;return(now-new Date(lp).getTime())>30*24*60*60*1000});
+  const noPayData=_partOrg==="Бейкуш Ф2"||_partOrg==="Интернет магазин"||_partOrg==="Дегустации";
+  const overdue=noPayData?[]:debtors.filter(p=>{const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;return(now-new Date(lp).getTime())>30*24*60*60*1000});
   const dormant=debtors.filter(p=>p.sold>10000&&toISO(p.lastSale)<sixMS);
 
   el.innerHTML=`${tabs}
+    ${noPayData?'<div class="warn">⚠ Банківські операції є тільки для Бейкуш Вайнери. Для цієї організації борги розраховані тільки по реалізаціях (без оплат).</div>':""}
     <div class="kpis">
       <div class="kpi"><div class="l">Загальний борг</div><div class="v rd">${ff(debtors.reduce((s,p)=>s+p.debt,0))}₴</div><div class="s">${debtors.length} боржників</div></div>
       <div class="kpi"><div class="l">Прострочено (>30д)</div><div class="v rd">${overdue.length}</div><div class="s">${ff(overdue.reduce((s,p)=>s+p.debt,0))}₴</div></div>
