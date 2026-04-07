@@ -258,25 +258,23 @@ function pageFetch_(path) {
 function syncFBPosts(ss) {
   if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   if (!CONFIG.META_PAGE_ID) { Logger.log('No META_PAGE_ID'); return '0'; }
-  const data = pageFetch_(CONFIG.META_PAGE_ID + '/posts?fields=id,created_time,message,type,permalink_url,likes.summary(true),comments.summary(true),shares&limit=100');
+  const data = pageFetch_(CONFIG.META_PAGE_ID + '/posts?fields=id,created_time,message,permalink_url&limit=100');
   if (!data || !data.data) { Logger.log('No FB posts'); return '0 posts'; }
-  const rows = [['id','created_time','message','type','permalink_url','likes','comments','shares','reach','engaged_users','clicks']];
+  const rows = [['id','created_time','message','permalink_url','reach','engaged_users','clicks','reactions']];
   for (const p of data.data) {
-    const likes = (p.likes && p.likes.summary) ? p.likes.summary.total_count : 0;
-    const comments = (p.comments && p.comments.summary) ? p.comments.summary.total_count : 0;
-    const shares = p.shares ? p.shares.count : 0;
-    let reach = 0, engaged = 0, clicks = 0;
+    let reach = 0, engaged = 0, clicks = 0, reactions = 0;
     try {
-      const ins = pageFetch_(p.id + '/insights?metric=post_reach,post_engaged_users,post_clicks');
+      const ins = pageFetch_(p.id + '/insights?metric=post_impressions_unique,post_engaged_users,post_clicks,post_reactions_by_type_total');
       if (ins && ins.data) ins.data.forEach(m => {
         const val = m.values && m.values[0] ? m.values[0].value : 0;
-        if (m.name === 'post_reach') reach = val;
+        if (m.name === 'post_impressions_unique') reach = val;
         if (m.name === 'post_engaged_users') engaged = val;
         if (m.name === 'post_clicks') clicks = val;
+        if (m.name === 'post_reactions_by_type_total' && typeof val === 'object') reactions = Object.values(val).reduce((s,v)=>s+v,0);
       });
     } catch(e) {}
-    rows.push([p.id, p.created_time||'', (p.message||'').substring(0,200), p.type||'', p.permalink_url||'',
-      likes, comments, shares, reach, engaged, clicks]);
+    rows.push([p.id, p.created_time||'', (p.message||'').substring(0,200), p.permalink_url||'',
+      reach, engaged, clicks, reactions]);
   }
   writeSheet_(ss, 'FB_Posts', rows);
   return (rows.length-1) + ' posts';
