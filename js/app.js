@@ -184,7 +184,9 @@ async function load(){
             items_count:pn(gv(r,"items_count")),
             line_items:[],meta_data:[]
           }});
-        console.log("WC_Orders mapped[0]:",JSON.stringify(WO[0]));
+        console.log("WC_Orders row[0]:",JSON.stringify(WO[0]));
+        console.log("WC sample dates:",WO.slice(0,5).map(o=>o.date_created));
+        console.log("WC statuses:",Object.entries(WO.reduce((a,o)=>{a[o.status]=(a[o.status]||0)+1;return a},{})));
       }
       if(wcProdSheet.length){
         console.log("WC_Products columns:",Object.keys(wcProdSheet[0]));
