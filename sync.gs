@@ -45,8 +45,6 @@ function syncPart2() {
   try { log.push(['Meta Ads', syncMetaAds(ss), new Date()]); } catch(e) { log.push(['Meta Ads', 'ERROR: ' + e.message, new Date()]); }
   writeLog(ss, log);
 }
-  writeLog(ss, log);
-}
 
 function syncSendPulse() { const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID); syncSPLists(ss); syncSPCampaigns(ss); }
 function syncWooCommerce() { const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID); syncWCOrders(ss); syncWCProducts(ss); }
