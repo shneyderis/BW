@@ -264,7 +264,7 @@ function syncFBPosts(ss) {
 function syncMetaAds(ss) {
   if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   if (!CONFIG.META_AD_ACCOUNT_ID) { Logger.log('No META_AD_ACCOUNT_ID'); return '0'; }
-  const since = new Date(); since.setDate(since.getDate() - 90);
+  const since = new Date(); since.setFullYear(since.getFullYear() - 3);
   const sinceStr = Utilities.formatDate(since, 'GMT', 'yyyy-MM-dd');
   const untilStr = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd');
   const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective&limit=100');
