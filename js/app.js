@@ -68,7 +68,7 @@ function showApp(tabs){
     if(id){btn.classList.toggle("hidden",!tabs.includes(id));if(!tabs.includes(id)&&btn.classList.contains("on")){btn.classList.remove("on")}}
   });
   const firstVisible=document.querySelector('.tab:not(.hidden)');
-  if(firstVisible&&!document.querySelector('.tab.on:not(.hidden)')){firstVisible.classList.add("on");const id=firstVisible.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];if(id){['pl','sales','exp','assets','shop','stock','cash','mkt','partners','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden')}}
+  if(firstVisible&&!document.querySelector('.tab.on:not(.hidden)')){firstVisible.classList.add("on");const id=firstVisible.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];if(id){['pl','sales','exp','assets','shop','stock','cash','mkt','partners','uk','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden')}}
   load();
 }
 
@@ -287,7 +287,7 @@ function bldFlt(yrs){
 }
 function gF(){return{yr:document.getElementById("fY")?.value||"ALL",mm:document.getElementById("fM")?.value||"ALL",src:document.getElementById("fS")?.value||"ALL",chan:document.getElementById("fC")?.value||"ALL",geo:document.getElementById("fG")?.value||"ALL",mgr:document.getElementById("fMgr")?.value||"ALL"}}
 function fl(list,f,tp){let r=list;if(f.yr!=="ALL")r=r.filter(t=>t.yr===f.yr);if(f.mm!=="ALL")r=r.filter(t=>t.mm===f.mm);if(f.src!=="ALL")r=r.filter(t=>t.st===f.src);if(f.chan!=="ALL")r=r.filter(t=>t.cat===f.chan);if(f.geo!=="ALL")r=r.filter(t=>t.geo===f.geo);if(f.mgr!=="ALL")r=r.filter(t=>t.mgr===f.mgr);if(tp)r=r.filter(t=>t.tp===tp);return r}
-function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['pl','sales','exp','assets','shop','stock','cash','mkt','partners','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
+function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['pl','sales','exp','assets','shop','stock','cash','mkt','partners','uk','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 function aY(){return[...new Set(T.map(x=>x.yr))].sort()}
 function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||"2026"}
@@ -295,7 +295,7 @@ function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn);[()=>rPL(f),()=>rSales(f),()=>rExp(f),()=>rAssets(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
+function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn);[()=>rPL(f),()=>rSales(f),()=>rExp(f),()=>rAssets(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========
