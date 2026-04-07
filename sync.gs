@@ -279,7 +279,7 @@ function syncMetaAds(ss) {
   const since = new Date(); since.setFullYear(since.getFullYear() - 3);
   const sinceStr = Utilities.formatDate(since, 'GMT', 'yyyy-MM-dd');
   const untilStr = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd');
-  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective,start_time&limit=50&filtering=[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED"]}]');
+  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective,start_time&limit=50');
   if (!data || !data.data) { Logger.log('No Meta campaigns'); return '0'; }
   const rows = [['campaign_id','campaign_name','status','objective','date_start','date_stop',
     'spend','impressions','reach','clicks','ctr','cpc','cpm','link_clicks','purchases','purchase_value']];
