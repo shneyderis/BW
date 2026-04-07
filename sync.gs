@@ -273,7 +273,7 @@ function syncMetaAds(ss) {
     'spend','impressions','reach','clicks','ctr','cpc','cpm','link_clicks','purchases','purchase_value']];
   for (const camp of data.data) {
     let ins = null;
-    try { ins = metaFetch_(camp.id + '/insights?fields=spend,impressions,reach,clicks,ctr,cpc,cpm,actions,action_values&time_range={"since":"'+sinceStr+'","until":"'+untilStr+'"}'); } catch(e) {}
+    try { ins = metaFetch_(camp.id + '/insights?fields=spend,impressions,reach,clicks,ctr,cpc,cpm,actions,action_values&time_range=' + encodeURIComponent('{"since":"'+sinceStr+'","until":"'+untilStr+'"}')); } catch(e) {}
     if (!ins || !ins.data || !ins.data.length) ins = {data:[{}]};
     const d = ins.data[0];
     let linkClicks=0, purchases=0, purchaseValue=0;
