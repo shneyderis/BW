@@ -199,8 +199,9 @@ async function rMkt(){
     }
   }
 
-  // ========== BUILD TIMELINE (30 days, daily) ==========
-  const tlStart=new Date();tlStart.setDate(tlStart.getDate()-30);
+  // ========== BUILD TIMELINE (configurable period) ==========
+  if(!window._mktDays)window._mktDays=30;
+  const tlStart=new Date();tlStart.setDate(tlStart.getDate()-window._mktDays);
   const tlStartStr=tlStart.toISOString().substring(0,10);
   const tlDays=[];for(let d=new Date(tlStart);d<=new Date();d.setDate(d.getDate()+1))tlDays.push(d.toISOString().substring(0,10));
 
@@ -230,8 +231,12 @@ async function rMkt(){
   el.innerHTML=`
     ${mktError?'<div class="warn">⚠ '+mktError+'</div>':""}
 
-    ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline (30 днів)</div>
-    <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях)</h3><canvas id="cTimeline" height="160"></canvas></div>`:""}
+    ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline
+      <span style="float:right;font-size:10px;font-weight:400">
+        ${[30,60,90,180].map(d=>`<button class="flt" style="margin-left:3px;${window._mktDays===d?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="window._mktDays=${d};render()">${d}д</button>`).join("")}
+      </span>
+    </div>
+    <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях, ${window._mktDays}д)</h3><canvas id="cTimeline" height="160"></canvas></div>`:""}
 
     <div class="sec">📧 Email-маркетинг (SendPulse)</div>
     <div class="kpis">
