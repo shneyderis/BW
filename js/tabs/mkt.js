@@ -238,6 +238,68 @@ async function rMkt(){
     </div>
     <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях, ${window._mktDays}д)</h3><canvas id="cTimeline" height="160"></canvas></div>`:""}
 
+    ${(()=>{
+      // === AI INSIGHTS ===
+      const insights=[];
+
+      // 1. Find days with peak orders and what happened before
+      const peakDays=tlDays.filter(d=>ordByDay[d]&&ordByDay[d].cnt>=5).map(d=>{
+        const prev1=tlDays[tlDays.indexOf(d)-1]||"";
+        const prev2=tlDays[tlDays.indexOf(d)-2]||"";
+        const igBefore=[igByDay[d],igByDay[prev1],igByDay[prev2]].filter(Boolean);
+        const emBefore=[emailByDay[d],emailByDay[prev1],emailByDay[prev2]].filter(Boolean);
+        return{date:d,orders:ordByDay[d].cnt,rev:ordByDay[d].rev,ig:igBefore,em:emBefore};
+      });
+      peakDays.forEach(p=>{
+        const causes=[];
+        if(p.ig.length)causes.push("📸 IG пост: "+p.ig.map(i=>i.label).join(", ")+" (reach "+ff(p.ig[0].reach)+")");
+        if(p.em.length)causes.push("📧 Розсилка: "+p.em.map(e=>e.labels[0]).join(", ")+" (sent "+ff(p.em[0].sent)+")");
+        if(causes.length)insights.push({type:"peak",icon:"📈",text:`<b>${p.date}</b>: ${p.orders} замовлень, ${ff(p.rev)}₴`,detail:causes.join(" + "),color:"#10b981"});
+        else insights.push({type:"peak",icon:"📈",text:`<b>${p.date}</b>: ${p.orders} замовлень, ${ff(p.rev)}₴`,detail:"Без видимої маркетингової активності — можливо сарафанне радіо або повторні клієнти",color:"#f59e0b"});
+      });
+
+      // 2. IG type effectiveness
+      if(Object.keys(igByType).length>1){
+        const best=Object.entries(igByType).sort((a,b)=>{const erA=a[1].reach>0?(a[1].likes+a[1].comments)/a[1].reach:0;const erB=b[1].reach>0?(b[1].likes+b[1].comments)/b[1].reach:0;return erB-erA})[0];
+        const erBest=best[1].reach>0?((best[1].likes+best[1].comments)/best[1].reach*100):0;
+        insights.push({type:"ig",icon:"📸",text:`<b>${best[0]}</b> — найефективніший тип контенту (ER ${erBest.toFixed(1)}%)`,detail:`Сер. reach: ${ff(best[1].reach/best[1].cnt)}, сер. лайків: ${(best[1].likes/best[1].cnt).toFixed(0)}. Рекомендація: робити більше ${best[0]}.`,color:"#e11d48"});
+      }
+
+      // 3. Email open rate trend
+      const recentEmails=recentCamp.slice(0,5);
+      const olderEmails=recentCamp.slice(5,10);
+      if(recentEmails.length&&olderEmails.length){
+        const recentOR=recentEmails.reduce((s,c)=>s+(c.all_email_qty>0?c.opened_email_qty/c.all_email_qty*100:0),0)/recentEmails.length;
+        const olderOR=olderEmails.reduce((s,c)=>s+(c.all_email_qty>0?c.opened_email_qty/c.all_email_qty*100:0),0)/olderEmails.length;
+        const diff=recentOR-olderOR;
+        insights.push({type:"email",icon:"📧",text:`Open rate ${diff>0?"зростає":"падає"}: ${recentOR.toFixed(1)}% (останні 5) vs ${olderOR.toFixed(1)}% (попередні 5)`,detail:diff>2?"Аудиторія стає більш залученою — гарний знак.":diff<-2?"Можливо втома від розсилок. Спробуйте змінити теми або частоту.":"Стабільний рівень — добре.",color:diff>0?"#10b981":"#ef4444"});
+      }
+
+      // 4. Wasted marketing: post/email without sales boost
+      const wastedIG=igPosts.filter(p=>p.date>=tlStartStr).filter(p=>{
+        const d=p.date;const next1=tlDays[tlDays.indexOf(d)+1]||"";const next2=tlDays[tlDays.indexOf(d)+2]||"";
+        const ordAfter=(ordByDay[next1]?.cnt||0)+(ordByDay[next2]?.cnt||0);
+        const ordBefore=(ordByDay[tlDays[tlDays.indexOf(d)-1]]?.cnt||0)+(ordByDay[tlDays[tlDays.indexOf(d)-2]]?.cnt||0);
+        return p.reach>3000&&ordAfter<ordBefore;
+      });
+      if(wastedIG.length)insights.push({type:"waste",icon:"⚠",text:`${wastedIG.length} пост(ів) з reach >3K без росту продажів`,detail:wastedIG.slice(0,3).map(p=>`"${(p.caption||"").substring(0,25)}" reach:${ff(p.reach)}`).join(", "),color:"#f59e0b"});
+
+      // 5. Best combo
+      const comboDays=tlDays.filter(d=>igByDay[d]&&emailByDay[d]);
+      if(comboDays.length){
+        const comboAvgOrd=comboDays.reduce((s,d)=>{const n1=tlDays[tlDays.indexOf(d)+1]||"";return s+(ordByDay[n1]?.cnt||0)},0)/comboDays.length;
+        const normalAvgOrd=tlDays.filter(d=>!igByDay[d]&&!emailByDay[d]&&ordByDay[d]).reduce((s,d)=>s+ordByDay[d].cnt,0)/(tlDays.filter(d=>!igByDay[d]&&!emailByDay[d]&&ordByDay[d]).length||1);
+        if(comboAvgOrd>normalAvgOrd)insights.push({type:"combo",icon:"🔥",text:`Комбо IG+Email в один день → ${comboAvgOrd.toFixed(1)} замовлень наступного дня (vs ${normalAvgOrd.toFixed(1)} без активності)`,detail:"Рекомендація: планувати розсилку і IG пост на один день.",color:"#10b981"});
+      }
+
+      return insights.length?`<div class="cc" style="border-color:rgba(139,92,246,.3)"><h3 style="color:#8b5cf6">🧠 AI-аналіз маркетингу</h3>
+        ${insights.map(i=>`<div style="margin-bottom:8px;padding:6px 8px;background:#0c0e13;border-radius:5px;border-left:3px solid ${i.color}">
+          <div style="font-size:10px"><span style="margin-right:4px">${i.icon}</span>${i.text}</div>
+          <div style="font-size:9px;color:#7d8196;margin-top:2px">${i.detail}</div>
+        </div>`).join("")}
+      </div>`:"";
+    })()}
+
     <div class="sec">📧 Email-маркетинг (SendPulse)</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Підписників</div><div class="v" style="color:#3b82f6">${ff(SP.totalSubs||0)}</div><div class="s">${spLists.length} списків</div></div>
