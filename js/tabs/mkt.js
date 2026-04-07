@@ -95,8 +95,24 @@ async function rMkt(){
   const igTotalComments=igPosts.reduce((s,p)=>s+p.comments,0);
   const igTotalReach=igPosts.reduce((s,p)=>s+p.reach,0);
   const igAvgEng=igTotal?igPosts.reduce((s,p)=>s+p.engagement,0)/igTotal:0;
-  const igByType={};igPosts.forEach(p=>{const t=p.media_type||"OTHER";igByType[t]=(igByType[t]||0)+1});
-  const igRecent=igPosts.slice(0,12);
+  const igAvgLikes=igTotal?igTotalLikes/igTotal:0;
+  const igAvgReach=igTotal?igTotalReach/igTotal:0;
+  const igEngRate=igTotalReach>0?((igTotalLikes+igTotalComments)/igTotalReach*100):0;
+
+  // IG by type — avg likes, avg reach per type
+  const igByType={};
+  igPosts.forEach(p=>{
+    const t=p.media_type||"OTHER";
+    if(!igByType[t])igByType[t]={cnt:0,likes:0,comments:0,reach:0};
+    igByType[t].cnt++;igByType[t].likes+=p.likes;igByType[t].comments+=p.comments;igByType[t].reach+=p.reach;
+  });
+
+  // Top posts by engagement
+  const topPosts=igPosts.slice().sort((a,b)=>(b.likes+b.comments)-(a.likes+a.comments)).slice(0,5);
+  // Top by reach
+  const topReach=igPosts.slice().sort((a,b)=>b.reach-a.reach).slice(0,5);
+
+  const igRecent=igPosts.slice(0,15);
 
   // === ADS STATS ===
   const adsTotalSpend=adCamps.reduce((s,a)=>s+a.spend,0);
@@ -197,32 +213,64 @@ async function rMkt(){
       </tr>`}).join("")}</table></div>
     ${emailCorrelHTML}
 
-    <div class="sec">📸 Instagram</div>
+    <div class="sec">📸 Instagram · SMM аналітика</div>
     ${igTotal?`
       <div class="kpis">
         <div class="kpi"><div class="l">Постів</div><div class="v">${igTotal}</div></div>
-        <div class="kpi"><div class="l">Лайків</div><div class="v" style="color:#e11d48">${ff(igTotalLikes)}</div><div class="s">~${(igTotal?igTotalLikes/igTotal:0).toFixed(0)}/пост</div></div>
-        <div class="kpi"><div class="l">Коментарів</div><div class="v">${ff(igTotalComments)}</div></div>
-        <div class="kpi"><div class="l">Охоплення</div><div class="v" style="color:#8b5cf6">${ff(igTotalReach)}</div></div>
-        <div class="kpi"><div class="l">Сер. engagement</div><div class="v">${igAvgEng.toFixed(0)}</div></div>
+        <div class="kpi"><div class="l">Engagement Rate</div><div class="v" style="color:${igEngRate>3?"#10b981":igEngRate>1?"#f59e0b":"#ef4444"}">${igEngRate.toFixed(2)}%</div><div class="s">(likes+comments)/reach</div></div>
+        <div class="kpi"><div class="l">Сер. лайків</div><div class="v" style="color:#e11d48">${igAvgLikes.toFixed(0)}</div><div class="s">за пост</div></div>
+        <div class="kpi"><div class="l">Сер. охоплення</div><div class="v" style="color:#8b5cf6">${ff(igAvgReach)}</div><div class="s">за пост</div></div>
+        <div class="kpi"><div class="l">Всього ❤</div><div class="v" style="color:#e11d48">${ff(igTotalLikes)}</div></div>
+        <div class="kpi"><div class="l">Всього reach</div><div class="v" style="color:#8b5cf6">${ff(igTotalReach)}</div></div>
       </div>
-      <div class="cc"><h3>Engagement по постах</h3><canvas id="cIgEng" height="100"></canvas></div>
+
+      <div class="cc"><h3>Engagement та Reach по постах</h3><canvas id="cIgEng" height="120"></canvas></div>
+
       <div class="row">
-        <div class="cc"><h3>Типи контенту</h3>${Object.entries(igByType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>{const pct=igTotal?(n/igTotal*100):0;const clr=t==="VIDEO"?"#8b5cf6":t==="CAROUSEL_ALBUM"?"#3b82f6":"#10b981";return`<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px"><span>${t}</span><span style="color:${clr};font-weight:600">${n} (${pct.toFixed(0)}%)</span></div>`}).join("")}</div>
-        <div class="cc"><h3>Останні пости</h3><table class="tbl"><tr><th>Пост</th><th class="r">Дата</th><th class="r">❤</th><th class="r">💬</th><th class="r">Reach</th></tr>
-          ${igRecent.slice(0,8).map(p=>`<tr>
-            <td style="font-size:9px">${p.caption||"—"}</td>
-            <td class="r" style="color:#7d8196;font-size:9px">${p.date}</td>
-            <td class="r" style="color:#e11d48">${p.likes}</td>
+        <div class="cc"><h3>📊 Типи контенту (ефективність)</h3>
+          <table class="tbl"><tr><th>Тип</th><th class="r">Пости</th><th class="r">Сер.❤</th><th class="r">Сер.Reach</th><th class="r">Eng.Rate</th></tr>
+          ${Object.entries(igByType).sort((a,b)=>b[1].reach-a[1].reach).map(([t,d])=>{
+            const avgL=(d.likes/d.cnt).toFixed(0);
+            const avgR=(d.reach/d.cnt).toFixed(0);
+            const er=d.reach>0?((d.likes+d.comments)/d.reach*100).toFixed(2):"0";
+            const clr=t==="VIDEO"?"#8b5cf6":t==="CAROUSEL_ALBUM"?"#3b82f6":"#10b981";
+            return`<tr><td style="color:${clr};font-weight:600">${t}</td><td class="r">${d.cnt}</td><td class="r" style="color:#e11d48">${avgL}</td><td class="r" style="color:#8b5cf6">${ff(avgR)}</td><td class="r">${er}%</td></tr>`
+          }).join("")}</table></div>
+        <div class="cc"><h3>🏆 Топ-5 по лайках</h3>
+          <table class="tbl"><tr><th>Пост</th><th class="r">❤</th><th class="r">💬</th><th class="r">Reach</th></tr>
+          ${topPosts.map(p=>`<tr>
+            <td style="font-size:9px">${(p.caption||"—").substring(0,30)}</td>
+            <td class="r" style="color:#e11d48;font-weight:700">${p.likes}</td>
             <td class="r">${p.comments}</td>
             <td class="r" style="color:#8b5cf6">${ff(p.reach)}</td>
           </tr>`).join("")}</table></div>
       </div>
-      ${igCorrelHTML}
-    `:'<div class="info">IG_Posts порожній. Запустіть syncIGPosts() в Apps Script після налаштування META_TOKEN.</div>'}
+
+      <div class="row">
+        <div class="cc"><h3>🔥 Топ-5 по охопленню</h3>
+          <table class="tbl"><tr><th>Пост</th><th class="r">Reach</th><th class="r">❤</th><th class="r">ER%</th></tr>
+          ${topReach.map(p=>{const er=p.reach>0?((p.likes+p.comments)/p.reach*100).toFixed(1):"0";return`<tr>
+            <td style="font-size:9px">${(p.caption||"—").substring(0,30)}</td>
+            <td class="r" style="color:#8b5cf6;font-weight:700">${ff(p.reach)}</td>
+            <td class="r" style="color:#e11d48">${p.likes}</td>
+            <td class="r">${er}%</td>
+          </tr>`}).join("")}</table></div>
+        <div class="cc"><h3>📅 Останні пости</h3>
+          <table class="tbl"><tr><th>Пост</th><th class="r">Дата</th><th class="r">Тип</th><th class="r">❤</th><th class="r">Reach</th></tr>
+          ${igRecent.slice(0,10).map(p=>`<tr>
+            <td style="font-size:9px">${(p.caption||"—").substring(0,25)}</td>
+            <td class="r" style="color:#7d8196;font-size:9px">${p.date}</td>
+            <td class="r" style="font-size:8px">${p.media_type==="VIDEO"?"🎬":p.media_type==="CAROUSEL_ALBUM"?"📸":"🖼"}</td>
+            <td class="r" style="color:#e11d48">${p.likes}</td>
+            <td class="r" style="color:#8b5cf6">${ff(p.reach)}</td>
+          </tr>`).join("")}</table></div>
+      </div>
+
+      ${igCorrelHTML||`<div class="info">Кореляція пости→замовлення: WC_Orders ${WO.length?WO.length+" записів, але дати не збігаються":"порожній"}. Для кореляції потрібні WC замовлення з датами.</div>`}
+    `:'<div class="info">IG_Posts порожній. Запустіть syncIGPosts() в Apps Script.</div>'}
 
     <div class="sec">📢 Meta Ads</div>
-    ${adCamps.length?`
+    ${adCamps.length&&adsTotalSpend>0?`
       <div class="kpis">
         <div class="kpi"><div class="l">Витрати</div><div class="v rd">${ff(adsTotalSpend)}$</div><div class="s">${adCamps.length} кампаній</div></div>
         <div class="kpi"><div class="l">Покази</div><div class="v">${ff(adsTotalImpr)}</div><div class="s">CTR ${adsCTR.toFixed(2)}%</div></div>
@@ -242,7 +290,7 @@ async function rMkt(){
           <td class="r ${rc}">${roas.toFixed(2)}x</td>
         </tr>`}).join("")}</table></div>
       <div class="cc"><h3>Витрати vs Дохід по кампаніях</h3><canvas id="cAdsBar" height="120"></canvas></div>
-    `:'<div class="info">Meta_Ads порожній. Запустіть syncMetaAds() в Apps Script після налаштування META_TOKEN та META_AD_ACCOUNT_ID.</div>'}
+    `:`<div class="info">${adCamps.length?`Meta Ads: знайдено ${adCamps.length} кампаній, але витрати = 0₴ за останні 90 днів. Можливо реклама не запущена або кампанії архівні.`:"Meta_Ads порожній. Запустіть syncMetaAds() в Apps Script."}</div>`}
   `;
 
   // === CHARTS ===
