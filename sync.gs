@@ -13,6 +13,7 @@ const CONFIG = {
   META_TOKEN: 'EAAoOzvxe9CgBRH4dIlKSAZCy6tWZBxRFYLaaY2mKVNgCaKNXQnTdHEDuIbS5jcMdlUixBPpvB2Jp3SbAO3nfdOwwxBpY4kjH5LVsWnSQE0mr6zWMPE01Pgl4W0KQEeZAV702zSZAr4JlJUHkTaIgkKSCUOaYigYfMFfOjZA8sZArmUajsyB6wbSaopQ06Sm0rnjAZDZD', // System User token (безстроковий) v3 with Page access
   IG_ACCOUNT_ID: '17841400059003944',
   META_PAGE_ID: '160594843975804',
+  META_PAGE_TOKEN: 'EAAoOzvxe9CgBRFCSgm1rq5MRWKL5YhVVx8ZCZAoYvkAc1GX4xJjnDyvrVBLjbliSAqWgZBU1ni90hqKRMFZCH4YWpdFcxY2n0nf11Lh7u1SR5PTSSSsgmlrFdC722nIZBVjALAmNc5ORRw3rvZBMUqVfsXASQyXy4LZBRZC2ogm3ZCIgJXQGSc8auXZBQZBvQpQp1tULBOHQIkZD', // Page token for FB Posts
   META_AD_ACCOUNT_ID: 'act_2205073692870663',
 };
 
@@ -246,10 +247,18 @@ function syncIGPosts(ss) {
   return (rows.length-1) + ' posts';
 }
 
+function pageFetch_(path) {
+  const token = CONFIG.META_PAGE_TOKEN || CONFIG.META_TOKEN;
+  const url = 'https://graph.facebook.com/v21.0/' + path + (path.indexOf('?') === -1 ? '?' : '&') + 'access_token=' + token;
+  const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) { Logger.log('Page API ' + resp.getResponseCode() + ': ' + resp.getContentText().substring(0, 150)); return null; }
+  return JSON.parse(resp.getContentText());
+}
+
 function syncFBPosts(ss) {
   if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   if (!CONFIG.META_PAGE_ID) { Logger.log('No META_PAGE_ID'); return '0'; }
-  const data = metaFetch_(CONFIG.META_PAGE_ID + '/posts?fields=id,created_time,message,type,permalink_url,likes.summary(true),comments.summary(true),shares&limit=100');
+  const data = pageFetch_(CONFIG.META_PAGE_ID + '/posts?fields=id,created_time,message,type,permalink_url,likes.summary(true),comments.summary(true),shares&limit=100');
   if (!data || !data.data) { Logger.log('No FB posts'); return '0 posts'; }
   const rows = [['id','created_time','message','type','permalink_url','likes','comments','shares','reach','engaged_users','clicks']];
   for (const p of data.data) {
@@ -258,7 +267,7 @@ function syncFBPosts(ss) {
     const shares = p.shares ? p.shares.count : 0;
     let reach = 0, engaged = 0, clicks = 0;
     try {
-      const ins = metaFetch_(p.id + '/insights?metric=post_reach,post_engaged_users,post_clicks');
+      const ins = pageFetch_(p.id + '/insights?metric=post_reach,post_engaged_users,post_clicks');
       if (ins && ins.data) ins.data.forEach(m => {
         const val = m.values && m.values[0] ? m.values[0].value : 0;
         if (m.name === 'post_reach') reach = val;
