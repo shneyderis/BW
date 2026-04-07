@@ -21,16 +21,30 @@ const CONFIG = {
 // ============================================================
 
 function syncAll() {
+  // Split into parts to avoid 6-min timeout
+  syncPart1(); // SP + WC (~3 min)
+  syncPart2(); // IG + FB + Ads (~3 min)
+}
+
+function syncPart1() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const log = [];
   try { log.push(['SendPulse Lists', syncSPLists(ss), new Date()]); } catch(e) { log.push(['SendPulse Lists', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['SendPulse Campaigns', syncSPCampaigns(ss), new Date()]); } catch(e) { log.push(['SendPulse Campaigns', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['WC Orders', syncWCOrders(ss), new Date()]); } catch(e) { log.push(['WC Orders', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['WC Products', syncWCProducts(ss), new Date()]); } catch(e) { log.push(['WC Products', 'ERROR: ' + e.message, new Date()]); }
+  try { ensureSettingsSheet(ss); log.push(['Settings', 'OK', new Date()]); } catch(e) { log.push(['Settings', 'ERROR: ' + e.message, new Date()]); }
+  writeLog(ss, log);
+}
+
+function syncPart2() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const log = [];
   try { log.push(['IG Posts', syncIGPosts(ss), new Date()]); } catch(e) { log.push(['IG Posts', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['FB Posts', syncFBPosts(ss), new Date()]); } catch(e) { log.push(['FB Posts', 'ERROR: ' + e.message, new Date()]); }
   try { log.push(['Meta Ads', syncMetaAds(ss), new Date()]); } catch(e) { log.push(['Meta Ads', 'ERROR: ' + e.message, new Date()]); }
-  try { ensureSettingsSheet(ss); log.push(['Settings', 'OK', new Date()]); } catch(e) { log.push(['Settings', 'ERROR: ' + e.message, new Date()]); }
+  writeLog(ss, log);
+}
   writeLog(ss, log);
 }
 
@@ -214,7 +228,7 @@ function discoverMetaIds() {
 
 function syncIGPosts(ss) {
   if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const data = metaFetch_(CONFIG.IG_ACCOUNT_ID + '/media?fields=id,timestamp,caption,media_type,permalink,like_count,comments_count&limit=100');
+  const data = metaFetch_(CONFIG.IG_ACCOUNT_ID + '/media?fields=id,timestamp,caption,media_type,permalink,like_count,comments_count&limit=50');
   if (!data || !data.data) { Logger.log('No IG posts'); return '0 posts'; }
   const rows = [['id','timestamp','caption','media_type','permalink','like_count','comments_count','reach','saved','engagement']];
   for (const p of data.data) {
@@ -267,7 +281,7 @@ function syncMetaAds(ss) {
   const since = new Date(); since.setFullYear(since.getFullYear() - 3);
   const sinceStr = Utilities.formatDate(since, 'GMT', 'yyyy-MM-dd');
   const untilStr = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd');
-  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective,start_time&limit=100');
+  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective,start_time&limit=50&filtering=[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED"]}]');
   if (!data || !data.data) { Logger.log('No Meta campaigns'); return '0'; }
   const rows = [['campaign_id','campaign_name','status','objective','date_start','date_stop',
     'spend','impressions','reach','clicks','ctr','cpc','cpm','link_clicks','purchases','purchase_value']];
