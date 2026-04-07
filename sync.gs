@@ -9,9 +9,9 @@ var WC_CS = "cs_3ad054a505185162e849a92bf019979e6c037c93";
 
 // Meta/Instagram
 var META_TOKEN = "EAAM1ECaLsGgBRHNGnpf5RFWFu8jDZB8SoV2Eil0fyCNz06mSzAhTpf1QOeHaoHKIg3GRl0lFyx4dNiZCaJhIsBbRnZBzfkIGIZBHVLs7xnAfVZAB26tmxSjRE65gu0PnREmza6mgABJtZAaMZC7HU3iarXc9LT9sIFv2ZBBZCRA54RI6J7hBNsX4ztsVBXNQSpZCgKuqEEKgLvEuNI7h9rRhlZCptA8fiZCebazya0km5Y8ZAiZCvgZAhsYnWYXeInyjwRGec3vmzyqibZCU4NnZClpw4iohUuUEz";
-var IG_ACCOUNT_ID = "";   // Будет определён автоматически через discoverMetaIds()
-var META_AD_ACCOUNT_ID = "";
-var META_PAGE_ID = "";
+var IG_ACCOUNT_ID = "17841400059003944";
+var META_AD_ACCOUNT_ID = "";  // Запусти discoverMetaIds() щоб дізнатись
+var META_PAGE_ID = "160594843975804";  // Beykush winery
 
 /**
  * Синхронизация WC заказов в лист WC_Orders
