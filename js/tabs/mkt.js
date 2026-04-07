@@ -270,25 +270,22 @@ async function rMkt(){
       ${igCorrelHTML||`<div class="info">Кореляція пости→замовлення: WC_Orders ${WO.length?WO.length+" записів, але дати не збігаються":"порожній"}. Для кореляції потрібні WC замовлення з датами.</div>`}
     `:'<div class="info">IG_Posts порожній. Запустіть syncIGPosts() в Apps Script.</div>'}
 
-    <div class="sec">📢 Meta Ads</div>
-    ${adCamps.length?`
+    ${adsTotalSpend>0?`<div class="sec">📢 Meta Ads</div>
       <div class="kpis">
-        <div class="kpi"><div class="l">Кампаній</div><div class="v">${adCamps.length}</div><div class="s">active: ${adCamps.filter(a=>a.status==="ACTIVE").length}</div></div>
-        ${adsTotalSpend>0?`
-          <div class="kpi"><div class="l">Витрати</div><div class="v rd">${ff(adsTotalSpend)}$</div></div>
-          <div class="kpi"><div class="l">Покази</div><div class="v">${ff(adsTotalImpr)}</div><div class="s">CTR ${adsCTR.toFixed(2)}%</div></div>
-          <div class="kpi"><div class="l">ROAS</div><div class="v" style="color:${adsROAS>=3?"#10b981":adsROAS>=1?"#f59e0b":"#ef4444"}">${adsROAS.toFixed(2)}x</div></div>
-        `:`<div class="kpi"><div class="l">Статус</div><div class="v" style="color:#f59e0b">Історія</div><div class="s">insights недоступні (>37 міс)</div></div>`}
+        <div class="kpi"><div class="l">Витрати</div><div class="v rd">${ff(adsTotalSpend)}$</div><div class="s">${adCamps.length} кампаній</div></div>
+        <div class="kpi"><div class="l">Покази</div><div class="v">${ff(adsTotalImpr)}</div><div class="s">CTR ${adsCTR.toFixed(2)}%</div></div>
+        <div class="kpi"><div class="l">ROAS</div><div class="v" style="color:${adsROAS>=3?"#10b981":adsROAS>=1?"#f59e0b":"#ef4444"}">${adsROAS.toFixed(2)}x</div></div>
       </div>
-      <div class="cc"><h3>Кампанії (${adCamps.length})</h3><table class="tbl"><tr><th>Кампанія</th><th class="r">Статус</th><th class="r">Старт</th>${adsTotalSpend>0?'<th class="r">Витрати</th><th class="r">Покази</th><th class="r">Кліки</th>':""}</tr>
-        ${adCamps.map(a=>{const st=a.status==="ACTIVE"?"#10b981":a.status==="PAUSED"?"#f59e0b":"#7d8196";const roas=a.spend>0?(a.purchase_value/a.spend):0;return`<tr>
+      <div class="cc"><h3>Кампанії</h3><table class="tbl"><tr><th>Кампанія</th><th class="r">Витрати</th><th class="r">Покази</th><th class="r">Кліки</th><th class="r">ROAS</th></tr>
+        ${adCamps.filter(a=>a.spend>0).map(a=>{const roas=a.spend>0?(a.purchase_value/a.spend):0;return`<tr>
           <td style="font-size:9px">${(a.name||"—").substring(0,30)}</td>
-          <td class="r" style="color:${st};font-size:9px">${a.status||""}</td>
-          <td class="r" style="color:#7d8196;font-size:9px">${(a.date_start||"").substring(0,10)}</td>
-          ${adsTotalSpend>0?`<td class="r rd">${ff(a.spend)}$</td><td class="r">${ff(a.impressions)}</td><td class="r" style="color:#3b82f6">${ff(a.clicks)}</td>`:""}
+          <td class="r rd">${ff(a.spend)}$</td>
+          <td class="r">${ff(a.impressions)}</td>
+          <td class="r" style="color:#3b82f6">${ff(a.clicks)}</td>
+          <td class="r ${roas>=2?"g":roas<1?"rd":""}">${roas.toFixed(2)}x</td>
         </tr>`}).join("")}</table></div>
-      <div class="cc"><h3>Витрати vs Дохід по кампаніях</h3><canvas id="cAdsBar" height="120"></canvas></div>
-    `:`<div class="info">${adCamps.length?`Meta Ads: знайдено ${adCamps.length} кампаній, але витрати = 0₴ за останні 90 днів. Можливо реклама не запущена або кампанії архівні.`:"Meta_Ads порожній. Запустіть syncMetaAds() в Apps Script."}</div>`}
+      <div class="cc"><h3>Витрати vs Дохід</h3><canvas id="cAdsBar" height="120"></canvas></div>
+    `:""}
   `;
 
   // === CHARTS ===
@@ -313,7 +310,7 @@ async function rMkt(){
   }
 
   // Ads spend vs revenue chart
-  if(adCamps.length&&document.getElementById("cAdsBar")){
+  if(adsTotalSpend>0&&document.getElementById("cAdsBar")){
     const adChD=adCamps.filter(a=>a.spend>0).slice(0,10);
     dc("cAdsBar");CH.cAdsBar=new Chart(document.getElementById("cAdsBar"),{type:"bar",data:{labels:adChD.map(a=>(a.name||"?").substring(0,15)),datasets:[
       {label:"Витрати $",data:adChD.map(a=>a.spend),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2},
