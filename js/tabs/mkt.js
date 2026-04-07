@@ -42,7 +42,6 @@ async function loadMkt(){
       likes:pn(gv(p,"like_count")),
       comments:pn(gv(p,"comments_count")),
       reach:pn(gv(p,"reach")),
-      impressions:pn(gv(p,"impressions")),
       saved:pn(gv(p,"saved")),
       engagement:pn(gv(p,"engagement"))
     })).sort((a,b)=>(b.timestamp||"").localeCompare(a.timestamp||""));

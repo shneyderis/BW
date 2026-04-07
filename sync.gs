@@ -10,7 +10,7 @@ var WC_CS = "cs_3ad054a505185162e849a92bf019979e6c037c93";
 // Meta/Instagram
 var META_TOKEN = "EAAM1ECaLsGgBRHNGnpf5RFWFu8jDZB8SoV2Eil0fyCNz06mSzAhTpf1QOeHaoHKIg3GRl0lFyx4dNiZCaJhIsBbRnZBzfkIGIZBHVLs7xnAfVZAB26tmxSjRE65gu0PnREmza6mgABJtZAaMZC7HU3iarXc9LT9sIFv2ZBBZCRA54RI6J7hBNsX4ztsVBXNQSpZCgKuqEEKgLvEuNI7h9rRhlZCptA8fiZCebazya0km5Y8ZAiZCvgZAhsYnWYXeInyjwRGec3vmzyqibZCU4NnZClpw4iohUuUEz";
 var IG_ACCOUNT_ID = "17841400059003944";
-var META_AD_ACCOUNT_ID = "";  // Запусти discoverMetaIds() щоб дізнатись
+var META_AD_ACCOUNT_ID = "act_359511770";  // Beykush
 var META_PAGE_ID = "160594843975804";  // Beykush winery
 
 /**
@@ -315,7 +315,7 @@ function syncFBPosts() {
   var headers = [
     "id", "created_time", "message", "type", "permalink_url",
     "likes", "comments", "shares",
-    "reach", "impressions", "engaged_users", "clicks"
+    "reach", "engaged_users", "clicks"
   ];
 
   // Отримуємо пости з реакціями
@@ -331,14 +331,13 @@ function syncFBPosts() {
     var shares = (p.shares) ? p.shares.count : 0;
 
     // Post insights
-    var reach = 0, impressions = 0, engaged = 0, clicks = 0;
+    var reach = 0, engaged = 0, clicks = 0;
     try {
-      var ins = metaFetch_(p.id + "/insights?metric=post_impressions,post_reach,post_engaged_users,post_clicks");
+      var ins = metaFetch_(p.id + "/insights?metric=post_reach,post_engaged_users,post_clicks");
       if (ins && ins.data) {
         ins.data.forEach(function(m) {
           var val = m.values && m.values[0] ? m.values[0].value : 0;
           if (m.name === "post_reach") reach = val;
-          if (m.name === "post_impressions") impressions = val;
           if (m.name === "post_engaged_users") engaged = val;
           if (m.name === "post_clicks") clicks = val;
         });
@@ -352,7 +351,7 @@ function syncFBPosts() {
       p.type || "",
       p.permalink_url || "",
       likes, comments, shares,
-      reach, impressions, engaged, clicks
+      reach, engaged, clicks
     ]);
   });
 
@@ -378,7 +377,7 @@ function syncIGPosts() {
   var headers = [
     "id", "timestamp", "caption", "media_type", "permalink",
     "like_count", "comments_count",
-    "reach", "impressions", "saved", "engagement"
+    "reach", "saved", "engagement"
   ];
 
   // Отримуємо пости
@@ -389,14 +388,13 @@ function syncIGPosts() {
   var rows = [];
 
   posts.forEach(function(p) {
-    // Insights для кожного поста
-    var reach = 0, impressions = 0, saved = 0;
+    var reach = 0, saved = 0;
     try {
-      var ins = metaFetch_(p.id + "/insights?metric=reach,impressions,saved");
+      var ins = metaFetch_(p.id + "/insights?metric=reach,saved");
       if (ins && ins.data) {
         ins.data.forEach(function(m) {
           if (m.name === "reach") reach = m.values[0].value || 0;
-          if (m.name === "impressions") impressions = m.values[0].value || 0;
+          if (m.name === "saved") saved = m.values[0].value || 0;
           if (m.name === "saved") saved = m.values[0].value || 0;
         });
       }
@@ -413,7 +411,7 @@ function syncIGPosts() {
       p.media_type || "",
       p.permalink || "",
       likes, comments,
-      reach, impressions, saved, engagement
+      reach, saved, engagement
     ]);
   });
 
