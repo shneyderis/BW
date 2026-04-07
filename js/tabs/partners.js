@@ -7,7 +7,7 @@ function shortName(n){if(!n)return"";return n.replace(/Товариство з �
 const INTERNAL=["інтернет магазин","конечный потребитель","корпорат.клиент","садовой","кінцевий споживач"];
 const isInternal=n=>INTERNAL.some(x=>n.toLowerCase().includes(x));
 
-let _partView="overview",_partChannel=null,_partOrg="Бейкуш Вайнери";
+let _partView="overview",_partChannel=null,_partOrg="Бейкуш Вайнери",_partSearch="";
 
 function rPartners(){
   const el=document.getElementById("t-partners");if(!el)return;
@@ -65,6 +65,7 @@ function rPartners(){
       <button class="sh-tab ${_partView==="channels"?"on":""}" onclick="_partView='channels';_partChannel=null;render()">Канали</button>
       <button class="sh-tab ${_partView==="debtors"?"on":""}" onclick="_partView='debtors';render()">Борги</button>
       <button class="sh-tab ${_partView==="contacts"?"on":""}" onclick="_partView='contacts';render()">Контакти</button>
+      <button class="sh-tab ${_partView==="crm"?"on":""}" onclick="_partView='crm';render()">CRM</button>
     </div>
     <select class="flt" id="partOrgFlt">
       <option value="ALL" ${_partOrg==="ALL"?"selected":""}>Всі організації</option>
@@ -77,6 +78,7 @@ function rPartners(){
   if(_partView==="channels"){rPartChannels(el,tabs,whArr,merged);bindOrgFlt();return}
   if(_partView==="debtors"){rPartDebtors(el,tabs,debtors,now);bindOrgFlt();return}
   if(_partView==="contacts"){rPartContacts(el,tabs,merged,partners);bindOrgFlt();return}
+  if(_partView==="crm"){rPartCRM(el,tabs,merged,debtors,now,bank);bindOrgFlt();return}
 
   // === OVERVIEW ===
   const byYr={};sales.forEach(s=>{const y=toISO(s.date).substring(0,4);if(y<"2015")return;if(!byYr[y])byYr[y]={sum:0,cnt:0};byYr[y].sum+=s.sum;byYr[y].cnt++});
@@ -205,4 +207,80 @@ function rPartContacts(el,tabs,merged,partners){
         <td class="r g">${ff(p.sold)}₴</td>
       </tr>`).join("")}
       ${withSales.length>50?`<tr><td colspan="6" style="color:#7d8196;font-size:9px">+ ще ${withSales.length-50}</td></tr>`:""}</table></div>`;
+}
+
+// === CRM VIEW ===
+function rPartCRM(el,tabs,merged,debtors,now,bank){
+  // Load CRM data from Sheets (Contacts + Leads)
+  // Contacts: stored in "CRM_Contacts" sheet - partner_name, contact_name, phone, email, position, notes
+  // Leads: stored in "CRM_Leads" sheet - name, contact, phone, status, source, created, notes
+
+  // For now show what we have from 1C + actionable debt info
+  const urgentDebtors=debtors.filter(p=>{
+    const lp=toISO(p.lastPay);
+    if(!lp)return p.debt>5000;
+    return(now-new Date(lp).getTime())>30*24*60*60*1000;
+  });
+
+  // Recent payments
+  const recentPay=bank.filter(b=>b.income>0&&b.type.includes("покупат")).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,20);
+
+  // Search filter
+  const search=_partSearch.toLowerCase();
+  const filtered=search?merged.filter(p=>p.name.toLowerCase().includes(search)||p.edrpou.includes(search)):null;
+
+  el.innerHTML=`${tabs}
+    <div class="info">CRM: контакти, борги, оплати. Для повного CRM створіть листи "CRM_Contacts" та "CRM_Leads" в Google Sheets.</div>
+
+    <div style="margin-bottom:10px">
+      <input type="text" placeholder="Пошук партнера..." value="${esc(_partSearch)}"
+        style="width:100%;max-width:300px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:12px"
+        oninput="_partSearch=this.value;render()">
+    </div>
+
+    ${filtered?`<div class="cc"><h3>Результати пошуку (${filtered.length})</h3>
+      <table class="tbl"><tr><th>Партнер</th><th class="r">ЄДРПОУ</th><th class="r">Продано</th><th class="r">Борг</th><th class="r">Ост.оплата</th><th class="r">Канали</th></tr>
+      ${filtered.slice(0,30).map(p=>{const hasDebt=p.debt>1000&&!isInternal(p.name);return`<tr>
+        <td style="font-size:10px;font-weight:600">${shortName(p.name).substring(0,25)}</td>
+        <td class="r" style="font-size:9px">${p.edrpou||"—"}</td>
+        <td class="r g">${ff(p.sold)}₴</td>
+        <td class="r ${hasDebt?"rd":""}">${hasDebt?ff(p.debt)+"₴":"✓"}</td>
+        <td class="r" style="font-size:9px">${fmtDate(p.lastPay)||"—"}</td>
+        <td class="r" style="font-size:8px;color:#7d8196">${p.warehouses.join(", ")}</td>
+      </tr>`}).join("")}</table></div>`:""}
+
+    ${urgentDebtors.length?`<div class="cc" style="border-color:rgba(239,68,68,.4)"><h3 style="color:#ef4444">📞 Потрібно зателефонувати (борг >30 днів)</h3>
+      <table class="tbl"><tr><th>Партнер</th><th class="r">Борг</th><th class="r">Ост.оплата</th><th class="r">Днів</th><th class="r">ЄДРПОУ</th></tr>
+      ${urgentDebtors.slice(0,20).map(p=>{
+        const days=p.lastPay?Math.floor((now-new Date(toISO(p.lastPay)).getTime())/(1000*60*60*24)):"∞";
+        return`<tr>
+        <td style="font-size:10px;font-weight:600;color:#e4e5ea">${shortName(p.name).substring(0,25)}</td>
+        <td class="r rd" style="font-weight:700">${ff(p.debt)}₴</td>
+        <td class="r" style="font-size:9px">${fmtDate(p.lastPay)||"ніколи"}</td>
+        <td class="r rd">${days}</td>
+        <td class="r" style="font-size:9px;color:#7d8196">${p.edrpou||"—"}</td>
+      </tr>`}).join("")}</table></div>`:""}
+
+    <div class="cc"><h3>📥 Останні оплати</h3>
+      <table class="tbl"><tr><th>Дата</th><th>Партнер</th><th class="r">Сума</th><th class="r">Банк</th></tr>
+      ${recentPay.map(b=>`<tr>
+        <td style="font-size:9px">${fmtDate(b.date)}</td>
+        <td style="font-size:9px">${shortName(b.partner).substring(0,25)}</td>
+        <td class="r g">${ff(b.income)}₴</td>
+        <td class="r" style="font-size:8px;color:#7d8196">${b.account||""}</td>
+      </tr>`).join("")}</table></div>
+
+    <div class="cc"><h3>📋 Як підключити повний CRM</h3>
+      <div style="font-size:10px;color:#7d8196;line-height:1.6">
+        <p>Створіть в Google Sheets два листи:</p>
+        <p><b>CRM_Contacts</b>: partner_name, contact_name, phone, email, position, notes</p>
+        <p><b>CRM_Leads</b>: company, contact_name, phone, email, status (new/in_progress/won/lost), source, created_date, next_action, notes</p>
+        <p>Дашборд автоматично завантажить дані і покаже:</p>
+        <ul style="margin-left:16px">
+          <li>Контактні особи по кожному партнеру</li>
+          <li>Ліди: нові контакти → на якій стадії переговори</li>
+          <li>Автоматичні нагадування: кому зателефонувати</li>
+        </ul>
+      </div>
+    </div>`;
 }

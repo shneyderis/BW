@@ -7,33 +7,37 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="login-screen">
   <span class="logo"><span class="logo-dot"></span>BEYKUSH WINERY</span>
   <div style="font-size:10px;color:#7d8196;margin-bottom:16px">Dashboard</div>
+  <div id="g_id_onload" data-auto_prompt="false"></div>
+  <div id="google-btn" style="margin-bottom:12px"></div>
+  <div style="font-size:9px;color:#7d8196;margin-bottom:8px">або</div>
   <input type="password" id="login-pass" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()">
-  <button onclick="doLogin()">Войти</button>
+  <button onclick="doLogin()">Увійти</button>
   <div class="err" id="login-err"></div>
 </div>
 <div id="app" class="hidden">
-<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><button class="logout-btn" onclick="doLogout()">Выход</button></div>
-<div class="sub" id="subtitle">Загрузка...</div>
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><span id="user-info" style="font-size:9px;color:#7d8196;margin-left:auto;margin-right:8px"></span><button class="logout-btn" onclick="doLogout()">Вийти</button></div>
+<div class="sub" id="subtitle">Завантаження...</div>
 <div class="tabs" id="tabs">
   <button class="tab on" onclick="sw('pl',this)">P&L</button>
-  <button class="tab" onclick="sw('sales',this)">Продажи</button>
-  <button class="tab" onclick="sw('exp',this)">Расходы</button>
-  <button class="tab" onclick="sw('assets',this)">Осн.фонды</button>
+  <button class="tab" onclick="sw('sales',this)">Продажі</button>
+  <button class="tab" onclick="sw('exp',this)">Витрати</button>
+  <button class="tab" onclick="sw('assets',this)">Осн.фонди</button>
   <button class="tab" onclick="sw('shop',this)">Магазин</button>
   <button class="tab" onclick="sw('stock',this)">Склад</button>
-  <button class="tab" onclick="sw('cash',this)">Кэш-фло</button>
+  <button class="tab" onclick="sw('cash',this)">Кеш-фло</button>
   <button class="tab" onclick="sw('mkt',this)">Маркетинг</button>
   <button class="tab" onclick="sw('partners',this)">Партнери</button>
   <button class="tab" onclick="sw('unrec',this)">⚠️</button>
   <button class="tab" onclick="sw('settings',this)">⚙</button>
 </div>
 <div id="filterbar" class="filters"></div>
-<div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Загрузка данных...</p></div>
+<div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Завантаження даних...</p></div>
 <div id="t-pl" class="hidden"></div>
 <div id="t-sales" class="hidden"></div>
 <div id="t-exp" class="hidden"></div>
@@ -47,19 +51,19 @@
 <div id="t-settings" class="hidden"></div>
 <div id="modal" class="modal hidden"></div>
 </div>
-<script src="js/config.js?v=9"></script>
-<script src="js/data.js?v=9"></script>
-<script src="js/tabs/pl.js?v=9"></script>
-<script src="js/tabs/sales.js?v=9"></script>
-<script src="js/tabs/exp.js?v=9"></script>
-<script src="js/tabs/assets.js?v=9"></script>
-<script src="js/tabs/shop.js?v=9"></script>
-<script src="js/tabs/stock.js?v=9"></script>
-<script src="js/tabs/cash.js?v=9"></script>
-<script src="js/tabs/mkt.js?v=9"></script>
-<script src="js/tabs/partners.js?v=9"></script>
-<script src="js/tabs/unrec.js?v=9"></script>
-<script src="js/tabs/settings.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/config.js?v=10"></script>
+<script src="js/data.js?v=10"></script>
+<script src="js/tabs/pl.js?v=10"></script>
+<script src="js/tabs/sales.js?v=10"></script>
+<script src="js/tabs/exp.js?v=10"></script>
+<script src="js/tabs/assets.js?v=10"></script>
+<script src="js/tabs/shop.js?v=10"></script>
+<script src="js/tabs/stock.js?v=10"></script>
+<script src="js/tabs/cash.js?v=10"></script>
+<script src="js/tabs/mkt.js?v=10"></script>
+<script src="js/tabs/partners.js?v=10"></script>
+<script src="js/tabs/unrec.js?v=10"></script>
+<script src="js/tabs/settings.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>

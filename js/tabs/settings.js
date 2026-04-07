@@ -85,6 +85,21 @@ function rSettings(){
     <div style="margin-top:6px;font-size:9px;color:#f59e0b">⚠ Паролі зберігаються в коді (config.js). Для збереження змін потрібен коміт.</div>
   </div>`:"";
 
+  // Users management
+  const allUsers=Object.entries({...USERS_DEFAULT,...USERS});
+  const usersHTML=isOwner?`<div class="cc"><h3>Користувачі (${allUsers.length})</h3>
+    <div class="info">Для Google авторизації додайте лист "Users" в Google Sheet з колонками: email, name, role, tabs, phone, active</div>
+    <table class="tbl"><tr><th>Email</th><th>Ім'я</th><th class="r">Роль</th><th class="r">Телефон</th><th class="r">Активний</th></tr>
+    ${allUsers.map(([email,u])=>`<tr>
+      <td style="font-size:9px">${email}</td>
+      <td style="font-size:9px">${u.name||"—"}</td>
+      <td class="r" style="font-size:9px">${u.role||"—"}</td>
+      <td class="r" style="font-size:9px">${u.phone||"—"}</td>
+      <td class="r">${u.active!==false?"<span style='color:#10b981'>✓</span>":"<span class='rd'>✗</span>"}</td>
+    </tr>`).join("")}</table>
+    ${GOOGLE_CLIENT_ID?"":'<div style="margin-top:8px;font-size:9px;color:#f59e0b">⚠ GOOGLE_CLIENT_ID не задано. Google Sign-In вимкнено, працюють тільки паролі.</div>'}
+  </div>`:"";
+
   // Data sources
   const srcHTML=`<div class="cc"><h3>Джерела даних</h3>
     <table class="tbl">
@@ -110,6 +125,7 @@ function rSettings(){
       <tr><td>Банк комісія %</td><td class="r"><input type="number" value="${SETS.fopBank}" step="0.5" style="width:55px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:2px 5px;border-radius:3px;font-family:inherit;font-size:11px" onchange="SETS.fopBank=parseFloat(this.value);render()"></td></tr>
     </table></div>
     ${rolesHTML}
+    ${usersHTML}
     ${pwHTML}
     ${settingsHTML}
     <div class="cc"><h3>Курси НБУ</h3><p style="font-size:11px">€1 = ${FX.EUR.toFixed(4)} ₴ · $1 = ${FX.USD.toFixed(4)} ₴</p></div>

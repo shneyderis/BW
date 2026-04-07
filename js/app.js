@@ -13,22 +13,52 @@ const COB={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9
 // ========== GLOBALS ==========
 let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
 let wcLoaded=false,wcError="",SP={},IG={posts:[]},MA={campaigns:[]},mktLoaded=false,mktError="";
-// 1C data
 let C1={sales:[],partners:[],products:[],osv:[],bank:[],loaded:false};
+let USERS={}; // email → {name,role,tabs,phone,active}
 
 // ========== AUTH ==========
-// ROLES defined in config.js
-let currentRole=null;
+let currentRole=null,currentUser=null; // currentUser = {email,name,role,picture}
+
+// Google Sign-In callback
+window.handleGoogleAuth=function(response){
+  const payload=JSON.parse(atob(response.credential.split('.')[1]));
+  const email=payload.email;
+  const user=USERS[email]||USERS_DEFAULT[email];
+  if(!user||!user.active){document.getElementById("login-err").textContent="Доступ заборонено: "+email;return}
+  const role=user.role||"manager";
+  const tabs=user.tabs||ROLES[role]?.tabs||[];
+  currentRole=role;
+  currentUser={email,name:user.name||payload.name||email,role,picture:payload.picture||""};
+  sessionStorage.setItem("bw_role",role);
+  sessionStorage.setItem("bw_user",JSON.stringify(currentUser));
+  sessionStorage.setItem("bw_ts",String(Date.now()));
+  document.getElementById("user-info").innerHTML=currentUser.name;
+  showApp(tabs);
+};
 
 function doLogin(){
   const p=document.getElementById("login-pass").value;
   for(const[role,cfg]of Object.entries(ROLES)){
-    if(cfg.password===p){currentRole=role;sessionStorage.setItem("bw_role",role);sessionStorage.setItem("bw_ts",String(Date.now()));showApp(cfg.tabs);return}
+    if(cfg.password===p){
+      currentRole=role;
+      currentUser={email:"",name:role,role,picture:""};
+      sessionStorage.setItem("bw_role",role);
+      sessionStorage.setItem("bw_user",JSON.stringify(currentUser));
+      sessionStorage.setItem("bw_ts",String(Date.now()));
+      document.getElementById("user-info").innerHTML=role;
+      showApp(cfg.tabs);return}
   }
-  document.getElementById("login-err").textContent="Неверный пароль";
+  document.getElementById("login-err").textContent="Невірний пароль";
 }
 
-function doLogout(){sessionStorage.removeItem("bw_role");currentRole=null;wcLoaded=false;wcError="";WO=[];WP=[];WCU=[];document.getElementById("app").classList.add("hidden");document.getElementById("login-screen").classList.remove("hidden");document.getElementById("login-pass").value=""}
+function doLogout(){
+  sessionStorage.clear();currentRole=null;currentUser=null;
+  wcLoaded=false;wcError="";WO=[];WP=[];WCU=[];
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("login-screen").classList.remove("hidden");
+  document.getElementById("login-pass").value="";
+  document.getElementById("user-info").innerHTML="";
+}
 
 function showApp(tabs){
   document.getElementById("login-screen").classList.add("hidden");
@@ -42,15 +72,60 @@ function showApp(tabs){
   load();
 }
 
+// Init Google Sign-In button
+(function(){
+  if(GOOGLE_CLIENT_ID){
+    window.addEventListener("load",()=>{
+      if(window.google&&google.accounts){
+        google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleAuth});
+        google.accounts.id.renderButton(document.getElementById("google-btn"),{theme:"filled_black",size:"large",text:"signin_with",width:220});
+      }
+    });
+  } else {
+    // Hide Google button if no client ID
+    const gb=document.getElementById("google-btn");if(gb)gb.style.display="none";
+    const sep=gb?.previousElementSibling;if(sep&&sep.textContent.includes("або"))sep.style.display="none";
+  }
+})();
+
 // Auto-login from session with 30-min timeout
 (function(){
   const r=sessionStorage.getItem("bw_role");
   const ts=parseInt(sessionStorage.getItem("bw_ts")||"0");
-  if(r&&ROLES[r]&&(Date.now()-ts<30*60*1000)){currentRole=r;showApp(ROLES[r].tabs)}
-  else{sessionStorage.removeItem("bw_role");sessionStorage.removeItem("bw_ts")}
+  if(r&&(Date.now()-ts<30*60*1000)){
+    currentRole=r;
+    try{currentUser=JSON.parse(sessionStorage.getItem("bw_user"))}catch(e){}
+    if(currentUser)document.getElementById("user-info").innerHTML=currentUser.name||r;
+    const user=currentUser&&currentUser.email?USERS[currentUser.email]||USERS_DEFAULT[currentUser.email]:null;
+    const tabs=user?.tabs||ROLES[r]?.tabs||[];
+    showApp(tabs);
+  } else{sessionStorage.clear()}
 })();
+
 // Reset timeout on activity
 ["click","keydown","scroll"].forEach(e=>document.addEventListener(e,()=>{if(currentRole)sessionStorage.setItem("bw_ts",String(Date.now()))}));
+
+// Load users from Sheets
+async function loadUsers(){
+  try{
+    const data=await csvF("Users");
+    if(data.length){
+      data.forEach(r=>{
+        const email=(gv(r,"email")||"").toLowerCase().trim();
+        if(!email)return;
+        USERS[email]={
+          name:gv(r,"name")||gv(r,"ім")||"",
+          role:gv(r,"role")||gv(r,"роль")||"manager",
+          tabs:(gv(r,"tabs")||"").split(",").map(s=>s.trim()).filter(Boolean),
+          phone:gv(r,"phone")||gv(r,"телефон")||"",
+          active:(gv(r,"active")||"true")!=="false"
+        };
+        if(!USERS[email].tabs.length)USERS[email].tabs=null; // use role defaults
+      });
+      console.log("Users loaded:",Object.keys(USERS).length);
+    }
+  }catch(e){console.warn("Users sheet not found, using defaults")}
+}
 
 // ========== HELPERS ==========
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -65,7 +140,7 @@ function sT(t){return(t.src==="2fMK"||t.src==="2fKiev")?"2Ф":"1Ф"}
 // ========== LOAD ==========
 async function load(){
   try{
-    await Promise.all([nbuF(), loadSettings()]);
+    await Promise.all([nbuF(), loadSettings(), loadUsers()]);
     const[t,s,b,sd]=await Promise.all([csvF("Dashboard_Data"),csvF("3_Stock"),(async()=>{try{const d=await csvF("PRIVAT_BALANCES",SID2);if(d.length){console.log("Balance: PRIVAT_BALANCES from BW_Accounts",d.length,"rows");return d}}catch(e){console.warn("PRIVAT_BALANCES from SID2 failed:",e.message)}try{const d=await csvF("6_Balances");if(d.length){console.log("Balance: 6_Balances fallback",d.length,"rows");return d}}catch(e){}return[]})(),csvF("Stock_Data").catch(()=>[])]);
     T=t.map(x=>{const mo=String(pn(gv(x,"month"))||gv(x,"month")||"");return{mo,money:gv(x,"money")||"",name:gv(x,"name")||"",alias:gv(x,"alias")||"",cat:gv(x,"category")||"",geo:gv(x,"geo")||"",mgr:gv(x,"менеджер")||gv(x,"manager")||"",amt:pn(gv(x,"sum_uah")),com:pn(gv(x,"commission")),sm:pn(gv(x,"sum_money")),src:gv(x,"source")||""}}).filter(x=>{const m=parseInt(x.mo);return m>=202001&&!IGN.includes(x.cat)&&x.cat!==""});
     T.forEach(x=>{x.yr=x.mo.substring(0,4);x.mm=x.mo.substring(4,6);x.ym=x.yr+"-"+x.mm;x.tp=x.amt>0?"Доход":"Расход";x.nt=net(x);x.st=sT(x)});
