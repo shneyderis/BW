@@ -5,12 +5,16 @@ async function loadMkt(){
   if(mktLoaded)return;
   try{
     // Все дані ТІЛЬКИ з Google Sheets (синхронізовані sync.gs)
-    const[lists,camps,igPosts,metaAds]=await Promise.all([
+    const[lists,camps,igPosts,metaAds,add1]=await Promise.all([
       csvF("SP_Lists").catch(()=>[]),
       csvF("SP_Campaigns").catch(()=>[]),
       csvF("IG_Posts").catch(()=>[]),
-      csvF("Meta_Ads").catch(()=>[])
+      csvF("Meta_Ads").catch(()=>[]),
+      csvF("ADD1").catch(()=>[])
     ]);
+
+    // Meta Ads: prefer ADD1 (manual export from Ads Manager) over Meta_Ads (API)
+    const adsSource=(add1||[]).length?add1:metaAds;
 
     SP.lists=(lists||[]).map(l=>({
       name:gv(l,"name")||"",
@@ -48,24 +52,33 @@ async function loadMkt(){
     })).sort((a,b)=>(b.timestamp||"").localeCompare(a.timestamp||""));
 
     // Meta Ads
-    MA.campaigns=(metaAds||[]).map(a=>({
-      id:gv(a,"campaign_id")||"",
-      name:gv(a,"campaign_name")||"",
-      status:gv(a,"status")||"",
-      objective:gv(a,"objective")||"",
-      date_start:gv(a,"date_start")||"",
-      date_stop:gv(a,"date_stop")||"",
-      spend:parseFloat(gv(a,"spend"))||0,
-      impressions:pn(gv(a,"impressions")),
-      reach:pn(gv(a,"reach")),
-      clicks:pn(gv(a,"clicks")),
-      ctr:parseFloat(gv(a,"ctr"))||0,
-      cpc:parseFloat(gv(a,"cpc"))||0,
-      cpm:parseFloat(gv(a,"cpm"))||0,
-      link_clicks:pn(gv(a,"actions_link_click")),
-      purchases:pn(gv(a,"actions_purchase")),
-      purchase_value:parseFloat(gv(a,"action_values_purchase"))||0
-    })).sort((a,b)=>b.spend-a.spend);
+    // Parse ads from ADD1 (Ads Manager export) or Meta_Ads (API)
+    MA.campaigns=(adsSource||[]).map(a=>{
+      // ADD1 columns: Назва оголошення, Показ реклами, Витрачена сума (EUR), Покази, Охоплення, Кліки посилання, CTR, CPC, CPM, Результати, Індикатор результату
+      const name=gv(a,"назва оголошення")||gv(a,"campaign_name")||"";
+      const status=gv(a,"показ реклами")||gv(a,"status")||"";
+      const spend=parseFloat(gv(a,"витрачена сума")||gv(a,"spend")||0);
+      const impressions=pn(gv(a,"покази")||gv(a,"impressions"));
+      const reach=pn(gv(a,"охоплення")||gv(a,"reach"));
+      const linkClicks=pn(gv(a,"кліки посилання")||gv(a,"clicks"));
+      const allClicks=pn(gv(a,"кліки (усі)")||0);
+      const ctr=parseFloat(gv(a,"ctr (рейтинг")||gv(a,"ctr")||0);
+      const cpc=parseFloat(gv(a,"cpc (ціна за клік")||gv(a,"cpc")||0);
+      const cpm=parseFloat(gv(a,"cpm (ціна за 1000")||gv(a,"cpm")||0);
+      const results=pn(gv(a,"результати")||0);
+      const resultType=gv(a,"індикатор результату")||"";
+      const costPerResult=parseFloat(gv(a,"ціна за результати")||0);
+      const dateStart=gv(a,"початок звітності")||gv(a,"date_start")||"";
+      const dateEnd=gv(a,"завершення звітності")||gv(a,"date_stop")||"";
+      const quality=gv(a,"оцінювання якості")||"";
+      const engRate=gv(a,"оцінка коефіцієнта взаємодії")||"";
+      const convRate=gv(a,"оцінка коефіцієнта конверсії")||"";
+      const purchases=resultType.includes("purchase")?results:0;
+      const landingViews=pn(gv(a,"перегляди цільової")||0);
+      return{name,status,spend,impressions,reach,clicks:linkClicks||allClicks,ctr,cpc,cpm,
+        results,resultType,costPerResult,purchases,purchase_value:0,
+        date_start:dateStart,date_stop:dateEnd,quality,engRate,convRate,landingViews};
+    }).filter(a=>a.name).sort((a,b)=>b.spend-a.spend);
 
     console.log("MKT loaded: SP",SP.campaigns.length,"camps, IG",IG.posts.length,"posts, Ads",MA.campaigns.length,"campaigns");
   }catch(e){mktError=e.message;console.error("MKT load error:",e)}
@@ -270,21 +283,31 @@ async function rMkt(){
       ${igCorrelHTML||`<div class="info">Кореляція пости→замовлення: WC_Orders ${WO.length?WO.length+" записів, але дати не збігаються":"порожній"}. Для кореляції потрібні WC замовлення з датами.</div>`}
     `:'<div class="info">IG_Posts порожній. Запустіть syncIGPosts() в Apps Script.</div>'}
 
-    ${adsTotalSpend>0?`<div class="sec">📢 Meta Ads</div>
+    ${adCamps.length?`<div class="sec">📢 Meta / Facebook Ads</div>
       <div class="kpis">
-        <div class="kpi"><div class="l">Витрати</div><div class="v rd">${ff(adsTotalSpend)}$</div><div class="s">${adCamps.length} кампаній</div></div>
-        <div class="kpi"><div class="l">Покази</div><div class="v">${ff(adsTotalImpr)}</div><div class="s">CTR ${adsCTR.toFixed(2)}%</div></div>
-        <div class="kpi"><div class="l">ROAS</div><div class="v" style="color:${adsROAS>=3?"#10b981":adsROAS>=1?"#f59e0b":"#ef4444"}">${adsROAS.toFixed(2)}x</div></div>
+        <div class="kpi"><div class="l">Витрати €</div><div class="v rd">${ff(adsTotalSpend)}€</div><div class="s">${adCamps.filter(a=>a.spend>0).length} оголошень</div></div>
+        <div class="kpi"><div class="l">Покази</div><div class="v">${ff(adsTotalImpr)}</div><div class="s">CPM ${adsTotalImpr>0?(adsTotalSpend/adsTotalImpr*1000).toFixed(2):0}€</div></div>
+        <div class="kpi"><div class="l">Охоплення</div><div class="v" style="color:#8b5cf6">${ff(adCamps.reduce((s,a)=>s+a.reach,0))}</div></div>
+        <div class="kpi"><div class="l">Кліки</div><div class="v" style="color:#3b82f6">${ff(adsTotalClicks)}</div><div class="s">CPC ${adsTotalClicks>0?(adsTotalSpend/adsTotalClicks).toFixed(2):0}€</div></div>
+        <div class="kpi"><div class="l">Покупки</div><div class="v g">${adCamps.reduce((s,a)=>s+a.purchases,0)}</div><div class="s">CPA ${(()=>{const p=adCamps.reduce((s,a)=>s+a.purchases,0);return p>0?(adsTotalSpend/p).toFixed(2):"—"})()}€</div></div>
+        <div class="kpi"><div class="l">Ціна/результат</div><div class="v">${(()=>{const r=adCamps.reduce((s,a)=>s+a.results,0);return r>0?(adsTotalSpend/r).toFixed(2):"—"})()}€</div><div class="s">${ff(adCamps.reduce((s,a)=>s+a.results,0))} результатів</div></div>
       </div>
-      <div class="cc"><h3>Кампанії</h3><table class="tbl"><tr><th>Кампанія</th><th class="r">Витрати</th><th class="r">Покази</th><th class="r">Кліки</th><th class="r">ROAS</th></tr>
-        ${adCamps.filter(a=>a.spend>0).map(a=>{const roas=a.spend>0?(a.purchase_value/a.spend):0;return`<tr>
-          <td style="font-size:9px">${(a.name||"—").substring(0,30)}</td>
-          <td class="r rd">${ff(a.spend)}$</td>
+      <div class="cc"><h3>Оголошення (${adCamps.filter(a=>a.spend>0).length} з витратами)</h3>
+        <table class="tbl"><tr><th>Оголошення</th><th class="r">Статус</th><th class="r">Витрати €</th><th class="r">Покази</th><th class="r">Кліки</th><th class="r">Результати</th><th class="r">Ціна/рез.</th><th class="r">Якість</th></tr>
+        ${adCamps.filter(a=>a.spend>0).map(a=>{
+          const stClr=a.status==="active"?"#10b981":a.status.includes("not_")?"#7d8196":"#f59e0b";
+          const qClr=a.quality.includes("Вище")?"#10b981":a.quality.includes("Нижче")?"#ef4444":a.quality.includes("Середній")?"#f59e0b":"#7d8196";
+          return`<tr>
+          <td style="font-size:9px">${(a.name||"—").substring(0,28)}</td>
+          <td class="r" style="color:${stClr};font-size:8px">${a.status==="active"?"●":a.status==="inactive"?"○":"◌"}</td>
+          <td class="r rd">${a.spend.toFixed(2)}€</td>
           <td class="r">${ff(a.impressions)}</td>
           <td class="r" style="color:#3b82f6">${ff(a.clicks)}</td>
-          <td class="r ${roas>=2?"g":roas<1?"rd":""}">${roas.toFixed(2)}x</td>
+          <td class="r g">${a.results||"—"}</td>
+          <td class="r">${a.costPerResult?a.costPerResult.toFixed(2)+"€":"—"}</td>
+          <td class="r" style="color:${qClr};font-size:8px">${a.quality||"—"}</td>
         </tr>`}).join("")}</table></div>
-      <div class="cc"><h3>Витрати vs Дохід</h3><canvas id="cAdsBar" height="120"></canvas></div>
+      <div class="cc"><h3>Витрати по оголошеннях</h3><canvas id="cAdsBar" height="${Math.max(80,adCamps.filter(a=>a.spend>0).length*18)}"></canvas></div>
     `:""}
   `;
 
@@ -311,10 +334,10 @@ async function rMkt(){
 
   // Ads spend vs revenue chart
   if(adsTotalSpend>0&&document.getElementById("cAdsBar")){
-    const adChD=adCamps.filter(a=>a.spend>0).slice(0,10);
-    dc("cAdsBar");CH.cAdsBar=new Chart(document.getElementById("cAdsBar"),{type:"bar",data:{labels:adChD.map(a=>(a.name||"?").substring(0,15)),datasets:[
-      {label:"Витрати $",data:adChD.map(a=>a.spend),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2},
-      {label:"Дохід $",data:adChD.map(a=>a.purchase_value),backgroundColor:"#10b981",borderRadius:2}
-    ]},options:{indexAxis:"y",responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>"$"+fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
+    const adChD=adCamps.filter(a=>a.spend>0).sort((a,b)=>b.spend-a.spend).slice(0,15);
+    dc("cAdsBar");CH.cAdsBar=new Chart(document.getElementById("cAdsBar"),{type:"bar",data:{labels:adChD.map(a=>(a.name||"?").substring(0,20)),datasets:[
+      {label:"Витрати €",data:adChD.map(a=>a.spend),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2},
+      {label:"Результати",data:adChD.map(a=>a.results),backgroundColor:"#10b981",borderRadius:2}
+    ]},options:{indexAxis:"y",responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)+"€"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
   }
 }
