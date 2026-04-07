@@ -30,3 +30,4 @@ body{background:#0c0e13;color:#e4e5ea;font-family:'DM Sans',sans-serif;max-width
 #login-screen button{background:#9f1239;color:#fff;border:none;padding:8px 24px;border-radius:6px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
 #login-screen .err{color:#ef4444;font-size:10px;margin-top:6px;height:14px}
 .logout-btn{background:none;border:1px solid #232738;color:#7d8196;font-size:9px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit;margin-left:auto}
+@media(max-width:500px){body{padding:8px 10px 30px}.hdr h1{font-size:14px}.kpi .v{font-size:15px}.sh-kpi .v{font-size:14px}.tbl{font-size:9px}.tbl th,.tbl td{padding:3px 2px}.cc{padding:8px}.tab{padding:4px 8px;font-size:9px}.flt{font-size:9px;padding:3px 6px}.kpis{grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:4px}.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}}

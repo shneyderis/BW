@@ -8,10 +8,10 @@ function rExp(f){
   const prevFt=T.filter(t=>t.tp==="Расход"&&!isA(t)&&t.yr===py);const prevBc={};prevFt.forEach(t=>{prevBc[t.cat||"???"]=(prevBc[t.cat||"???"]||0)+t.nt});
   const totalE=so.reduce((s,x)=>s+Math.abs(x.a),0);
   el.innerHTML=`
-    <div class="cc"><h3>OPEX (без осн.фондов)</h3><canvas id="c4" height="${Math.max(120,so.length*14)}"></canvas></div>
-    <div class="cc"><h3>Детализация</h3><table class="tbl"><tr><th>Категория</th><th class="r">Сумма</th><th class="r">%выр</th><th class="r">${py}</th><th class="r">Δ</th></tr>
+    <div class="cc"><h3>OPEX (без осн.фондів)</h3><canvas id="c4" height="${Math.max(120,so.length*14)}"></canvas></div>
+    <div class="cc"><h3>Деталізація</h3><table class="tbl"><tr><th>Категорія</th><th class="r">Сума</th><th class="r">%выр</th><th class="r">${py}</th><th class="r">Δ</th></tr>
       ${so.map(e=>{const cv=toCur(Math.abs(e.a));const pv=toCur(Math.abs(prevBc[e.c]||0));const pct=revT?(Math.abs(e.a)/revT*100).toFixed(1):"—";const d=pv?((cv-pv)/pv*100).toFixed(0):"—";return'<tr><td>'+e.c.substring(0,24)+'</td><td class="r rd">'+ff(cv)+c$+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(pv)+'</td><td class="r" style="color:'+(d>0?"#ef4444":"#10b981")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}
-      <tr class="tot"><td>Итого OPEX</td><td class="r rd">${ff(toCur(totalE))}${c$}</td><td class="r">${revT?(totalE/revT*100).toFixed(1):"—"}%</td><td></td><td></td></tr></table></div>`;
+      <tr class="tot"><td>Разом OPEX</td><td class="r rd">${ff(toCur(totalE))}${c$}</td><td class="r">${revT?(totalE/revT*100).toFixed(1):"—"}%</td><td></td><td></td></tr></table></div>`;
   dc("c4");CH.c4=new Chart(document.getElementById("c4"),{type:"bar",data:{labels:so.map(e=>e.c.substring(0,20)),datasets:[{data:so.map(e=>toCur(Math.abs(e.a))),backgroundColor:"rgba(239,68,68,.5)",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
   // Monthly stacked bar for top-5 categories
   const top5=so.slice(0,5).map(x=>x.c);

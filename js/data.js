@@ -8,6 +8,14 @@ function gv(o,s){for(const k of Object.keys(o)){if(k.trim().toLowerCase().starts
 function toCur(v){if(SETS.dispCur==="EUR")return v/FX.EUR;if(SETS.dispCur==="USD")return v/FX.USD;return v}
 function cs(){return SETS.dispCur==="EUR"?"€":SETS.dispCur==="USD"?"$":"₴"}
 
+// CSV export utility
+function exportCSV(filename,headers,rows){
+  const csvRows=[headers.join(",")];
+  rows.forEach(r=>{csvRows.push(r.map(c=>{const s=String(c==null?"":c);return s.includes(",")||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s}).join(","))});
+  const blob=new Blob(["\uFEFF"+csvRows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+
 async function csvF(sh,sid){
   const cacheKey="bw_csv_"+sh;
   try{
