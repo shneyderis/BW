@@ -281,12 +281,11 @@ async function rMkt(){
         `:`<div class="kpi"><div class="l">Статус</div><div class="v" style="color:#f59e0b">Історія</div><div class="s">insights недоступні (>37 міс)</div></div>`}
       </div>
       <div class="cc"><h3>Кампанії (${adCamps.length})</h3><table class="tbl"><tr><th>Кампанія</th><th class="r">Статус</th><th class="r">Старт</th>${adsTotalSpend>0?'<th class="r">Витрати</th><th class="r">Покази</th><th class="r">Кліки</th>':""}</tr>
-        ${adCamps.map(a=>{const st=a.status==="ACTIVE"?"#10b981":a.status==="PAUSED"?"#f59e0b":"#7d8196";return`<tr>
+        ${adCamps.map(a=>{const st=a.status==="ACTIVE"?"#10b981":a.status==="PAUSED"?"#f59e0b":"#7d8196";const roas=a.spend>0?(a.purchase_value/a.spend):0;return`<tr>
           <td style="font-size:9px">${(a.name||"—").substring(0,30)}</td>
           <td class="r" style="color:${st};font-size:9px">${a.status||""}</td>
           <td class="r" style="color:#7d8196;font-size:9px">${(a.date_start||"").substring(0,10)}</td>
           ${adsTotalSpend>0?`<td class="r rd">${ff(a.spend)}$</td><td class="r">${ff(a.impressions)}</td><td class="r" style="color:#3b82f6">${ff(a.clicks)}</td>`:""}
-          <td class="r ${rc}">${roas.toFixed(2)}x</td>
         </tr>`}).join("")}</table></div>
       <div class="cc"><h3>Витрати vs Дохід по кампаніях</h3><canvas id="cAdsBar" height="120"></canvas></div>
     `:`<div class="info">${adCamps.length?`Meta Ads: знайдено ${adCamps.length} кампаній, але витрати = 0₴ за останні 90 днів. Можливо реклама не запущена або кампанії архівні.`:"Meta_Ads порожній. Запустіть syncMetaAds() в Apps Script."}</div>`}
