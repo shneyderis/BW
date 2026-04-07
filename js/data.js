@@ -11,8 +11,13 @@ function cs(){return SETS.dispCur==="EUR"?"€":SETS.dispCur==="USD"?"$":"₴"}
 async function csvF(sh,sid){
   const cacheKey="bw_csv_"+sh;
   try{
-    const r=await fetch(`https://docs.google.com/spreadsheets/d/${sid||SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`);
-    const t=await r.text();const rows=[];let c=[],q=false,f="";
+    const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),8000);
+    const r=await fetch(`https://docs.google.com/spreadsheets/d/${sid||SID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sh)}`,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok){console.warn("csvF("+sh+"): HTTP "+r.status);return[]}
+    const ct=r.headers.get("content-type")||"";
+    if(ct.includes("html")){console.warn("csvF("+sh+"): got HTML, sheet probably missing");return[]}
+    const t=await r.text();if(!t||t.length<5)return[];const rows=[];let c=[],q=false,f="";
     for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}
     if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];
     const h=rows[0].map(x=>x.trim());const data=rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o});
