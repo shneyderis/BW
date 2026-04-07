@@ -4,12 +4,16 @@
 async function loadMkt(){
   if(mktLoaded)return;
   try{
-    const[lists,camps,igPosts,metaAds]=await Promise.all([
+    // Timeout wrapper for slow/missing sheets
+    function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),ms))])}
+    const[lists,camps]=await Promise.all([
       csvF("SP_Lists").catch(()=>[]),
-      csvF("SP_Campaigns").catch(()=>[]),
-      csvF("IG_Posts").catch(()=>[]),
-      csvF("Meta_Ads").catch(()=>[])
+      csvF("SP_Campaigns").catch(()=>[])
     ]);
+    // IG/Ads — load separately with timeout, don't block SP
+    let igPosts=[],metaAds=[];
+    try{igPosts=await withTimeout(csvF("IG_Posts"),5000)}catch(e){console.warn("IG_Posts:",e.message)}
+    try{metaAds=await withTimeout(csvF("Meta_Ads"),5000)}catch(e){console.warn("Meta_Ads:",e.message)}
 
     SP.lists=(lists||[]).map(l=>({
       name:gv(l,"name")||"",
