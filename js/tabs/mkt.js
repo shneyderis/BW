@@ -199,50 +199,39 @@ async function rMkt(){
     }
   }
 
-  // ========== BUILD TIMELINE ==========
-  // Merge emails, IG posts, and orders on one date axis
-  const tlEvents=[];
-  // Emails
-  recentCamp.forEach(c=>{if(c.send_date)tlEvents.push({date:c.send_date.substring(0,10),type:"email",label:(c.name||"").substring(0,20),value:c.all_email_qty,detail:`Sent:${ff(c.all_email_qty)} Open:${(c.all_email_qty>0?(c.opened_email_qty/c.all_email_qty*100):0).toFixed(0)}%`})});
-  // IG posts
-  igPosts.forEach(p=>{if(p.date)tlEvents.push({date:p.date,type:"ig",label:(p.caption||"").substring(0,20),value:p.likes,detail:`❤${p.likes} Reach:${ff(p.reach)}`})});
+  // ========== BUILD TIMELINE (30 days, daily) ==========
+  const tlStart=new Date();tlStart.setDate(tlStart.getDate()-30);
+  const tlStartStr=tlStart.toISOString().substring(0,10);
+  const tlDays=[];for(let d=new Date(tlStart);d<=new Date();d.setDate(d.getDate()+1))tlDays.push(d.toISOString().substring(0,10));
+
   // Orders by day
   const ordByDay={};
   corrOrders.filter(o=>o.status==="completed"||o.status==="processing").forEach(o=>{
-    const d=(o.date_created||"").replace(/ .*/,"").replace("T","").substring(0,10);
+    const d=(o.date_created||"").replace(/ .*/,"").substring(0,10).replace("T","");
     if(d.length===10){if(!ordByDay[d])ordByDay[d]={cnt:0,rev:0};ordByDay[d].cnt++;ordByDay[d].rev+=parseFloat(o.total||0)}
   });
 
-  // Build timeline chart data (last 90 days)
-  const tlStart=new Date();tlStart.setDate(tlStart.getDate()-90);
-  const tlStartStr=tlStart.toISOString().substring(0,10);
-  const tlDays=[];for(let d=new Date(tlStart);d<=new Date();d.setDate(d.getDate()+1))tlDays.push(d.toISOString().substring(0,10));
-  const tlEmails={},tlIG={},tlOrd={};
-  tlEvents.filter(e=>e.date>=tlStartStr).forEach(e=>{
-    if(e.type==="email")tlEmails[e.date]=(tlEmails[e.date]||0)+1;
-    if(e.type==="ig")tlIG[e.date]=(tlIG[e.date]||0)+1;
-  });
-  // Weekly aggregation for readability
-  const tlWeeks=[];
-  for(let i=0;i<tlDays.length;i+=7){
-    const wDays=tlDays.slice(i,i+7);
-    const wLabel=wDays[0].substring(5);
-    tlWeeks.push({
-      label:wLabel,
-      emails:wDays.reduce((s,d)=>s+(tlEmails[d]||0),0),
-      ig:wDays.reduce((s,d)=>s+(tlIG[d]||0),0),
-      orders:wDays.reduce((s,d)=>s+(ordByDay[d]?.cnt||0),0),
-      revenue:wDays.reduce((s,d)=>s+(ordByDay[d]?.rev||0),0)
-    });
-  }
-  const hasTimeline=tlWeeks.some(w=>w.emails||w.ig||w.orders);
+  // IG posts by day (reach as value)
+  const igByDay={};
+  igPosts.forEach(p=>{if(p.date&&p.date>=tlStartStr){igByDay[p.date]={reach:p.reach,likes:p.likes,label:(p.caption||"").substring(0,25)}}});
+
+  // Emails by day (sent as value)
+  const emailByDay={};
+  recentCamp.forEach(c=>{const d=(c.send_date||"").substring(0,10);if(d&&d>=tlStartStr){if(!emailByDay[d])emailByDay[d]={sent:0,labels:[]};emailByDay[d].sent+=c.all_email_qty;emailByDay[d].labels.push((c.name||"").substring(0,20))}});
+
+  // Scale IG reach and email sent to fit on orders axis
+  const maxOrd=Math.max(...tlDays.map(d=>ordByDay[d]?.cnt||0),1);
+  const maxIGReach=Math.max(...Object.values(igByDay).map(v=>v.reach),1);
+  const maxEmailSent=Math.max(...Object.values(emailByDay).map(v=>v.sent),1);
+
+  const hasTimeline=tlDays.some(d=>ordByDay[d]||igByDay[d]||emailByDay[d]);
 
   // ========== RENDER ==========
   el.innerHTML=`
     ${mktError?'<div class="warn">⚠ '+mktError+'</div>':""}
 
-    ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline (90 днів)</div>
-    <div class="cc"><h3>Активності та замовлення по тижнях</h3><canvas id="cTimeline" height="130"></canvas></div>`:""}
+    ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline (30 днів)</div>
+    <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях)</h3><canvas id="cTimeline" height="160"></canvas></div>`:""}
 
     <div class="sec">📧 Email-маркетинг (SendPulse)</div>
     <div class="kpis">
@@ -353,17 +342,43 @@ async function rMkt(){
   `;
 
   // === CHARTS ===
-  // Timeline
+  // Timeline (daily, 30 days)
   if(hasTimeline&&document.getElementById("cTimeline")){
+    // IG reach as scatter points (sized by reach)
+    const igPoints=tlDays.map((d,i)=>{const ig=igByDay[d];return ig?{x:i,y:ig.reach/500,label:ig.label,reach:ig.reach,likes:ig.likes}:null}).filter(Boolean);
+    // Email sent as scatter points
+    const emailPoints=tlDays.map((d,i)=>{const em=emailByDay[d];return em?{x:i,y:em.sent/200,label:em.labels.join(", "),sent:em.sent}:null}).filter(Boolean);
+
     dc("cTimeline");CH.cTimeline=new Chart(document.getElementById("cTimeline"),{type:"bar",
-      data:{labels:tlWeeks.map(w=>w.label),datasets:[
-        {label:"Замовлення",data:tlWeeks.map(w=>w.orders),backgroundColor:"#10b981",borderRadius:2,yAxisID:"y"},
-        {label:"📧 Розсилки",data:tlWeeks.map(w=>w.emails),backgroundColor:"#3b82f6",borderRadius:2,yAxisID:"y"},
-        {label:"📸 IG пости",data:tlWeeks.map(w=>w.ig),backgroundColor:"#e11d48",borderRadius:2,yAxisID:"y"},
-        {label:"Виручка ₴",data:tlWeeks.map(w=>w.revenue),type:"line",borderColor:"#f59e0b",borderWidth:2,pointRadius:3,pointBackgroundColor:"#f59e0b",tension:.3,yAxisID:"y1"}
+      data:{labels:tlDays.map(d=>d.substring(5)),datasets:[
+        {label:"Замовлення",data:tlDays.map(d=>ordByDay[d]?.cnt||0),backgroundColor:"rgba(16,185,129,.6)",borderRadius:2,yAxisID:"y",order:2},
+        {label:"Виручка ₴",data:tlDays.map(d=>ordByDay[d]?.rev||0),type:"line",borderColor:"#f59e0b",borderWidth:2,pointRadius:0,tension:.3,yAxisID:"y1",order:1},
+        {label:"📸 IG (reach/500)",data:tlDays.map(d=>{const ig=igByDay[d];return ig?ig.reach/500:null}),type:"scatter",
+          pointRadius:tlDays.map(d=>{const ig=igByDay[d];return ig?Math.max(4,Math.min(ig.reach/1000,15)):0}),
+          pointBackgroundColor:"rgba(225,29,72,.7)",pointBorderColor:"#e11d48",yAxisID:"y",order:0},
+        {label:"📧 Email (sent/200)",data:tlDays.map(d=>{const em=emailByDay[d];return em?em.sent/200:null}),type:"scatter",
+          pointRadius:tlDays.map(d=>{const em=emailByDay[d];return em?Math.max(5,Math.min(em.sent/300,15)):0}),
+          pointBackgroundColor:"rgba(59,130,246,.7)",pointBorderColor:"#3b82f6",pointStyle:"rectRot",yAxisID:"y",order:0}
       ]},
-      options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+(c.dataset.yAxisID==="y1"?ff(c.raw)+"₴":c.raw)}}},
-        scales:{x:{ticks:{color:"#7d8196",font:{size:8}},grid:{color:"#1e2130"}},y:{position:"left",ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y1:{position:"right",ticks:{color:"#f59e0b",font:{size:9},callback:v=>fm(v)+"₴"},grid:{display:false}}}}
+      options:{responsive:true,
+        plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},
+          tooltip:{callbacks:{
+            title:ctx=>{const i=ctx[0]?.dataIndex;return tlDays[i]||""},
+            label:ctx=>{
+              const ds=ctx.dataset.label;const d=tlDays[ctx.dataIndex];
+              if(ds.includes("IG")){const ig=igByDay[d];return ig?`📸 ${ig.label} — reach:${ff(ig.reach)} ❤${ig.likes}`:ds}
+              if(ds.includes("Email")){const em=emailByDay[d];return em?`📧 ${em.labels[0]} — sent:${ff(em.sent)}`:ds}
+              if(ds.includes("Виручка"))return`Виручка: ${ff(ctx.raw)}₴`;
+              return`Замовлень: ${ctx.raw}`;
+            }
+          }}
+        },
+        scales:{
+          x:{ticks:{color:"#7d8196",font:{size:7},maxTicksLimit:15},grid:{color:"#1e2130"}},
+          y:{position:"left",title:{display:true,text:"Замовлення",color:"#7d8196",font:{size:8}},ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},
+          y1:{position:"right",title:{display:true,text:"Виручка ₴",color:"#f59e0b",font:{size:8}},ticks:{color:"#f59e0b",font:{size:9},callback:v=>fm(v)+"₴"},grid:{display:false}}
+        }
+      }
     });
   }
 
