@@ -15,6 +15,8 @@ const CONFIG = {
   META_PAGE_ID: '160594843975804',
   META_PAGE_TOKEN: 'EAAoOzvxe9CgBRFCSgm1rq5MRWKL5YhVVx8ZCZAoYvkAc1GX4xJjnDyvrVBLjbliSAqWgZBU1ni90hqKRMFZCH4YWpdFcxY2n0nf11Lh7u1SR5PTSSSsgmlrFdC722nIZBVjALAmNc5ORRw3rvZBMUqVfsXASQyXy4LZBRZC2ogm3ZCIgJXQGSc8auXZBQZBvQpQp1tULBOHQIkZD', // Page token for FB Posts
   META_AD_ACCOUNT_ID: 'act_2205073692870663',
+  METORIK_UK_TOKEN: 'mtk_8yjvfwcu0gjhkn0z53wpliv6el0jfc1a7gvm5d8z6icvqvao',
+  METORIK_UK_BASE: 'https://app.metorik.com/api/v1',
 };
 
 // ============================================================
@@ -260,21 +262,15 @@ function syncFBPosts(ss) {
   if (!CONFIG.META_PAGE_ID) { Logger.log('No META_PAGE_ID'); return '0'; }
   const data = pageFetch_(CONFIG.META_PAGE_ID + '/posts?fields=id,created_time,message,permalink_url&limit=100');
   if (!data || !data.data) { Logger.log('No FB posts'); return '0 posts'; }
-  const rows = [['id','created_time','message','permalink_url','reach','engaged_users','clicks','reactions']];
+  const rows = [['id','created_time','message','permalink_url','reactions','comments','shares']];
   for (const p of data.data) {
-    let reach = 0, engaged = 0, clicks = 0, reactions = 0;
+    let reactions = 0, comments = 0, shares = 0;
     try {
-      const ins = pageFetch_(p.id + '/insights?metric=post_impressions_unique,post_engaged_users,post_clicks,post_reactions_by_type_total');
-      if (ins && ins.data) ins.data.forEach(m => {
-        const val = m.values && m.values[0] ? m.values[0].value : 0;
-        if (m.name === 'post_impressions_unique') reach = val;
-        if (m.name === 'post_engaged_users') engaged = val;
-        if (m.name === 'post_clicks') clicks = val;
-        if (m.name === 'post_reactions_by_type_total' && typeof val === 'object') reactions = Object.values(val).reduce((s,v)=>s+v,0);
-      });
+      const r = pageFetch_(p.id + '?fields=reactions.summary(true),comments.summary(true),shares');
+      if (r) { reactions = r.reactions?.summary?.total_count||0; comments = r.comments?.summary?.total_count||0; shares = r.shares?.count||0; }
     } catch(e) {}
     rows.push([p.id, p.created_time||'', (p.message||'').substring(0,200), p.permalink_url||'',
-      reach, engaged, clicks, reactions]);
+      reactions, comments, shares]);
   }
   writeSheet_(ss, 'FB_Posts', rows);
   return (rows.length-1) + ' posts';
@@ -307,6 +303,62 @@ function syncMetaAds(ss) {
   }
   writeSheet_(ss, 'Meta_Ads', rows);
   return (rows.length-1) + ' campaigns';
+}
+
+// ============================================================
+// METORIK UK (Wines of Ukraine)
+// ============================================================
+
+function mtkFetch_(ep) {
+  const url = CONFIG.METORIK_UK_BASE + ep + (ep.includes('?') ? '&' : '?') + 'token=' + CONFIG.METORIK_UK_TOKEN;
+  const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) { Logger.log('Metorik ' + resp.getResponseCode() + ': ' + resp.getContentText().substring(0, 150)); return null; }
+  return JSON.parse(resp.getContentText());
+}
+
+function syncUKOrders(ss) {
+  if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const rows = [['id','date_created','status','total','currency','billing_first_name','billing_last_name','billing_email','billing_city','billing_country','items_detail','utm_source']];
+  let page = 1;
+  while (page <= 10) {
+    const data = mtkFetch_('/orders/?per_page=100&page=' + page + '&orderby=date&order=desc');
+    if (!data || !data.data || !data.data.length) break;
+    for (const o of data.data) {
+      const b = o.billing || {};
+      const items = (o.line_items || []).map(i => (i.name||'') + ' x' + (i.quantity||1)).join('; ');
+      const utm = (o.meta_data || []).find(m => m.key === '_metorik_utm_source');
+      rows.push([o.id, o.date_created||'', o.status||'', parseFloat(o.total)||0, o.currency||'GBP',
+        b.first_name||'', b.last_name||'', b.email||'', b.city||'', b.country||'',
+        items, utm ? utm.value : '']);
+    }
+    if (data.data.length < 100) break;
+    page++;
+    Utilities.sleep(500);
+  }
+  writeSheet_(ss, 'UK_Orders', rows);
+  return (rows.length - 1) + ' UK orders';
+}
+
+function syncUKProducts(ss) {
+  if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const data = mtkFetch_('/products/?per_page=100');
+  if (!data || !data.data) { Logger.log('No UK products'); return '0'; }
+  const rows = [['id','name','sku','price','stock_quantity','stock_status','total_sales','categories']];
+  for (const p of data.data) {
+    const cats = (p.categories || []).map(c => c.name || '').join(', ');
+    rows.push([p.id, p.name||'', p.sku||'', parseFloat(p.price)||0,
+      p.stock_quantity||0, p.stock_status||'', p.total_sales||0, cats]);
+  }
+  writeSheet_(ss, 'UK_Products', rows);
+  return (rows.length - 1) + ' UK products';
+}
+
+function syncUK() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const log = [];
+  try { log.push(['UK Orders', syncUKOrders(ss), new Date()]); } catch(e) { log.push(['UK Orders', 'ERROR: ' + e.message, new Date()]); }
+  try { log.push(['UK Products', syncUKProducts(ss), new Date()]); } catch(e) { log.push(['UK Products', 'ERROR: ' + e.message, new Date()]); }
+  writeLog(ss, log);
 }
 
 // ============================================================
