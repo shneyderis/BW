@@ -267,19 +267,20 @@ function syncMetaAds(ss) {
   const since = new Date(); since.setFullYear(since.getFullYear() - 3);
   const sinceStr = Utilities.formatDate(since, 'GMT', 'yyyy-MM-dd');
   const untilStr = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd');
-  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective&limit=100');
+  const data = metaFetch_(CONFIG.META_AD_ACCOUNT_ID + '/campaigns?fields=id,name,status,objective,start_time&limit=100');
   if (!data || !data.data) { Logger.log('No Meta campaigns'); return '0'; }
   const rows = [['campaign_id','campaign_name','status','objective','date_start','date_stop',
     'spend','impressions','reach','clicks','ctr','cpc','cpm','link_clicks','purchases','purchase_value']];
   for (const camp of data.data) {
-    const ins = metaFetch_(camp.id + '/insights?fields=spend,impressions,reach,clicks,ctr,cpc,cpm,actions,action_values&time_range={"since":"'+sinceStr+'","until":"'+untilStr+'"}');
-    if (!ins || !ins.data || !ins.data.length) continue;
+    let ins = null;
+    try { ins = metaFetch_(camp.id + '/insights?fields=spend,impressions,reach,clicks,ctr,cpc,cpm,actions,action_values&time_range={"since":"'+sinceStr+'","until":"'+untilStr+'"}'); } catch(e) {}
+    if (!ins || !ins.data || !ins.data.length) ins = {data:[{}]};
     const d = ins.data[0];
     let linkClicks=0, purchases=0, purchaseValue=0;
     (d.actions||[]).forEach(a => { if(a.action_type==='link_click') linkClicks=parseInt(a.value||0); if(a.action_type==='purchase'||a.action_type==='offsite_conversion.fb_pixel_purchase') purchases=parseInt(a.value||0); });
     (d.action_values||[]).forEach(a => { if(a.action_type==='purchase'||a.action_type==='offsite_conversion.fb_pixel_purchase') purchaseValue=parseFloat(a.value||0); });
-    if (parseFloat(d.spend||0) > 0 || parseInt(d.impressions||0) > 0) {
-      rows.push([camp.id, camp.name||'', camp.status||'', camp.objective||'', sinceStr, untilStr,
+    if (true) { // Include all campaigns, even with 0 spend
+      rows.push([camp.id, camp.name||'', camp.status||'', camp.objective||'', camp.start_time||sinceStr, untilStr,
         parseFloat(d.spend||0), parseInt(d.impressions||0), parseInt(d.reach||0), parseInt(d.clicks||0),
         parseFloat(d.ctr||0).toFixed(2), parseFloat(d.cpc||0).toFixed(2), parseFloat(d.cpm||0).toFixed(2),
         linkClicks, purchases, purchaseValue.toFixed(2)]);
