@@ -48,7 +48,8 @@ async function loadMkt(){
       comments:pn(gv(p,"comments_count")),
       reach:pn(gv(p,"reach")),
       saved:pn(gv(p,"saved")),
-      engagement:pn(gv(p,"engagement"))
+      engagement:pn(gv(p,"engagement")),
+      media_url:gv(p,"media_url")||""
     })).sort((a,b)=>(b.timestamp||"").localeCompare(a.timestamp||""));
 
     // Meta Ads
@@ -367,14 +368,26 @@ async function rMkt(){
             <td class="r">${er}%</td>
           </tr>`}).join("")}</table></div>
         <div class="cc"><h3>📅 Останні пости</h3>
-          <table class="tbl"><tr><th>Пост</th><th class="r">Дата</th><th class="r">Тип</th><th class="r">❤</th><th class="r">Reach</th></tr>
-          ${igRecent.slice(0,10).map(p=>`<tr>
-            <td style="font-size:9px">${(p.caption||"—").substring(0,25)}</td>
-            <td class="r" style="color:#7d8196;font-size:9px">${p.date}</td>
-            <td class="r" style="font-size:8px">${p.media_type==="VIDEO"?"🎬":p.media_type==="CAROUSEL_ALBUM"?"📸":"🖼"}</td>
-            <td class="r" style="color:#e11d48">${p.likes}</td>
-            <td class="r" style="color:#8b5cf6">${ff(p.reach)}</td>
-          </tr>`).join("")}</table></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+          ${igRecent.slice(0,12).map(p=>{
+            const er=p.reach>0?((p.likes+p.comments)/p.reach*100).toFixed(1):"0";
+            const typeIcon=p.media_type==="VIDEO"?"🎬":p.media_type==="CAROUSEL_ALBUM"?"📸":"🖼";
+            const hasImg=p.media_url&&p.media_url.startsWith("http");
+            return`<div style="background:#0c0e13;border-radius:6px;border:1px solid #232738;overflow:hidden">
+              ${hasImg?`<a href="${p.permalink}" target="_blank" style="display:block"><img src="${p.media_url}" style="width:100%;height:130px;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'"></a>`
+              :`<div style="height:50px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#151821">${typeIcon}</div>`}
+              <div style="padding:8px">
+                <div style="font-size:9px;color:#7d8196;margin-bottom:4px">${p.date} · ${typeIcon} ${p.media_type}</div>
+                <div style="font-size:10px;line-height:1.3;margin-bottom:6px;max-height:36px;overflow:hidden">${(p.caption||"—").substring(0,80)}</div>
+                <div style="display:flex;justify-content:space-between;font-size:9px">
+                  <span style="color:#e11d48">❤ ${p.likes}</span>
+                  <span>💬 ${p.comments}</span>
+                  <span style="color:#8b5cf6">👁 ${ff(p.reach)}</span>
+                  <span style="color:#10b981">ER ${er}%</span>
+                </div>
+              </div>
+            </div>`}).join("")}
+          </div></div>
       </div>
 
       ${igCorrelHTML||`<div class="info">Кореляція пости→замовлення: WC_Orders ${WO.length?WO.length+" записів, але дати не збігаються":"порожній"}. Для кореляції потрібні WC замовлення з датами.</div>`}

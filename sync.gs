@@ -229,9 +229,9 @@ function discoverMetaIds() {
 
 function syncIGPosts(ss) {
   if (!ss) ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const data = metaFetch_(CONFIG.IG_ACCOUNT_ID + '/media?fields=id,timestamp,caption,media_type,permalink,like_count,comments_count&limit=50');
+  const data = metaFetch_(CONFIG.IG_ACCOUNT_ID + '/media?fields=id,timestamp,caption,media_type,permalink,like_count,comments_count,media_url,thumbnail_url&limit=50');
   if (!data || !data.data) { Logger.log('No IG posts'); return '0 posts'; }
-  const rows = [['id','timestamp','caption','media_type','permalink','like_count','comments_count','reach','saved','engagement']];
+  const rows = [['id','timestamp','caption','media_type','permalink','like_count','comments_count','reach','saved','engagement','media_url']];
   for (const p of data.data) {
     let reach = 0, saved = 0;
     try {
@@ -242,8 +242,9 @@ function syncIGPosts(ss) {
       });
     } catch(e) {}
     const likes = p.like_count || 0, comments = p.comments_count || 0;
+    const imgUrl = p.thumbnail_url || p.media_url || '';
     rows.push([p.id, p.timestamp||'', (p.caption||'').substring(0,200), p.media_type||'', p.permalink||'',
-      likes, comments, reach, saved, likes+comments+saved]);
+      likes, comments, reach, saved, likes+comments+saved, imgUrl]);
   }
   writeSheet_(ss, 'IG_Posts', rows);
   return (rows.length-1) + ' posts';
@@ -323,13 +324,21 @@ function syncUKOrders(ss) {
   while (page <= 10) {
     const data = mtkFetch_('/orders/?per_page=100&page=' + page + '&orderby=date&order=desc');
     if (!data || !data.data || !data.data.length) break;
+    if (page === 1 && data.data.length) Logger.log('UK order[0] keys: ' + Object.keys(data.data[0]).join(', '));
+    if (page === 1 && data.data.length) Logger.log('UK order[0]: ' + JSON.stringify(data.data[0]).substring(0, 500));
     for (const o of data.data) {
-      const b = o.billing || {};
-      const items = (o.line_items || []).map(i => (i.name||'') + ' x' + (i.quantity||1)).join('; ');
-      const utm = (o.meta_data || []).find(m => m.key === '_metorik_utm_source');
-      rows.push([o.id, o.date_created||'', o.status||'', parseFloat(o.total)||0, o.currency||'GBP',
+      // Metorik wraps order data differently - check nested structures
+      const order = o.order || o;
+      const b = order.billing || o.billing || {};
+      const items = (order.line_items || o.line_items || []).map(i => (i.name||'') + ' x' + (i.quantity||1)).join('; ');
+      const total = parseFloat(order.total || o.total || o.order_total || 0);
+      const currency = order.currency || o.currency || 'GBP';
+      const status = order.status || o.status || '';
+      const date = order.date_created || o.date_created || o.date || '';
+      const utm_val = ((order.meta_data || o.meta_data || []).find(m => m.key === '_metorik_utm_source') || {}).value || '';
+      rows.push([o.id, date, status, total, currency,
         b.first_name||'', b.last_name||'', b.email||'', b.city||'', b.country||'',
-        items, utm ? utm.value : '']);
+        items, utm_val]);
     }
     if (data.data.length < 100) break;
     page++;
