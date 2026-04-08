@@ -222,15 +222,17 @@ async function load(){
 
     // Phase 2c: worker_new — customer aliases & channels
     try{
-      const wn=await csvF("worker_new");
+      const wn=await csvF("worker_new",SID2);
       WN={};
       if(wn.length){
         const k0=Object.keys(wn[0]);
         console.log("worker_new columns:",k0.join(", "));
+        console.log("worker_new row0:",JSON.stringify(wn[0]));
         wn.forEach(r=>{
-          const cust=gv(r,"customer")||gv(r,"контрагент")||gv(r,"name")||gv(r,"клієнт")||"";
-          const alias=gv(r,"alias")||gv(r,"аліас")||gv(r,"коротка")||gv(r,"short")||"";
-          const chan=gv(r,"channel")||gv(r,"канал")||gv(r,"category")||gv(r,"група")||gv(r,"group")||"";
+          // Try all possible column name patterns
+          const cust=gv(r,"customer")||gv(r,"контрагент")||gv(r,"name")||gv(r,"наименование")||gv(r,"клієнт")||gv(r,"повне")||"";
+          const alias=gv(r,"alias")||gv(r,"аліас")||gv(r,"коротка")||gv(r,"short")||gv(r,"назва")||gv(r,"nick")||"";
+          const chan=gv(r,"channel")||gv(r,"канал")||gv(r,"category")||gv(r,"група")||gv(r,"group")||gv(r,"тип")||"";
           if(cust)WN[cust]={alias:alias||cust,channel:chan||""};
         });
         console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
