@@ -119,7 +119,22 @@ function rGoods(){
 
   function sortHdr(col,label){const active=_gdSort===col;const arrow=active?(_gdSortDir<0?"▼":"▲"):"";return`<th class="r" style="cursor:pointer;user-select:none${active?";color:#f59e0b":""}" onclick="gdToggleSort('${col}')">${label} ${arrow}</th>`}
 
+  // DEBUG: show WN status
+  const wnKeys=WN?Object.keys(WN).length:0;
+  const gdCusts=[...new Set(GD.map(r=>r.cust))];
+  const matched=gdCusts.filter(c=>_wnLookup(c)).length;
+  const c1pLen=C1&&C1.partners?C1.partners.length:0;
+  const wnSample=WN?Object.keys(WN).slice(0,3).join("; "):"(empty)";
+  const gdSample=gdCusts.slice(0,3).join("; ");
+  const debugHTML=`<div style="font-size:9px;color:#f59e0b;background:#1e2130;padding:6px 8px;border-radius:4px;margin-bottom:8px">
+    🔍 WN: ${wnKeys} записів · C1.partners: ${c1pLen} · GD клієнтів: ${gdCusts.length} · Matched: ${matched}
+    <br>WN sample: ${wnSample.substring(0,60)}
+    <br>GD sample: ${gdSample.substring(0,80)}
+    ${wnKeys>0&&matched===0?'<br><span style="color:#ef4444">⚠ WN завантажено але matching = 0!</span>':""}
+  </div>`;
+
   el.innerHTML=`${header}
+    ${debugHTML}
     <div class="info">${ff(GD.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Продано пляшок</div><div class="v g">${ff(totalQty)}</div></div>
