@@ -199,10 +199,10 @@ function rPartDebtors(el,tabs,debtors,now){
   if(top15.length){dc("cDebtBar");CH.cDebtBar=new Chart(document.getElementById("cDebtBar"),{type:"bar",data:{labels:top15.map(p=>shortName(p.name).substring(0,14)),datasets:[{label:"Борг",data:top15.map(p=>p.debt),backgroundColor:"#ef4444",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}})}
 }
 
-// === WN lookup for partners (uses same normalized matching as goods.js) ===
+// === WN/channel lookup for partners (uses goods.js _chanLookup) ===
 function wnForPartner(name){
-  if(!WN||!Object.keys(WN).length)return null;
-  return _wnLookup(name);
+  if(typeof _chanLookup==="function")return _chanLookup(name);
+  return null;
 }
 
 // === CONTACTS VIEW ===

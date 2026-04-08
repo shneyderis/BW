@@ -222,7 +222,11 @@ async function load(){
 
     // Phase 2c: worker_new — customer aliases & channels
     try{
-      const wn=await csvF("worker_new",SID2);
+      // Try multiple possible sheet names
+      let wn=[];
+      for(const name of["worker_new","Worker_New","WorkerNew","worker","Worker"]){
+        try{wn=await csvF(name,SID2);if(wn.length){console.log("worker_new found as '"+name+"':",wn.length,"rows");break}}catch(e){}
+      }
       WN={};
       if(wn.length){
         const k0=Object.keys(wn[0]);
@@ -242,8 +246,8 @@ async function load(){
           if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr,contact,tel,edrpou,discount,commission};
         });
         console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
-      }
-    }catch(e){console.warn("worker_new not loaded:",e.message)}
+      } else {WN._err="Sheet empty or not found (tried: worker_new, Worker_New, WorkerNew, worker, Worker)"}
+    }catch(e){WN={};WN._err=e.message;console.warn("worker_new not loaded:",e.message)}
 
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{

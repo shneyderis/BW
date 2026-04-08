@@ -1,73 +1,86 @@
 // js/tabs/goods.js — Product-level sales analytics (FINAL_sales_detail + worker_new)
 
-let _gdView="top",_gdYr="ALL",_gdChan="ALL",_gdSearch="",_gdSort="sum",_gdSortDir=-1;
+let _gdView="top",_gdYr="ALL",_gdChan="ALL",_gdGeo="ALL",_gdSearch="",_gdSort="sum",_gdSortDir=-1;
 function stripVintage(name){return name.replace(/\s+20[12]\d\s*$/,"").trim()}
 
-// Resolve customer → WN entry via multiple strategies
-const _wnCache={};
-function _normName(n){
-  return n.toLowerCase()
-    .replace(/товариство з обмеженою відповідальніст[юі]\s*/gi,"")
-    .replace(/tobapиctbo 3 oбmeжеhoю відповідальніст[юі]\s*/gi,"")
-    .replace(/фізична особа[\s\-–]*підприємець\s*/gi,"")
-    .replace(/фiзична особа[\s\-–]*пiдприємець\s*/gi,"")
-    .replace(/\bтов\b|\bфоп\b|\bпвкп\b|\bптеп\b|\bду\b|\bпп\b/gi,"")
-    .replace(/[""«»"']/g,"").replace(/\s+/g," ").trim();
-}
-let _wnNorm=null,_wnByEdr=null;
-function _buildWnIndex(){
-  if(_wnNorm)return;
-  _wnNorm=[];_wnByEdr={};
-  for(const[k,v]of Object.entries(WN)){
-    const nk=_normName(k);if(nk.length>2)_wnNorm.push({nk,v});
-    if(v.edrpou)_wnByEdr[v.edrpou]=v;
+// Build channel/alias mapping from Dashboard_Data (T) — always available
+// T has: name (bank counterparty), alias, cat (channel like "Продаж, Horeca & Shops")
+const _chanCache={};
+let _chanMap=null; // alias → {alias, channel}
+function _buildChanMap(){
+  if(_chanMap)return;
+  _chanMap={byAlias:{},byName:{},byEdr:{}};
+  // From T: map alias and name → channel
+  if(typeof T!=="undefined"&&T.length){
+    T.forEach(t=>{
+      if(t.tp==="Доход"&&t.cat&&CHS.includes(t.cat)){
+        const ch=CSH[t.cat]||t.cat;
+        if(t.alias&&!_chanMap.byAlias[t.alias])_chanMap.byAlias[t.alias]={alias:t.alias,channel:ch,geo:t.geo||""};
+        if(t.name&&!_chanMap.byName[t.name])_chanMap.byName[t.name]={alias:t.alias||t.name,channel:ch,geo:t.geo||""};
+      }
+    });
   }
-}
-function _wnLookup(cust){
-  if(_wnCache[cust]!==undefined)return _wnCache[cust];
-  if(!WN||!Object.keys(WN).length){_wnCache[cust]=null;return null}
-  // 1. Exact match
-  if(WN[cust]){_wnCache[cust]=WN[cust];return WN[cust]}
-  const ct=cust.trim();if(WN[ct]){_wnCache[cust]=WN[ct];return WN[ct]}
-  _buildWnIndex();
-  // 2. EDRPOU bridge: customer → C1.partners (edrpou) → WN
-  if(C1&&C1.partners&&C1.partners.length){
-    const p=C1.partners.find(x=>x.name===cust||x.name===ct)||C1.partners.find(x=>cust.includes(x.name)||x.name.includes(cust));
-    if(p&&p.edrpou&&_wnByEdr[p.edrpou]){_wnCache[cust]=_wnByEdr[p.edrpou];return _wnByEdr[p.edrpou]}
-  }
-  // 3. Normalized name match
-  const nc=_normName(cust);
-  if(nc.length>2){
-    for(const{nk,v}of _wnNorm){
-      if(nc===nk||nc.includes(nk)||nk.includes(nc)){_wnCache[cust]=v;return v}
+  // From WN if available
+  if(WN&&Object.keys(WN).length){
+    for(const[k,v]of Object.entries(WN)){
+      if(k==="_err")continue;
+      if(v.channel){
+        const ch=CSH[v.channel]||v.channel;
+        _chanMap.byName[k]={alias:v.alias||k,channel:ch,geo:v.geo||""};
+        if(v.edrpou)_chanMap.byEdr[v.edrpou]={alias:v.alias||k,channel:ch,geo:v.geo||""};
+      }
     }
   }
-  _wnCache[cust]=null;return null;
+}
+function _normName(n){
+  return n.toLowerCase().replace(/товариство з обмеженою відповідальніст[юі]\s*/gi,"").replace(/tobapиctbo 3 oбmeжеhoю відповідальніст[юі]\s*/gi,"").replace(/фізична особа[\s\-–]*підприємець\s*/gi,"").replace(/фiзична особа[\s\-–]*пiдприємець\s*/gi,"").replace(/\bтов\b|\bфоп\b/gi,"").replace(/[""«»"']/g,"").replace(/\s+/g," ").trim();
+}
+function _chanLookup(cust){
+  if(_chanCache[cust]!==undefined)return _chanCache[cust];
+  _buildChanMap();
+  // 1. Exact by name/alias
+  if(_chanMap.byAlias[cust]){_chanCache[cust]=_chanMap.byAlias[cust];return _chanCache[cust]}
+  if(_chanMap.byName[cust]){_chanCache[cust]=_chanMap.byName[cust];return _chanCache[cust]}
+  const ct=cust.trim();
+  if(_chanMap.byAlias[ct]||_chanMap.byName[ct]){const r=_chanMap.byAlias[ct]||_chanMap.byName[ct];_chanCache[cust]=r;return r}
+  // 2. EDRPOU bridge via C1.partners
+  if(C1&&C1.partners&&C1.partners.length){
+    const p=C1.partners.find(x=>x.name===cust||x.name===ct);
+    if(p&&p.edrpou&&_chanMap.byEdr[p.edrpou]){_chanCache[cust]=_chanMap.byEdr[p.edrpou];return _chanCache[cust]}
+  }
+  // 3. Fuzzy normalized match on alias/name keys
+  const nc=_normName(cust);
+  if(nc.length>3){
+    for(const[k,v]of Object.entries(_chanMap.byAlias)){
+      const nk=_normName(k);if(nk.length>3&&(nc.includes(nk)||nk.includes(nc))){_chanCache[cust]=v;return v}
+    }
+    for(const[k,v]of Object.entries(_chanMap.byName)){
+      const nk=_normName(k);if(nk.length>3&&(nc.includes(nk)||nk.includes(nc))){_chanCache[cust]=v;return v}
+    }
+  }
+  _chanCache[cust]=null;return null;
 }
 function _shortName(n){return n.replace(/Товариство з обмеженою відповідальніст[юі]\s*/gi,"ТОВ ").replace(/ТОВАРИСТВО З ОБМЕЖЕНОЮ В[IІ]ДПОВ[IІ]ДАЛЬН[IІ]СТ[ЮІ]\s*/gi,"ТОВ ").replace(/TOBAPИCTBO 3 OБMEЖЕHOЮ ВІДПОВІДАЛЬНІСТ[ЮІ]\s*/gi,"ТОВ ").replace(/Фізична особа[\s\-–]*підприємець\s*/gi,"ФОП ").replace(/ФІЗИЧНА ОСОБА[\s\-–]*ПІДПРИЄМЕЦЬ\s*/gi,"ФОП ").replace(/[""«»"]/g,"").trim()}
-function gdAlias(cust){const w=_wnLookup(cust);return w&&w.alias?w.alias:_shortName(cust)}
-function gdChan(cust){const w=_wnLookup(cust);return w&&w.channel?w.channel:""}
+function gdAlias(cust){const w=_chanLookup(cust);return w&&w.alias?w.alias:_shortName(cust)}
+function gdChan(cust){const w=_chanLookup(cust);return w&&w.channel?w.channel:""}
 
 function rGoods(){
   const el=document.getElementById("t-goods");if(!el)return;
   if(!GD.length){el.innerHTML='<div class="info">Завантаження FINAL_sales_detail...</div>';return}
   const c$=cs();
 
-  // === Available years & warehouses (as channels) ===
+  // === Available years, channels, geo ===
   const allYrs=[...new Set(GD.map(r=>r.yr))].filter(y=>y>="2020").sort();
-  // Use Warehouse as channel (reliable, always in data). Also try WN channels as bonus.
-  const allWH=[...new Set(GD.map(r=>r.wh).filter(Boolean))].sort();
-  const wnChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
-  const useWN=wnChans.length>=3; // WN channels work if at least 3 found
-  const allChans=useWN?wnChans:allWH;
+  const allChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
+  // Geo from T mapping (via _chanLookup)
+  function _gdGeoFor(cust){const w=_chanLookup(cust);return w&&w.geo?w.geo:""}
+  const allGeos=[...new Set(GD.map(r=>{const w=_chanLookup(r.cust);return w&&w.geo?w.geo:""}).filter(Boolean))].sort();
 
   // === Filter data ===
   let fd=GD;
   if(_gdYr!=="ALL")fd=fd.filter(r=>r.yr===_gdYr);
-  if(_gdChan!=="ALL"){
-    if(useWN)fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
-    else fd=fd.filter(r=>r.wh===_gdChan);
-  }
+  if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
+  if(_gdGeo!=="ALL")fd=fd.filter(r=>_gdGeoFor(r.cust)===_gdGeo);
 
   const totalQty=fd.reduce((s,r)=>s+r.qty,0);
   const totalSum=fd.reduce((s,r)=>s+r.sum,0);
@@ -87,6 +100,10 @@ function rGoods(){
         <option value="ALL" ${_gdYr==="ALL"?"selected":""}>Всі роки</option>
         ${allYrs.map(y=>`<option ${y===_gdYr?"selected":""}>${y}</option>`).join("")}
       </select>
+      ${allGeos.length?`<select class="flt" id="gdGeoFlt">
+        <option value="ALL" ${_gdGeo==="ALL"?"selected":""}>Все гео</option>
+        ${allGeos.map(g=>`<option ${g===_gdGeo?"selected":""}>${g}</option>`).join("")}
+      </select>`:""}
       <input type="text" placeholder="Пошук вина..." value="${_gdSearch}" style="background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:5px 8px;border-radius:4px;font-size:11px;width:130px" oninput="_gdSearch=this.value;render()">
     </div>
   </div>
@@ -95,7 +112,7 @@ function rGoods(){
     ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
   </div>`;
 
-  function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()}}
+  function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
 
   if(_gdView==="customers"){rGdCustomers(el,header,fd,c$);bindFlt();return}
   if(_gdView==="trends"){rGdTrends(el,header,allYrs,c$);bindFlt();return}
@@ -119,23 +136,8 @@ function rGoods(){
 
   function sortHdr(col,label){const active=_gdSort===col;const arrow=active?(_gdSortDir<0?"▼":"▲"):"";return`<th class="r" style="cursor:pointer;user-select:none${active?";color:#f59e0b":""}" onclick="gdToggleSort('${col}')">${label} ${arrow}</th>`}
 
-  // DEBUG: show WN status
-  const wnKeys=WN?Object.keys(WN).length:0;
-  const gdCusts=[...new Set(GD.map(r=>r.cust))];
-  const matched=gdCusts.filter(c=>_wnLookup(c)).length;
-  const c1pLen=C1&&C1.partners?C1.partners.length:0;
-  const wnSample=WN?Object.keys(WN).slice(0,3).join("; "):"(empty)";
-  const gdSample=gdCusts.slice(0,3).join("; ");
-  const debugHTML=`<div style="font-size:9px;color:#f59e0b;background:#1e2130;padding:6px 8px;border-radius:4px;margin-bottom:8px">
-    🔍 WN: ${wnKeys} записів · C1.partners: ${c1pLen} · GD клієнтів: ${gdCusts.length} · Matched: ${matched}
-    <br>WN sample: ${wnSample.substring(0,60)}
-    <br>GD sample: ${gdSample.substring(0,80)}
-    ${wnKeys>0&&matched===0?'<br><span style="color:#ef4444">⚠ WN завантажено але matching = 0!</span>':""}
-  </div>`;
-
   el.innerHTML=`${header}
-    ${debugHTML}
-    <div class="info">${ff(GD.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}</div>
+    <div class="info">${ff(fd.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}${_gdGeo!=="ALL"?" · "+_gdGeo:""}</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Продано пляшок</div><div class="v g">${ff(totalQty)}</div></div>
       <div class="kpi"><div class="l">Сума</div><div class="v" style="color:#f59e0b">${ff(toCur(totalSum))}${c$}</div></div>
