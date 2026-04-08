@@ -72,6 +72,8 @@ function gdChan(cust){const w=_chanLookup(cust);return w&&w.channel?w.channel:""
 function rGoods(){
   const el=document.getElementById("t-goods");if(!el)return;
   if(!GD.length){el.innerHTML='<div class="info">Завантаження FINAL_sales_detail...</div>';return}
+  // Reset caches on each render (WN may have loaded since last render)
+  _chanMap=null;Object.keys(_chanCache).forEach(k=>delete _chanCache[k]);
   const c$=cs();
 
   // === Available years, channels, geo ===
