@@ -61,11 +61,6 @@ function _chanLookup(cust){
       const nk=_normName(k);if(nk.length>3&&(nc.includes(nk)||nk.includes(nc))){_chanCache[cust]=v;return v}
     }
   }
-  // 4. Heuristic: Latin characters in name → likely export
-  if(/[a-zA-Z]{3,}/.test(cust)){
-    const exp={alias:_shortName(cust),channel:CSH["Продаж, Експорт"]||"Экспорт"};
-    _chanCache[cust]=exp;return exp;
-  }
   _chanCache[cust]=null;return null;
 }
 function _shortName(n){return n.replace(/Товариство з обмеженою відповідальніст[юі]\s*/gi,"ТОВ ").replace(/ТОВАРИСТВО З ОБМЕЖЕНОЮ В[IІ]ДПОВ[IІ]ДАЛЬН[IІ]СТ[ЮІ]\s*/gi,"ТОВ ").replace(/TOBAPИCTBO 3 OБMEЖЕHOЮ ВІДПОВІДАЛЬНІСТ[ЮІ]\s*/gi,"ТОВ ").replace(/Фізична особа[\s\-–]*підприємець\s*/gi,"ФОП ").replace(/ФІЗИЧНА ОСОБА[\s\-–]*ПІДПРИЄМЕЦЬ\s*/gi,"ФОП ").replace(/[""«»"]/g,"").trim()}
