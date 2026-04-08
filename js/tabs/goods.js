@@ -204,14 +204,14 @@ function rGoods(){
 
 // === CUSTOMERS VIEW ===
 function rGdCustomers(el,header,fd,c$){
-  const byCust={};
+  const byCust={};const totalFdSum=fd.reduce((s,r)=>s+r.sum,0);
   fd.forEach(r=>{
-    const alias=gdAlias(r.cust);
-    if(!byCust[alias])byCust[alias]={qty:0,sum:0,prods:new Set(),docs:new Set(),lastDate:"",chan:gdChan(r.cust)};
+    const alias=gdAlias(r.cust);const w=_chanLookup(r.cust);
+    if(!byCust[alias])byCust[alias]={qty:0,sum:0,prods:new Set(),docs:new Set(),lastDate:"",chan:gdChan(r.cust),geo:w&&w.geo?w.geo:""};
     byCust[alias].qty+=r.qty;byCust[alias].sum+=r.sum;byCust[alias].prods.add(r.prod);byCust[alias].docs.add(r.doc);
     if(r.date>byCust[alias].lastDate)byCust[alias].lastDate=r.date;
   });
-  let custArr=Object.entries(byCust).map(([name,d])=>({name,qty:d.qty,sum:d.sum,pCnt:d.prods.size,dCnt:d.docs.size,last:d.lastDate,chan:d.chan}));
+  let custArr=Object.entries(byCust).map(([name,d])=>({name,qty:d.qty,sum:d.sum,pct:totalFdSum>0?(d.sum/totalFdSum*100):0,pCnt:d.prods.size,dCnt:d.docs.size,last:d.lastDate,chan:d.chan,geo:d.geo}));
   if(_gdSearch){const q=_gdSearch.toLowerCase();custArr=custArr.filter(c=>c.name.toLowerCase().includes(q))}
 
   // Sort
@@ -229,18 +229,20 @@ function rGdCustomers(el,header,fd,c$){
     </div>
     <div class="cc"><h3>Топ клієнтів</h3><canvas id="cGdCust" height="240"></canvas></div>
     <div class="cc"><h3>Клієнти (${custArr.length})</h3>
-      <table class="tbl"><tr><th>Клієнт</th><th>Канал</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}<th class="r">Накладних</th><th class="r">Вин</th><th class="r">Ост.покупка</th></tr>
+      <table class="tbl"><tr><th>Клієнт</th><th>Канал</th><th>Гео</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}<th class="r">%</th><th class="r">Накладних</th><th class="r">Вин</th><th class="r">Ост.покупка</th></tr>
       ${custArr.slice(0,60).map(c=>`<tr>
-        <td style="font-size:10px">${c.name.substring(0,30)}</td>
+        <td style="font-size:10px">${c.name.substring(0,28)}</td>
         <td style="font-size:9px;color:#8b5cf6">${c.chan}</td>
+        <td style="font-size:9px;color:#7d8196">${c.geo}</td>
         <td class="r">${ff(c.qty)}</td>
         <td class="r g">${ff(c.sum)}₴</td>
+        <td class="r" style="color:#f59e0b">${c.pct.toFixed(1)}%</td>
         <td class="r">${c.dCnt}</td>
         <td class="r">${c.pCnt}</td>
         <td class="r" style="color:#7d8196;font-size:9px">${c.last}</td>
       </tr>`).join("")}
-      ${custArr.length>60?`<tr><td colspan="7" style="color:#7d8196;font-size:9px">+ ще ${custArr.length-60}</td></tr>`:""}
-      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(custArr.reduce((s,c)=>s+c.qty,0))}</td><td class="r g">${ff(custArr.reduce((s,c)=>s+c.sum,0))}₴</td><td class="r">${custArr.reduce((s,c)=>s+c.dCnt,0)}</td><td class="r">${custArr.reduce((s,c)=>s+c.pCnt,0)}</td><td></td></tr></table></div>`;
+      ${custArr.length>60?`<tr><td colspan="9" style="color:#7d8196;font-size:9px">+ ще ${custArr.length-60}</td></tr>`:""}
+      <tr class="tot"><td>Разом</td><td></td><td></td><td class="r">${ff(custArr.reduce((s,c)=>s+c.qty,0))}</td><td class="r g">${ff(custArr.reduce((s,c)=>s+c.sum,0))}₴</td><td class="r">100%</td><td class="r">${custArr.reduce((s,c)=>s+c.dCnt,0)}</td><td class="r">${custArr.reduce((s,c)=>s+c.pCnt,0)}</td><td></td></tr></table></div>`;
 
   const top20=custArr.slice(0,20);
   if(top20.length){
