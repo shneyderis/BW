@@ -127,6 +127,10 @@ async function rMkt(){
   // Top by reach
   const topReach=igPosts.slice().sort((a,b)=>b.reach-a.reach).slice(0,5);
 
+  // Post scoring: reach × ER × 100
+  const igScored=igPosts.map(p=>{const er=p.reach>0?(p.likes+p.comments)/p.reach:0;return{...p,score:Math.round(p.reach*er*100),er:er*100}}).sort((a,b)=>b.score-a.score);
+  const topScored=igScored.slice(0,5);
+
   const igRecent=igPosts.slice(0,15);
 
   // === ADS STATS ===
@@ -202,13 +206,16 @@ async function rMkt(){
 
   // ========== BUILD TIMELINE (configurable period) ==========
   if(!window._mktDays)window._mktDays=30;
+  // Respect global year filter for orders
+  const gFilter=typeof gF==="function"?gF():{yr:"ALL"};
   const tlStart=new Date();tlStart.setDate(tlStart.getDate()-window._mktDays);
   const tlStartStr=tlStart.toISOString().substring(0,10);
   const tlDays=[];for(let d=new Date(tlStart);d<=new Date();d.setDate(d.getDate()+1))tlDays.push(d.toISOString().substring(0,10));
 
   // Orders by day
   const ordByDay={};
-  corrOrders.filter(o=>o.status==="completed"||o.status==="processing").forEach(o=>{
+  const filteredOrders=gFilter.yr!=="ALL"?corrOrders.filter(o=>(o.date_created||"").startsWith(gFilter.yr)):corrOrders;
+  filteredOrders.filter(o=>o.status==="completed"||o.status==="processing").forEach(o=>{
     const d=(o.date_created||"").replace(/ .*/,"").substring(0,10).replace("T","");
     if(d.length===10){if(!ordByDay[d])ordByDay[d]={cnt:0,rev:0};ordByDay[d].cnt++;ordByDay[d].rev+=parseFloat(o.total||0)}
   });
@@ -301,6 +308,33 @@ async function rMkt(){
       </div>`:"";
     })()}
 
+    ${(()=>{
+      // === MONTHLY COMPARISON ===
+      const now=new Date();const curM=now.toISOString().substring(0,7);
+      const prevM=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString().substring(0,7);
+      const curIG=igPosts.filter(p=>p.date&&p.date.startsWith(curM));
+      const prevIG=igPosts.filter(p=>p.date&&p.date.startsWith(prevM));
+      const curEmail=recentCamp.filter(c=>c.send_date&&c.send_date.startsWith(curM));
+      const prevEmail=recentCamp.filter(c=>c.send_date&&c.send_date.startsWith(prevM));
+      const curOrd=filteredOrders.filter(o=>(o.date_created||"").substring(0,7)===curM);
+      const prevOrd=filteredOrders.filter(o=>(o.date_created||"").substring(0,7)===prevM);
+      const curRev=curOrd.reduce((s,o)=>s+parseFloat(o.total||0),0);
+      const prevRev=prevOrd.reduce((s,o)=>s+parseFloat(o.total||0),0);
+      function delta(cur,prev){if(!prev)return"—";const d=((cur-prev)/prev*100);return`<span style="color:${d>=0?"#10b981":"#ef4444"}">${d>0?"+":""}${d.toFixed(0)}%</span>`}
+      const curIGReach=curIG.reduce((s,p)=>s+p.reach,0);const prevIGReach=prevIG.reduce((s,p)=>s+p.reach,0);
+      const curIGLikes=curIG.reduce((s,p)=>s+p.likes,0);const prevIGLikes=prevIG.reduce((s,p)=>s+p.likes,0);
+      if(curIG.length||prevIG.length)return`<div class="cc" style="border-color:rgba(245,158,11,.3)"><h3 style="color:#f59e0b">📊 Місячний звіт: ${curM} vs ${prevM}</h3>
+        <table class="tbl"><tr><th>Метрика</th><th class="r">${curM}</th><th class="r">${prevM}</th><th class="r">Δ</th></tr>
+          <tr><td>Замовлення</td><td class="r">${curOrd.length}</td><td class="r">${prevOrd.length}</td><td class="r">${delta(curOrd.length,prevOrd.length)}</td></tr>
+          <tr><td>Виручка</td><td class="r g">${ff(curRev)}₴</td><td class="r">${ff(prevRev)}₴</td><td class="r">${delta(curRev,prevRev)}</td></tr>
+          <tr><td>IG постів</td><td class="r">${curIG.length}</td><td class="r">${prevIG.length}</td><td class="r">${delta(curIG.length,prevIG.length)}</td></tr>
+          <tr><td>IG лайків</td><td class="r" style="color:#e11d48">${ff(curIGLikes)}</td><td class="r">${ff(prevIGLikes)}</td><td class="r">${delta(curIGLikes,prevIGLikes)}</td></tr>
+          <tr><td>IG reach</td><td class="r" style="color:#8b5cf6">${ff(curIGReach)}</td><td class="r">${ff(prevIGReach)}</td><td class="r">${delta(curIGReach,prevIGReach)}</td></tr>
+          <tr><td>Email кампаній</td><td class="r">${curEmail.length}</td><td class="r">${prevEmail.length}</td><td class="r">${delta(curEmail.length,prevEmail.length)}</td></tr>
+        </table></div>`;
+      return"";
+    })()}
+
     <div class="sec">📧 Email-маркетинг (SendPulse)</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Підписників</div><div class="v" style="color:#3b82f6">${ff(SP.totalSubs||0)}</div><div class="s">${spLists.length} списків</div></div>
@@ -359,6 +393,14 @@ async function rMkt(){
       </div>
 
       <div class="row">
+        <div class="cc"><h3>⭐ Топ-5 по Score (reach×ER)</h3>
+          <table class="tbl"><tr><th>Пост</th><th class="r">Score</th><th class="r">Reach</th><th class="r">ER%</th></tr>
+          ${topScored.map(p=>`<tr>
+            <td style="font-size:9px">${(p.caption||"—").substring(0,30)}</td>
+            <td class="r" style="color:#f59e0b;font-weight:700">${ff(p.score)}</td>
+            <td class="r" style="color:#8b5cf6">${ff(p.reach)}</td>
+            <td class="r">${p.er.toFixed(1)}%</td>
+          </tr>`).join("")}</table></div>
         <div class="cc"><h3>🔥 Топ-5 по охопленню</h3>
           <table class="tbl"><tr><th>Пост</th><th class="r">Reach</th><th class="r">❤</th><th class="r">ER%</th></tr>
           ${topReach.map(p=>{const er=p.reach>0?((p.likes+p.comments)/p.reach*100).toFixed(1):"0";return`<tr>

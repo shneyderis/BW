@@ -59,6 +59,26 @@ function rProduction(){
   const readyToBtl=lots.filter(l=>l.stage.includes("Pre-Bottling")||l.stage.includes("Stabilization"));
   const readyVol=readyToBtl.reduce((s,l)=>s+l.volume,0);
 
+  // === Revenue Forecast ===
+  const rvPrices={"Kara Kermen":1200,"Loca Deserta":1500,"Artania":500,"Beykush":800,"Beresagne":600,"Yafe Nagar":700};
+  function rvBrand(tags){const t=tags||"";if(t.includes("Kara Kermen"))return"Kara Kermen";if(t.includes("Loca Deserta")||t.includes("LocaDeserta"))return"Loca Deserta";if(t.includes("Artania"))return"Artania";if(t.includes("Beresagne"))return"Beresagne";if(t.includes("Yafe Nagar"))return"Yafe Nagar";if(t.includes("Beykush"))return"Beykush";return"Інше"}
+  const revByBrand={};const revByColor={};let totalRev=0;
+  lots.forEach(l=>{const bottles=Math.floor(l.volume/0.75);const brand=rvBrand(l.tags);const price=rvPrices[brand]||500;const rev=bottles*price;totalRev+=rev;if(!revByBrand[brand])revByBrand[brand]=0;revByBrand[brand]+=rev;const c=l.color||"?";if(!revByColor[c])revByColor[c]=0;revByColor[c]+=rev});
+  const totalRevEUR=totalRev/FX.EUR;
+  const brandArr=Object.entries(revByBrand).sort((a,b)=>b[1]-a[1]);
+  const colorRevArr=Object.entries(revByColor).sort((a,b)=>b[1]-a[1]);
+  const revForecastHTML='<div class="sec">💰 Прогноз доходу (поточні лоти)</div>'
+    +'<div class="kpis">'
+    +'<div class="kpi"><div class="l">Загальний прогноз</div><div class="v g">'+ff(totalRev)+'₴</div><div class="s">~'+ff(Math.round(totalRevEUR))+'€</div></div>'
+    +brandArr.slice(0,5).map(function(e){var b=e[0],r=e[1];return'<div class="kpi"><div class="l">'+b+'</div><div class="v" style="color:#8b5cf6">'+ff(r)+'₴</div><div class="s">~'+ff(Math.floor(r/(rvPrices[b]||500)))+' пл</div></div>'}).join("")
+    +'</div>'
+    +'<div class="row">'
+    +'<div class="cc"><h3>Дохід по брендах</h3><canvas id="cRevBrand" height="180"></canvas></div>'
+    +'<div class="cc"><h3>Дохід по кольорах</h3>'
+    +colorRevArr.map(function(e){var c=e[0],r=e[1];var pct=totalRev>0?(r/totalRev*100):0;var clr=colorClr[c]||"#7d8196";return'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px"><span style="color:'+clr+';font-weight:600">'+c+'</span><span>'+ff(r)+'₴ · '+pct.toFixed(0)+'%</span></div><div style="height:4px;background:#232738;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:2px"></div></div>'}).join("")
+    +'</div>'
+    +'</div>';
+
   el.innerHTML=`${tabs}
     <div class="sec">🍷 Виробництво · Лоти на витримці</div>
     <div class="kpis">
@@ -80,6 +100,10 @@ function rProduction(){
       <div class="cc"><h3>Топ сортів (по об'єму)</h3><canvas id="cProdVar" height="140"></canvas></div>
     </div>
 
+    <div class="cc"><h3>Таймлайн розливу (по врожаях)</h3><canvas id="cProdTimeline" height="${Math.max(200,lots.length*12)}"></canvas></div>
+
+    ${revForecastHTML}
+
     ${readyToBtl.length?`<div class="cc" style="border-color:rgba(16,185,129,.3)"><h3 style="color:#10b981">🍾 Готові до розливу</h3>
       <table class="tbl"><tr><th>Лот</th><th>Назва</th><th class="r">Об'єм</th><th class="r">Сорт</th><th class="r">Врожай</th></tr>
       ${readyToBtl.map(l=>`<tr><td style="font-weight:600">${l.code}</td><td style="font-size:9px">${l.name}</td><td class="r g">${ff(l.volume)}л</td><td class="r" style="font-size:9px">${l.varietal}</td><td class="r">${l.vintage}</td></tr>`).join("")}</table></div>`:""}
@@ -88,6 +112,22 @@ function rProduction(){
   if(vintArr.length){dc("cProdVint");CH.cProdVint=new Chart(document.getElementById("cProdVint"),{type:"bar",data:{labels:vintArr.map(([v])=>v),datasets:[{data:vintArr.map(([,d])=>d.vol),backgroundColor:"#9f1239",borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)+"л"},grid:{color:"#1e2130"}}}}})}
   const topVar=varArr.slice(0,12);
   if(topVar.length){dc("cProdVar");CH.cProdVar=new Chart(document.getElementById("cProdVar"),{type:"bar",data:{labels:topVar.map(([v])=>v.substring(0,14)),datasets:[{data:topVar.map(([,d])=>d.vol),backgroundColor:topVar.map(([v])=>{const l=LOTS.find(x=>x.varietal===v);return colorClr[l?.color]||"#7d8196"}),borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)+"л"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}})}
+
+  // === BOTTLING TIMELINE CHART ===
+  const stageClr={"Aging":"#3b82f6","Pre-Bottling Stabilization":"#10b981","Fermenting":"#f59e0b","Riddling":"#8b5cf6","Extended Maceration":"#e11d48","Processed":"#6b7280"};
+  const tlLots=lots.filter(l=>l.vintage).sort((a,b)=>a.vintage.localeCompare(b.vintage)||a.name.localeCompare(b.name));
+  if(tlLots.length){
+    const vintages=[...new Set(tlLots.map(l=>l.vintage))].sort();
+    const vintMin=parseInt(vintages[0])||2015;
+    const vintMax=parseInt(vintages[vintages.length-1])||2025;
+    const tlLabels=tlLots.map(l=>l.code);
+    const tlColors=tlLots.map(l=>{const s=l.stage||"";for(const[k,c]of Object.entries(stageClr)){if(s.includes(k))return c}return"#6b7280"});
+    dc("cProdTimeline");CH.cProdTimeline=new Chart(document.getElementById("cProdTimeline"),{type:"bar",data:{labels:tlLabels,datasets:[{data:tlLots.map(l=>{const v=parseInt(l.vintage)||vintMin;return[v-0.35,v+0.35]}),backgroundColor:tlColors,borderRadius:2,barPercentage:0.7,categoryPercentage:0.85}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:true,labels:{generateLabels:function(){return Object.entries(stageClr).map(([text,fc])=>({text:text,fillStyle:fc,strokeStyle:fc,lineWidth:0}))},color:"#7d8196",font:{size:8}}},tooltip:{callbacks:{label:function(ctx){const l=tlLots[ctx.dataIndex];return l.name+" · "+l.vintage+" · "+l.stage+" · "+ff(l.volume)+"л"}}}},scales:{x:{type:"linear",min:vintMin-0.5,max:vintMax+0.5,ticks:{color:"#7d8196",font:{size:9},stepSize:1,callback:v=>Number.isInteger(v)?v:""},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:7}},grid:{display:false}}}}});
+  }
+
+  // === REVENUE BY BRAND CHART ===
+  const rvBrandClr={"Kara Kermen":"#e11d48","Loca Deserta":"#8b5cf6","Artania":"#f59e0b","Beykush":"#3b82f6","Beresagne":"#10b981","Yafe Nagar":"#ec4899","Інше":"#6b7280"};
+  if(brandArr.length){dc("cRevBrand");CH.cRevBrand=new Chart(document.getElementById("cRevBrand"),{type:"bar",data:{labels:brandArr.map(function(e){return e[0]}),datasets:[{data:brandArr.map(function(e){return e[1]}),backgroundColor:brandArr.map(function(e){return rvBrandClr[e[0]]||"#7d8196"}),borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ff(ctx.raw)+"₴"}}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:function(v){return fm(v)+"₴"}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9}},grid:{display:false}}}}})}
 }
 
 function rProdLots(el,tabs,lots){

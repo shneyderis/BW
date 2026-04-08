@@ -161,8 +161,6 @@ async function load(){
     try{
       const[wcOrdSheet,wcProdSheet]=await Promise.all([csvF("WC_Orders").catch(()=>[]),csvF("WC_Products").catch(()=>[])]);
       if(wcOrdSheet.length){
-        console.log("WC_Orders columns:",Object.keys(wcOrdSheet[0]));
-        console.log("WC_Orders row[0]:",JSON.stringify(wcOrdSheet[0]));
         WO=wcOrdSheet.map(r=>{
           return{
             id:pn(gv(r,"id")),
@@ -184,12 +182,9 @@ async function load(){
             items_count:pn(gv(r,"items_count")),
             line_items:[],meta_data:[]
           }});
-        console.log("WC_Orders row[0]:",JSON.stringify(WO[0]));
-        console.log("WC sample dates:",WO.slice(0,5).map(o=>o.date_created));
-        console.log("WC statuses:",Object.entries(WO.reduce((a,o)=>{a[o.status]=(a[o.status]||0)+1;return a},{})));
+        console.log("WC from Sheets:",WO.length,"orders");
       }
       if(wcProdSheet.length){
-        console.log("WC_Products columns:",Object.keys(wcProdSheet[0]));
         WP=wcProdSheet.map(r=>{
           let cats=[];try{const c=gv(r,"categories")||r["categories"]||"";if(c)cats=JSON.parse(c)}catch(e){const c=gv(r,"categories")||r["categories"]||"";if(c)cats=c.split(",").map(n=>({name:n.trim()}))}
           return{
