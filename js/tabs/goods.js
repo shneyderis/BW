@@ -132,6 +132,7 @@ function rGoods(){
         <td class="r g">${ff(p.sum)}₴</td>
         <td class="r" style="color:#f59e0b">${p.avg.toFixed(0)}₴</td>
       </tr>`).join("")}
+      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(prodArr.reduce((s,p)=>s+p.qty,0))}</td><td class="r g">${ff(prodArr.reduce((s,p)=>s+p.sum,0))}₴</td><td class="r">${prodArr.reduce((s,p)=>s+p.qty,0)>0?(prodArr.reduce((s,p)=>s+p.sum,0)/prodArr.reduce((s,p)=>s+p.qty,0)).toFixed(0):"—"}₴</td></tr>
       ${prodArr.length>60?`<tr><td colspan="5" style="color:#7d8196;font-size:9px">+ ще ${prodArr.length-60}</td></tr>`:""}</table></div>`;
 
   // Export
@@ -192,7 +193,8 @@ function rGdCustomers(el,header,fd,c$){
         <td class="r">${c.pCnt}</td>
         <td class="r" style="color:#7d8196;font-size:9px">${c.last}</td>
       </tr>`).join("")}
-      ${custArr.length>60?`<tr><td colspan="7" style="color:#7d8196;font-size:9px">+ ще ${custArr.length-60}</td></tr>`:""}</table></div>`;
+      ${custArr.length>60?`<tr><td colspan="7" style="color:#7d8196;font-size:9px">+ ще ${custArr.length-60}</td></tr>`:""}
+      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(custArr.reduce((s,c)=>s+c.qty,0))}</td><td class="r g">${ff(custArr.reduce((s,c)=>s+c.sum,0))}₴</td><td class="r">${custArr.reduce((s,c)=>s+c.dCnt,0)}</td><td class="r">${custArr.reduce((s,c)=>s+c.pCnt,0)}</td><td></td></tr></table></div>`;
 
   const top20=custArr.slice(0,20);
   if(top20.length){
@@ -248,7 +250,9 @@ function rGdTrends(el,header,allYrs,c$){
         <td class="r" style="color:#7d8196">${ff(p.qtyP)}</td>
         <td class="r" style="color:#7d8196">${ff(p.sumP)}₴</td>
         <td class="r ${gc}">${gTxt}</td>
-      </tr>`}).join("")}</table></div>`;
+      </tr>`}).join("")}
+      ${(()=>{const tqC=prodYoY.reduce((s,p)=>s+p.qtyC,0),tsC=prodYoY.reduce((s,p)=>s+p.sumC,0),tqP=prodYoY.reduce((s,p)=>s+p.qtyP,0),tsP=prodYoY.reduce((s,p)=>s+p.sumP,0);const tg=tsP>0?((tsC-tsP)/tsP*100):0;return`<tr class="tot"><td>Разом</td><td class="r">${ff(tqC)}</td><td class="r g">${ff(tsC)}₴</td><td class="r">${ff(tqP)}</td><td class="r">${ff(tsP)}₴</td><td class="r" style="color:${tg>0?"#10b981":"#ef4444"}">${tg>0?"+":""}${tg.toFixed(0)}%</td></tr>`})()}
+      </table></div>`;
 
   if(yrArr.length){
     dc("cGdYr");CH.cGdYr=new Chart(document.getElementById("cGdYr"),{type:"bar",
