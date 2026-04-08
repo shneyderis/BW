@@ -11,7 +11,7 @@ const MMa=["01","02","03","04","05","06","07","08","09","10","11","12"];
 const COB={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9,padding:6}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
 
 // ========== GLOBALS ==========
-let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
+let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],GD=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
 let wcLoaded=false,wcError="",SP={},IG={posts:[]},MA={campaigns:[]},mktLoaded=false,mktError="";
 let C1={sales:[],partners:[],products:[],osv:[],bank:[],loaded:false};
 let USERS={}; // email → {name,role,tabs,phone,active}
@@ -68,7 +68,7 @@ function showApp(tabs){
     if(id){btn.classList.toggle("hidden",!tabs.includes(id));if(!tabs.includes(id)&&btn.classList.contains("on")){btn.classList.remove("on")}}
   });
   const firstVisible=document.querySelector('.tab:not(.hidden)');
-  if(firstVisible&&!document.querySelector('.tab.on:not(.hidden)')){firstVisible.classList.add("on");const id=firstVisible.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];if(id){['balance','pl','sales','exp','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden')}}
+  if(firstVisible&&!document.querySelector('.tab.on:not(.hidden)')){firstVisible.classList.add("on");const id=firstVisible.getAttribute('onclick')?.match(/sw\('(\w+)'/)?.[1];if(id){['balance','pl','sales','goods','exp','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden')}}
   load();
 }
 
@@ -199,6 +199,27 @@ async function load(){
       console.log("WC from Sheets:",WO.length,"orders,",WP.length,"products");
     }catch(e){wcError="Sheets: "+e.message;console.error("WC Sheets error:",e);wcLoaded=true}
 
+    // Phase 2b: FINAL_sales_detail — product-level sales
+    try{
+      const gd=await csvF("FINAL_sales_detail");
+      GD=gd.map(r=>{
+        const d=gv(r,"date")||"";
+        return{
+          date:d,yr:d.substring(0,4),mo:d.substring(0,7),
+          doc:gv(r,"document")||"",
+          cust:gv(r,"customer")||"",
+          wh:gv(r,"warehouse")||"",
+          prod:gv(r,"product")||"",
+          code:gv(r,"product code")||"",
+          qty:pn(gv(r,"quantity")),
+          price:pn(gv(r,"price")),
+          sum:pn(gv(r,"sum")),
+          vat:pn(gv(r,"vat"))
+        };
+      }).filter(r=>r.prod&&r.qty>0);
+      console.log("FINAL_sales_detail loaded:",GD.length,"rows");
+    }catch(e){console.warn("FINAL_sales_detail not loaded:",e.message)}
+
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{
       async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");if(!r.ok)throw new Error(r.status);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
@@ -282,7 +303,7 @@ function bldFlt(yrs){
 }
 function gF(){return{yr:document.getElementById("fY")?.value||"ALL",mm:document.getElementById("fM")?.value||"ALL",src:document.getElementById("fS")?.value||"ALL",chan:document.getElementById("fC")?.value||"ALL",geo:document.getElementById("fG")?.value||"ALL",mgr:document.getElementById("fMgr")?.value||"ALL"}}
 function fl(list,f,tp){let r=list;if(f.yr!=="ALL")r=r.filter(t=>t.yr===f.yr);if(f.mm!=="ALL")r=r.filter(t=>t.mm===f.mm);if(f.src!=="ALL")r=r.filter(t=>t.st===f.src);if(f.chan!=="ALL")r=r.filter(t=>t.cat===f.chan);if(f.geo!=="ALL")r=r.filter(t=>t.geo===f.geo);if(f.mgr!=="ALL")r=r.filter(t=>t.mgr===f.mgr);if(tp)r=r.filter(t=>t.tp===tp);return r}
-function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['balance','pl','sales','exp','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
+function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['balance','pl','sales','goods','exp','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 function aY(){return[...new Set(T.map(x=>x.yr))].sort()}
 function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||"2026"}
@@ -290,7 +311,7 @@ function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn);[()=>rBalance(),()=>rPL(f),()=>rSales(f),()=>rExp(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rProduction(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
+function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn);[()=>rBalance(),()=>rPL(f),()=>rSales(f),()=>rGoods(),()=>rExp(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rProduction(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========
