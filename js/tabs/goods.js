@@ -44,7 +44,8 @@ function _wnLookup(cust){
   }
   _wnCache[cust]=null;return null;
 }
-function gdAlias(cust){const w=_wnLookup(cust);return w&&w.alias?w.alias:cust}
+function _shortName(n){return n.replace(/Товариство з обмеженою відповідальніст[юі]\s*/gi,"ТОВ ").replace(/ТОВАРИСТВО З ОБМЕЖЕНОЮ В[IІ]ДПОВ[IІ]ДАЛЬН[IІ]СТ[ЮІ]\s*/gi,"ТОВ ").replace(/TOBAPИCTBO 3 OБMEЖЕHOЮ ВІДПОВІДАЛЬНІСТ[ЮІ]\s*/gi,"ТОВ ").replace(/Фізична особа[\s\-–]*підприємець\s*/gi,"ФОП ").replace(/ФІЗИЧНА ОСОБА[\s\-–]*ПІДПРИЄМЕЦЬ\s*/gi,"ФОП ").replace(/[""«»"]/g,"").trim()}
+function gdAlias(cust){const w=_wnLookup(cust);return w&&w.alias?w.alias:_shortName(cust)}
 function gdChan(cust){const w=_wnLookup(cust);return w&&w.channel?w.channel:""}
 
 function rGoods(){
@@ -52,14 +53,21 @@ function rGoods(){
   if(!GD.length){el.innerHTML='<div class="info">Завантаження FINAL_sales_detail...</div>';return}
   const c$=cs();
 
-  // === Available years & channels ===
+  // === Available years & warehouses (as channels) ===
   const allYrs=[...new Set(GD.map(r=>r.yr))].filter(y=>y>="2020").sort();
-  const allChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
+  // Use Warehouse as channel (reliable, always in data). Also try WN channels as bonus.
+  const allWH=[...new Set(GD.map(r=>r.wh).filter(Boolean))].sort();
+  const wnChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
+  const useWN=wnChans.length>=3; // WN channels work if at least 3 found
+  const allChans=useWN?wnChans:allWH;
 
   // === Filter data ===
   let fd=GD;
   if(_gdYr!=="ALL")fd=fd.filter(r=>r.yr===_gdYr);
-  if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
+  if(_gdChan!=="ALL"){
+    if(useWN)fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
+    else fd=fd.filter(r=>r.wh===_gdChan);
+  }
 
   const totalQty=fd.reduce((s,r)=>s+r.qty,0);
   const totalSum=fd.reduce((s,r)=>s+r.sum,0);
