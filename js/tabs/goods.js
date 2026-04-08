@@ -9,7 +9,7 @@ const _chanCache={};
 let _chanMap=null; // alias → {alias, channel}
 function _buildChanMap(){
   if(_chanMap)return;
-  _chanMap={byAlias:{},byName:{},byEdr:{}};
+  _chanMap={byAlias:{},byName:{},byEdr:{},byCurrency:{}};
   // From T: map alias and name → channel
   if(typeof T!=="undefined"&&T.length){
     T.forEach(t=>{
@@ -17,6 +17,12 @@ function _buildChanMap(){
         const ch=CSH[t.cat]||t.cat;
         if(t.alias&&!_chanMap.byAlias[t.alias])_chanMap.byAlias[t.alias]={alias:t.alias,channel:ch,geo:t.geo||""};
         if(t.name&&!_chanMap.byName[t.name])_chanMap.byName[t.name]={alias:t.alias||t.name,channel:ch,geo:t.geo||""};
+      }
+      // Currency-based: EUR/USD income → Експорт (fallback for "?" channels)
+      if(t.tp==="Доход"&&t.money&&t.money!=="UAH"&&(t.money==="EUR"||t.money==="USD")){
+        const expCh=CSH["Продаж, Експорт"]||"Экспорт";
+        if(t.alias&&!_chanMap.byCurrency[t.alias])_chanMap.byCurrency[t.alias]={alias:t.alias,channel:expCh,geo:t.geo||""};
+        if(t.name&&!_chanMap.byCurrency[t.name])_chanMap.byCurrency[t.name]={alias:t.alias||t.name,channel:expCh,geo:t.geo||""};
       }
     });
   }
@@ -67,7 +73,26 @@ function _chanLookup(cust){
 }
 function _shortName(n){return n.replace(/Товариство з обмеженою відповідальніст[юі]\s*/gi,"ТОВ ").replace(/ТОВАРИСТВО З ОБМЕЖЕНОЮ В[IІ]ДПОВ[IІ]ДАЛЬН[IІ]СТ[ЮІ]\s*/gi,"ТОВ ").replace(/TOBAPИCTBO 3 OБMEЖЕHOЮ ВІДПОВІДАЛЬНІСТ[ЮІ]\s*/gi,"ТОВ ").replace(/Фізична особа[\s\-–]*підприємець\s*/gi,"ФОП ").replace(/ФІЗИЧНА ОСОБА[\s\-–]*ПІДПРИЄМЕЦЬ\s*/gi,"ФОП ").replace(/[""«»"]/g,"").trim()}
 function gdAlias(cust){const w=_chanLookup(cust);return w&&w.alias?w.alias:_shortName(cust)}
-function gdChan(cust){const w=_chanLookup(cust);return w&&w.channel?w.channel:""}
+function gdChan(cust){
+  const w=_chanLookup(cust);
+  if(!w)return"";
+  // If channel is "?" or empty, check currency-based fallback
+  if((!w.channel||w.channel==="?")&&_chanMap&&_chanMap.byCurrency){
+    // Check by alias/name in currency map
+    const ca=w.alias?_chanMap.byCurrency[w.alias]:null;
+    if(ca)return ca.channel;
+    const cn=_chanMap.byCurrency[cust]||_chanMap.byCurrency[cust.trim()];
+    if(cn)return cn.channel;
+    // Fuzzy currency match
+    const nc=_normName(cust);
+    if(nc.length>3){
+      for(const[k,v]of Object.entries(_chanMap.byCurrency)){
+        const nk=_normName(k);if(nk.length>3&&(nc.includes(nk)||nk.includes(nc)))return v.channel;
+      }
+    }
+  }
+  return w.channel||"";
+}
 
 function rGoods(){
   const el=document.getElementById("t-goods");if(!el)return;
