@@ -26,8 +26,10 @@ function _buildChanMap(){
       if(k==="_err")continue;
       if(v.channel){
         const ch=CSH[v.channel]||v.channel;
-        _chanMap.byName[k]={alias:v.alias||k,channel:ch,geo:v.geo||""};
-        if(v.edrpou)_chanMap.byEdr[v.edrpou]={alias:v.alias||k,channel:ch,geo:v.geo||""};
+        const entry={alias:v.alias||k,channel:ch,geo:v.geo||""};
+        _chanMap.byName[k]=entry;
+        if(v.alias&&v.alias!==k)_chanMap.byAlias[v.alias]=entry;
+        if(v.edrpou)_chanMap.byEdr[v.edrpou]=entry;
       }
     }
   }
