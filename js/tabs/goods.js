@@ -100,6 +100,7 @@ function rGoods(){
   const header=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
     <div class="sh-tabs">
       <button class="sh-tab ${_gdView==="top"?"on":""}" onclick="_gdView='top';render()">Топ вина</button>
+      <button class="sh-tab ${_gdView==="abc"?"on":""}" onclick="_gdView='abc';render()">ABC</button>
       <button class="sh-tab ${_gdView==="customers"?"on":""}" onclick="_gdView='customers';render()">Клієнти</button>
       <button class="sh-tab ${_gdView==="trends"?"on":""}" onclick="_gdView='trends';render()">Тренди</button>
     </div>
@@ -123,6 +124,7 @@ function rGoods(){
 
   function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
 
+  if(_gdView==="abc"){rGdABC(el,header,fd,c$);bindFlt();return}
   if(_gdView==="customers"){rGdCustomers(el,header,fd,c$);bindFlt();return}
   if(_gdView==="trends"){rGdTrends(el,header,allYrs,c$);bindFlt();return}
 
@@ -319,5 +321,93 @@ function rGdTrends(el,header,allYrs,c$){
         {label:prevYr,data:MMa.map(m=>byMoPrev[m]?.qty||0),backgroundColor:"rgba(139,92,246,.35)",borderRadius:2}
       ]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},
         scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
+  }
+}
+
+// === ABC ANALYSIS ===
+function rGdABC(el,header,fd,c$){
+  // Group by base wine name
+  const byWine={};
+  fd.forEach(r=>{
+    const base=stripVintage(r.prod);
+    if(!byWine[base])byWine[base]={qty:0,sum:0};
+    byWine[base].qty+=r.qty;byWine[base].sum+=r.sum;
+  });
+  const wines=Object.entries(byWine).map(([name,d])=>({name,qty:d.qty,sum:d.sum})).sort((a,b)=>b.sum-a.sum);
+  const totalSum=wines.reduce((s,w)=>s+w.sum,0);
+  const totalQty=wines.reduce((s,w)=>s+w.qty,0);
+
+  // Assign ABC class
+  let cumPct=0;
+  wines.forEach(w=>{
+    w.pct=totalSum>0?(w.sum/totalSum*100):0;
+    cumPct+=w.pct;w.cumPct=cumPct;
+    w.cls=cumPct<=80?"A":cumPct<=95?"B":"C";
+  });
+
+  const aWines=wines.filter(w=>w.cls==="A");
+  const bWines=wines.filter(w=>w.cls==="B");
+  const cWines=wines.filter(w=>w.cls==="C");
+
+  // ABC by customer
+  const byCust={};
+  fd.forEach(r=>{const a=gdAlias(r.cust);if(!byCust[a])byCust[a]={sum:0,qty:0,chan:gdChan(r.cust)};byCust[a].sum+=r.sum;byCust[a].qty+=r.qty});
+  const custs=Object.entries(byCust).map(([name,d])=>({name,...d})).sort((a,b)=>b.sum-a.sum);
+  let cumCust=0;
+  custs.forEach(c=>{c.pct=totalSum>0?(c.sum/totalSum*100):0;cumCust+=c.pct;c.cumPct=cumCust;c.cls=cumCust<=80?"A":cumCust<=95?"B":"C"});
+  const aCusts=custs.filter(c=>c.cls==="A");
+  const bCusts=custs.filter(c=>c.cls==="B");
+
+  const clsClr={A:"#10b981",B:"#f59e0b",C:"#7d8196"};
+
+  el.innerHTML=`${header}
+    <div class="kpis">
+      <div class="kpi" style="border-color:#10b98140"><div class="l" style="color:#10b981">A — 80% виручки</div><div class="v" style="color:#10b981">${aWines.length} вин</div><div class="s">${ff(aWines.reduce((s,w)=>s+w.sum,0))}₴</div></div>
+      <div class="kpi" style="border-color:#f59e0b40"><div class="l" style="color:#f59e0b">B — 15% виручки</div><div class="v" style="color:#f59e0b">${bWines.length} вин</div><div class="s">${ff(bWines.reduce((s,w)=>s+w.sum,0))}₴</div></div>
+      <div class="kpi" style="border-color:#7d819640"><div class="l" style="color:#7d8196">C — 5% виручки</div><div class="v" style="color:#7d8196">${cWines.length} вин</div><div class="s">${ff(cWines.reduce((s,w)=>s+w.sum,0))}₴</div></div>
+    </div>
+
+    <div class="cc"><h3>Парето: кумулятивна виручка</h3><canvas id="cAbcPareto" height="160"></canvas></div>
+
+    <div class="cc"><h3>ABC по винах</h3>
+      <table class="tbl"><tr><th>Вино</th><th class="r">Клас</th><th class="r">Пляшок</th><th class="r">Сума</th><th class="r">%</th><th class="r">Кум.%</th></tr>
+      ${wines.map(w=>`<tr>
+        <td style="font-size:10px">${w.name.substring(0,35)}</td>
+        <td class="r" style="color:${clsClr[w.cls]};font-weight:700">${w.cls}</td>
+        <td class="r">${ff(w.qty)}</td>
+        <td class="r g">${ff(w.sum)}₴</td>
+        <td class="r">${w.pct.toFixed(1)}%</td>
+        <td class="r" style="color:${clsClr[w.cls]}">${w.cumPct.toFixed(1)}%</td>
+      </tr>`).join("")}
+      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(totalQty)}</td><td class="r g">${ff(totalSum)}₴</td><td class="r">100%</td><td></td></tr></table></div>
+
+    <div class="cc"><h3>ABC по клієнтах</h3>
+      <div class="kpis" style="margin-bottom:8px">
+        <div class="kpi" style="border-color:#10b98140"><div class="l" style="color:#10b981">A-клієнти (80%)</div><div class="v" style="color:#10b981">${aCusts.length}</div><div class="s">з ${custs.length}</div></div>
+        <div class="kpi" style="border-color:#f59e0b40"><div class="l" style="color:#f59e0b">B-клієнти (15%)</div><div class="v" style="color:#f59e0b">${bCusts.length}</div></div>
+      </div>
+      <table class="tbl"><tr><th>Клієнт</th><th>Канал</th><th class="r">Клас</th><th class="r">Сума</th><th class="r">%</th><th class="r">Кум.%</th></tr>
+      ${custs.filter(c=>c.cls!=="C").map(c=>`<tr>
+        <td style="font-size:10px">${c.name.substring(0,28)}</td>
+        <td style="font-size:9px;color:#8b5cf6">${c.chan}</td>
+        <td class="r" style="color:${clsClr[c.cls]};font-weight:700">${c.cls}</td>
+        <td class="r g">${ff(c.sum)}₴</td>
+        <td class="r">${c.pct.toFixed(1)}%</td>
+        <td class="r" style="color:${clsClr[c.cls]}">${c.cumPct.toFixed(1)}%</td>
+      </tr>`).join("")}
+      <tr style="color:#7d8196;font-size:9px"><td>C-клієнти (${custs.filter(c=>c.cls==="C").length})</td><td></td><td class="r">C</td><td class="r">${ff(custs.filter(c=>c.cls==="C").reduce((s,c)=>s+c.sum,0))}₴</td><td class="r">${(custs.filter(c=>c.cls==="C").reduce((s,c)=>s+c.pct,0)).toFixed(1)}%</td><td></td></tr>
+      </table></div>`;
+
+  // Pareto chart
+  if(wines.length>1){
+    dc("cAbcPareto");CH.cAbcPareto=new Chart(document.getElementById("cAbcPareto"),{type:"bar",
+      data:{labels:wines.map(w=>w.name.substring(0,12)),datasets:[
+        {label:"Сума",data:wines.map(w=>w.sum),backgroundColor:wines.map(w=>clsClr[w.cls]),borderRadius:1,yAxisID:"y",order:2},
+        {label:"Кум.%",data:wines.map(w=>w.cumPct),type:"line",borderColor:"#e11d48",borderWidth:2,pointRadius:0,tension:.3,yAxisID:"y1",order:1}
+      ]},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}},
+        tooltip:{callbacks:{label:c=>c.dataset.label==="Кум.%"?c.raw.toFixed(1)+"%":ff(c.raw)+"₴"}}},
+        scales:{x:{ticks:{color:"#7d8196",font:{size:7},maxTicksLimit:20},grid:{color:"#1e2130"}},
+          y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},
+          y1:{position:"right",min:0,max:100,ticks:{color:"#e11d48",font:{size:9},callback:v=>v+"%"},grid:{display:false}}}}});
   }
 }
