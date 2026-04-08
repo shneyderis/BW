@@ -53,10 +53,12 @@ js/tabs/mkt.js          — Маркетинг (Email + Instagram + Meta Ads)
 js/tabs/partners.js     — Партнери (огляд, канали, борги, контакти, CRM)
 js/tabs/unrec.js        — Нерозпізнані транзакції
 js/tabs/settings.js     — Налаштування, ролі, користувачі, джерела даних
-js/tabs/uk.js           — Wines of Ukraine UK (підготовлено)
+js/tabs/production.js   — Виробництво (лоти Innovint, витримка, розлив)
+js/tabs/uk.js           — Wines of Ukraine UK (Metorik/Shopify)
 vercel.json             — Vercel конфігурація (Cache-Control)
 sync.gs                 — Google Apps Script для синхронізації даних
 data/1c_*.csv           — CSV дані з 1С бухгалтерії
+data/lots.csv           — лоти з Innovint
 beykush_data.xlsx       — Вихідний xlsx файл з 1С
 ```
 
@@ -78,6 +80,9 @@ beykush_data.xlsx       — Вихідний xlsx файл з 1С
 | IG_Posts | Instagram пости з engagement | sync.gs → syncIGPosts() |
 | Meta_Ads | Meta рекламні кампанії | sync.gs → syncMetaAds() |
 | FB_Posts | Facebook пости | sync.gs → syncFBPosts() |
+| UK_Orders | Замовлення Wines of Ukraine UK (Shopify) | sync.gs → syncUK() |
+| UK_Products | Товари Wines of Ukraine UK (Shopify) | sync.gs → syncUK() |
+| ADD1 | Meta Ads (з Ads Manager експорту) | Вручну |
 | Sync_Log | Лог синхронізацій | Автоматично |
 | Users | Користувачі для Google Auth | Вручну |
 
@@ -104,6 +109,11 @@ beykush_data.xlsx       — Вихідний xlsx файл з 1С
 | 1c_staff.csv | 37 | Співробітники |
 | 1c_assets.csv | 116 | Основні засоби |
 
+#### 3b. Innovint — CSV файл (data/)
+| Файл | Що містить |
+|---|---|
+| lots.csv | Лоти з Innovint (виробничі партії, витримка, розлив) |
+
 #### 4. Зовнішні API (через sync.gs)
 | API | Що дає | Ключ/Токен |
 |---|---|---|
@@ -111,6 +121,7 @@ beykush_data.xlsx       — Вихідний xlsx файл з 1С
 | SendPulse | Розсилки, кампанії | Bearer token в sync.gs |
 | WooCommerce | Замовлення, товари | ck/cs ключі в sync.gs |
 | Meta Graph API | IG пости, FB пости, Ads | OAuth token в sync.gs |
+| Metorik | UK замовлення, товари (Shopify) | API token в sync.gs |
 
 ---
 
@@ -189,6 +200,20 @@ beykush_data.xlsx       — Вихідний xlsx файл з 1С
 Фільтр по організації: Бейкуш Вайнери / Бейкуш Ф2 / Всі
 ⚠ Банківські операції є тільки для Бейкуш Вайнери
 
+### 🍷 Виробництво
+Дані з Innovint (lots.csv). Підвкладки:
+- **Overview**: KPI (загальний об'єм, оцінка пляшок, вартість), розподіл по кольору, стадії, вінтажу, сорту
+- **Lots**: повна таблиця всіх лотів з пошуком та фільтрами
+- **Wines**: лоти згруповані по цільовому вину (intended wine)
+
+### 🇬🇧 UK
+Wines of Ukraine Ltd — продажі в Великобританії через Shopify.
+Інтеграція через Metorik API (sync.gs → syncUK()).
+- Замовлення з UK_Orders
+- Товари з UK_Products
+- KPI: виручка, замовлення, середній чек
+- Помісячна динаміка
+
 ### ⚠ Нерозпізнані
 - Транзакції з категорією "???" або порожньою
 - Експорт CSV
@@ -202,6 +227,18 @@ beykush_data.xlsx       — Вихідний xlsx файл з 1С
 - Курси НБУ
 - Джерела даних зі статусами
 - Інформація про сесію
+
+---
+
+## Marketing Timeline
+
+Графік таймлайну маркетингових активностей з вікнами 30 / 60 / 90 / 180 днів.
+Відображає на одній часовій осі:
+- **Замовлення** (WooCommerce) — стовпчики з кількістю замовлень по днях
+- **Email розсилки** (SendPulse) — маркери кампаній з open rate
+- **Instagram пости** — маркери публікацій з engagement
+
+Перемикач періоду (30д / 60д / 90д / 180д) дозволяє масштабувати вікно. Графік допомагає візуально оцінити кореляцію між маркетинговими активностями та продажами.
 
 ---
 
@@ -228,6 +265,11 @@ Google Sheet (SID) → Extensions → Apps Script
 | `syncIGPosts()` | Instagram пости (100 останніх) | Щоденно |
 | `syncFBPosts()` | Facebook пости (100 останніх) | Щоденно |
 | `syncMetaAds()` | Meta рекламні кампанії | Щоденно |
+| `syncUK()` | Повна синхронізація UK (orders + products) | Щоденно |
+| `syncUKOrders()` | Тільки UK замовлення (Metorik API) | За потреби |
+| `syncUKProducts()` | Тільки UK товари (Metorik API) | За потреби |
+| `syncPart1()` | Перша частина sync (SP + WC) — split для уникнення 6-хв таймауту | Щоденно |
+| `syncPart2()` | Друга частина sync (Marketing + UK) — split для уникнення 6-хв таймауту | Щоденно |
 | `discoverMetaIds()` | Показує Page/IG/Ad IDs | Одноразово |
 
 ### Налаштування тригерів
@@ -270,6 +312,7 @@ for name,eng in sheets.items():
 
 ## Оновлення Meta токену
 
+### User Token (короткоживучий, ~60 днів)
 Meta токен живе ~60 днів. Для оновлення:
 1. https://developers.facebook.com/tools/explorer/
 2. Вибрати додаток Beykush
@@ -277,6 +320,15 @@ Meta токен живе ~60 днів. Для оновлення:
 4. Generate Access Token
 5. Оновити в sync.gs → CONFIG.META_TOKEN
 6. Запустити syncAll() для перевірки
+
+### System User Token (безстроковий, рекомендований)
+Для уникнення ротації токену кожні 60 днів можна використати System User token:
+1. https://business.facebook.com/settings/system-users
+2. Створити System User (або використати існуючий)
+3. Додати Assets → призначити Page та Ad Account
+4. Generate Token з потрібними permissions
+5. Токен не має терміну дії (безстроковий) — не потребує оновлення
+6. Оновити в sync.gs → CONFIG.META_TOKEN
 
 ---
 
