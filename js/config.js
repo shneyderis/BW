@@ -9,9 +9,9 @@ const GOOGLE_CLIENT_ID = ""; // Поки пусто — Google Sign-In не по
 
 // Password fallback (працює завжди, навіть без Google)
 const ROLES={
-  owner:{password:"beykush2024",tabs:["pl","sales","exp","assets","shop","stock","cash","mkt","partners","uk","production","unrec","settings"]},
+  owner:{password:"beykush2024",tabs:["balance","pl","sales","exp","assets","shop","stock","cash","mkt","partners","uk","production","unrec","settings"]},
   manager:{password:"sales2024",tabs:["sales","shop","stock","mkt","partners"]},
-  accountant:{password:"acc2024",tabs:["pl","exp","assets","cash","partners","unrec"]}
+  accountant:{password:"acc2024",tabs:["balance","pl","exp","assets","cash","partners","unrec"]}
 };
 
 // Users list for Google Auth — email → {name, role, tabs, phone, active}

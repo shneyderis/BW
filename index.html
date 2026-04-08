@@ -24,7 +24,8 @@
 <div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><span id="user-info" style="font-size:9px;color:#7d8196;margin-left:auto;margin-right:8px"></span><button class="logout-btn" onclick="doLogout()">Вийти</button></div>
 <div class="sub" id="subtitle">Завантаження...</div>
 <div class="tabs" id="tabs">
-  <button class="tab on" onclick="sw('pl',this)">P&L</button>
+  <button class="tab on" onclick="sw('balance',this)">💰 Баланс</button>
+  <button class="tab" onclick="sw('pl',this)">P&L</button>
   <button class="tab" onclick="sw('sales',this)">Продажі</button>
   <button class="tab" onclick="sw('exp',this)">Витрати</button>
   <button class="tab" onclick="sw('assets',this)">Осн.фонди</button>
@@ -40,6 +41,7 @@
 </div>
 <div id="filterbar" class="filters"></div>
 <div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Завантаження даних...</p></div>
+<div id="t-balance" class="hidden"></div>
 <div id="t-pl" class="hidden"></div>
 <div id="t-sales" class="hidden"></div>
 <div id="t-exp" class="hidden"></div>
@@ -55,21 +57,22 @@
 <div id="t-settings" class="hidden"></div>
 <div id="modal" class="modal hidden"></div>
 </div>
-<script src="js/config.js?v=23"></script>
-<script src="js/data.js?v=23"></script>
-<script src="js/tabs/pl.js?v=23"></script>
-<script src="js/tabs/sales.js?v=23"></script>
-<script src="js/tabs/exp.js?v=23"></script>
-<script src="js/tabs/assets.js?v=23"></script>
-<script src="js/tabs/shop.js?v=23"></script>
-<script src="js/tabs/stock.js?v=23"></script>
-<script src="js/tabs/cash.js?v=23"></script>
-<script src="js/tabs/mkt.js?v=23"></script>
-<script src="js/tabs/partners.js?v=23"></script>
-<script src="js/tabs/production.js?v=23"></script>
-<script src="js/tabs/uk.js?v=23"></script>
-<script src="js/tabs/unrec.js?v=23"></script>
-<script src="js/tabs/settings.js?v=23"></script>
-<script src="js/app.js?v=23"></script>
+<script src="js/config.js?v=24"></script>
+<script src="js/data.js?v=24"></script>
+<script src="js/tabs/balance.js?v=24"></script>
+<script src="js/tabs/pl.js?v=24"></script>
+<script src="js/tabs/sales.js?v=24"></script>
+<script src="js/tabs/exp.js?v=24"></script>
+<script src="js/tabs/assets.js?v=24"></script>
+<script src="js/tabs/shop.js?v=24"></script>
+<script src="js/tabs/stock.js?v=24"></script>
+<script src="js/tabs/cash.js?v=24"></script>
+<script src="js/tabs/mkt.js?v=24"></script>
+<script src="js/tabs/partners.js?v=24"></script>
+<script src="js/tabs/production.js?v=24"></script>
+<script src="js/tabs/uk.js?v=24"></script>
+<script src="js/tabs/unrec.js?v=24"></script>
+<script src="js/tabs/settings.js?v=24"></script>
+<script src="js/app.js?v=24"></script>
 </body>
 </html>
