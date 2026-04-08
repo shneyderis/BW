@@ -145,8 +145,13 @@ function rGoods(){
 
   function sortHdr(col,label){const active=_gdSort===col;const arrow=active?(_gdSortDir<0?"▼":"▲"):"";return`<th class="r" style="cursor:pointer;user-select:none${active?";color:#f59e0b":""}" onclick="gdToggleSort('${col}')">${label} ${arrow}</th>`}
 
+  const _wnCount=WN?Object.keys(WN).filter(k=>k!=="_err").length:0;
+  const _allGdCusts=[...new Set(GD.map(r=>r.cust))];
+  const _matchedCount=_allGdCusts.filter(c=>_chanLookup(c)).length;
+
   el.innerHTML=`${header}
     <div class="info">${ff(fd.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}${_gdGeo!=="ALL"?" · "+_gdGeo:""}
+      · <span style="color:${_wnCount>0?"#10b981":"#ef4444"}">WN:${_wnCount}</span> matched:${_matchedCount}/${_allGdCusts.length}
       <button class="flt" style="float:right;font-size:9px" onclick="exportChannelMapping()">📋 Експорт маппінгу каналів</button>
     </div>
     <div class="kpis">
