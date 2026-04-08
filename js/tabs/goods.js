@@ -2,9 +2,25 @@
 
 let _gdView="top",_gdYr="ALL",_gdChan="ALL",_gdSearch="",_gdSort="sum",_gdSortDir=-1;
 
-// Resolve customer → alias & channel from WN (worker_new)
-function gdAlias(cust){return(WN[cust]&&WN[cust].alias)?WN[cust].alias:cust}
-function gdChan(cust){return(WN[cust]&&WN[cust].channel)?WN[cust].channel:""}
+// Resolve customer → WN entry (exact match or fuzzy)
+const _wnCache={};
+function _wnLookup(cust){
+  if(_wnCache[cust]!==undefined)return _wnCache[cust];
+  // 1. Exact match
+  if(WN[cust]){_wnCache[cust]=WN[cust];return WN[cust]}
+  // 2. Trimmed match
+  const ct=cust.trim();
+  if(WN[ct]){_wnCache[cust]=WN[ct];return WN[ct]}
+  // 3. Case-insensitive contains (WN key inside customer or vice versa)
+  const cl=ct.toLowerCase();
+  for(const[k,v]of Object.entries(WN)){
+    const kl=k.toLowerCase().trim();
+    if(kl&&kl.length>3&&(cl.includes(kl)||kl.includes(cl))){_wnCache[cust]=v;return v}
+  }
+  _wnCache[cust]=null;return null;
+}
+function gdAlias(cust){const w=_wnLookup(cust);return w&&w.alias?w.alias:cust}
+function gdChan(cust){const w=_wnLookup(cust);return w&&w.channel?w.channel:""}
 
 function rGoods(){
   const el=document.getElementById("t-goods");if(!el)return;

@@ -229,11 +229,12 @@ async function load(){
         console.log("worker_new columns:",k0.join(", "));
         console.log("worker_new row0:",JSON.stringify(wn[0]));
         wn.forEach(r=>{
-          // Try all possible column name patterns
-          const cust=gv(r,"customer")||gv(r,"контрагент")||gv(r,"name")||gv(r,"наименование")||gv(r,"клієнт")||gv(r,"повне")||"";
-          const alias=gv(r,"alias")||gv(r,"аліас")||gv(r,"коротка")||gv(r,"short")||gv(r,"назва")||gv(r,"nick")||"";
-          const chan=gv(r,"channel")||gv(r,"канал")||gv(r,"category")||gv(r,"група")||gv(r,"group")||gv(r,"тип")||"";
-          if(cust)WN[cust]={alias:alias||cust,channel:chan||""};
+          const cust=(r["F"]||gv(r,"f")||"").trim();
+          const alias=(r["ALIAS"]||gv(r,"alias")||"").trim();
+          const chan=(r["CATEGORY"]||gv(r,"category")||"").trim();
+          const geo=(r["GEO"]||gv(r,"geo")||"").trim();
+          const mgr=(r["Менеджер"]||gv(r,"менеджер")||"").trim();
+          if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr};
         });
         console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
       }
