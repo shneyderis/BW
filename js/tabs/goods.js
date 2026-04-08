@@ -3,20 +3,36 @@
 let _gdView="top",_gdYr="ALL",_gdChan="ALL",_gdSearch="",_gdSort="sum",_gdSortDir=-1;
 function stripVintage(name){return name.replace(/\s+20[12]\d\s*$/,"").trim()}
 
-// Resolve customer → WN entry (exact match or fuzzy)
+// Resolve customer → WN entry (exact match or fuzzy with normalization)
 const _wnCache={};
+// Normalize: strip legal form prefixes/suffixes, lowercase, trim
+function _normName(n){
+  return n.toLowerCase()
+    .replace(/товариство з обмеженою відповідальніст[юі]\s*/gi,"")
+    .replace(/tobapиctbo 3 oбmeжеhoю відповідальніст[юі]\s*/gi,"")
+    .replace(/фізична особа[\s\-–]*підприємець\s*/gi,"")
+    .replace(/фiзична особа[\s\-–]*пiдприємець\s*/gi,"")
+    .replace(/\bтов\b|\bфоп\b|\bпвкп\b|\bптеп\b|\bду\b|\bпп\b/gi,"")
+    .replace(/[""«»"']/g,"").replace(/\s+/g," ").trim();
+}
+// Pre-build normalized WN keys
+let _wnNorm=null;
+function _buildWnNorm(){
+  if(_wnNorm)return;_wnNorm=[];
+  for(const[k,v]of Object.entries(WN)){const nk=_normName(k);if(nk.length>2)_wnNorm.push({nk,v})}
+}
 function _wnLookup(cust){
   if(_wnCache[cust]!==undefined)return _wnCache[cust];
   // 1. Exact match
   if(WN[cust]){_wnCache[cust]=WN[cust];return WN[cust]}
-  // 2. Trimmed match
-  const ct=cust.trim();
-  if(WN[ct]){_wnCache[cust]=WN[ct];return WN[ct]}
-  // 3. Case-insensitive contains (WN key inside customer or vice versa)
-  const cl=ct.toLowerCase();
-  for(const[k,v]of Object.entries(WN)){
-    const kl=k.toLowerCase().trim();
-    if(kl&&kl.length>3&&(cl.includes(kl)||kl.includes(cl))){_wnCache[cust]=v;return v}
+  const ct=cust.trim();if(WN[ct]){_wnCache[cust]=WN[ct];return WN[ct]}
+  // 2. Normalized match
+  _buildWnNorm();
+  const nc=_normName(cust);
+  if(nc.length>2){
+    for(const{nk,v}of _wnNorm){
+      if(nc===nk||nc.includes(nk)||nk.includes(nc)){_wnCache[cust]=v;return v}
+    }
   }
   _wnCache[cust]=null;return null;
 }
