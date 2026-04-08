@@ -79,7 +79,8 @@ function rGoods(){
   // === Filter data ===
   let fd=GD;
   if(_gdYr!=="ALL")fd=fd.filter(r=>r.yr===_gdYr);
-  if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
+  if(_gdChan==="?")fd=fd.filter(r=>!gdChan(r.cust));
+  else if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
   if(_gdGeo!=="ALL")fd=fd.filter(r=>_gdGeoFor(r.cust)===_gdGeo);
 
   const totalQty=fd.reduce((s,r)=>s+r.qty,0);
@@ -110,6 +111,7 @@ function rGoods(){
   <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
     <button class="flt" style="${_gdChan==="ALL"?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='ALL';render()">Всі канали</button>
     ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
+    <button class="flt" style="${_gdChan==="?"?"background:#7d8196;color:#fff;border-color:#7d8196":""}" onclick="_gdChan='?';render()">Невизначений</button>
   </div>`;
 
   function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
