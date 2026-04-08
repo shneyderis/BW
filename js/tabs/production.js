@@ -107,6 +107,20 @@ function rProduction(){
     ${readyToBtl.length?`<div class="cc" style="border-color:rgba(16,185,129,.3)"><h3 style="color:#10b981">🍾 Готові до розливу</h3>
       <table class="tbl"><tr><th>Лот</th><th>Назва</th><th class="r">Об'єм</th><th class="r">Сорт</th><th class="r">Врожай</th></tr>
       ${readyToBtl.map(l=>`<tr><td style="font-weight:600">${l.code}</td><td style="font-size:9px">${l.name}</td><td class="r g">${ff(l.volume)}л</td><td class="r" style="font-size:9px">${l.varietal}</td><td class="r">${l.vintage}</td></tr>`).join("")}</table></div>`:""}
+
+    <div class="cc"><h3>🌿 Виноградник · середня врожайність</h3>
+      <div style="font-size:9px;color:#7d8196;margin-bottom:6px">Дані за 2021-2025 по ділянках (з таблиці лотів)</div>
+      <table class="tbl"><tr><th>Ділянка</th><th class="r">Сортів</th><th class="r">Сер.кг/рік</th><th class="r">Тренд</th></tr>
+      ${(()=>{
+        const byPlot={};lots.forEach(l=>{const p=l.vineyard||"?";if(!byPlot[p])byPlot[p]={varietals:new Set(),vols:{}};byPlot[p].varietals.add(l.varietal);const y=l.vintage;if(!byPlot[p].vols[y])byPlot[p].vols[y]=0;byPlot[p].vols[y]+=l.volume});
+        return Object.entries(byPlot).sort((a,b)=>{const aVol=Object.values(a[1].vols).reduce((s,v)=>s+v,0);const bVol=Object.values(b[1].vols).reduce((s,v)=>s+v,0);return bVol-aVol}).map(([p,d])=>{
+          const yrs=Object.keys(d.vols).sort();const avg=yrs.length?Object.values(d.vols).reduce((s,v)=>s+v,0)/yrs.length:0;
+          const last=d.vols[yrs[yrs.length-1]]||0;const prev=d.vols[yrs[yrs.length-2]]||0;
+          const trend=prev>0?((last-prev)/prev*100):0;
+          const tClr=trend>10?"#10b981":trend<-10?"#ef4444":"#7d8196";
+          return`<tr><td>${p}</td><td class="r">${d.varietals.size}</td><td class="r">${ff(avg.toFixed(0))}л</td><td class="r" style="color:${tClr}">${trend>0?"+":""}${trend.toFixed(0)}%</td></tr>`
+        }).join("")})()}</table>
+    </div>
   `;
 
   if(vintArr.length){dc("cProdVint");CH.cProdVint=new Chart(document.getElementById("cProdVint"),{type:"bar",data:{labels:vintArr.map(([v])=>v),datasets:[{data:vintArr.map(([,d])=>d.vol),backgroundColor:"#9f1239",borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)+"л"},grid:{color:"#1e2130"}}}}})}
@@ -156,13 +170,27 @@ function rProdWines(el,tabs,lots){
   });
   const wineArr=Object.entries(byWine).sort((a,b)=>b[1].vol-a[1].vol);
 
+  // Estimate months of stock per wine based on 1C sales speed
+  const salesByWine={};
+  if(C1&&C1.sales&&C1.sales.length){
+    // Rough mapping wine brand → 1C sales (by matching names)
+    const monthsOfData=Math.max(1,(C1.sales.length>0?((new Date()-new Date(C1.sales[C1.sales.length-1].date||"2021-01-01"))/(1000*60*60*24*30)):12));
+    const totalSalesPerMonth=C1.sales.length/monthsOfData;
+    // Use total sales as rough proxy — refined mapping needs product-level data
+  }
+
   el.innerHTML=`${tabs}
     <div class="info">${wineArr.length} вин планується з ${lots.length} лотів</div>
     ${wineArr.map(([wine,d])=>{
       const clr=d.lots[0]?{"red":"#e11d48","white":"#f59e0b","rose":"#ec4899","orange":"#f97316","sparkling":"#8b5cf6"}[d.lots[0].color]||"#7d8196":"#7d8196";
       const bottles=Math.floor(d.vol/0.75);
-      return`<div class="cc">
-        <h3 style="display:flex;justify-content:space-between"><span style="color:${clr}">${wine}</span><span>${ff(d.vol)}л · ~${ff(bottles)} пл</span></h3>
+      // Stock alert: <500 bottles = low, >5000 = high
+      const alertLow=bottles>0&&bottles<500;
+      const alertHigh=bottles>5000;
+      const alertStyle=alertLow?"border-color:rgba(239,68,68,.4)":alertHigh?"border-color:rgba(245,158,11,.3)":"";
+      const alertBadge=alertLow?`<span style="color:#ef4444;font-size:9px;margin-left:8px">⚠ мало — гальмувати продаж</span>`:alertHigh?`<span style="color:#f59e0b;font-size:9px;margin-left:8px">📦 багато — прискорити продаж</span>`:"";
+      return`<div class="cc" style="${alertStyle}">
+        <h3 style="display:flex;justify-content:space-between;flex-wrap:wrap"><span style="color:${clr}">${wine}${alertBadge}</span><span>${ff(d.vol)}л · ~${ff(bottles)} пл</span></h3>
         <table class="tbl"><tr><th>Лот</th><th class="r">Об'єм</th><th class="r">Сорт</th><th class="r">Врожай</th><th class="r">Стадія</th></tr>
         ${d.lots.map(l=>`<tr>
           <td style="font-size:9px;font-weight:600">${l.code}</td>

@@ -432,7 +432,26 @@ async function rMkt(){
           </div></div>
       </div>
 
-      ${igCorrelHTML||`<div class="info">Кореляція пости→замовлення: WC_Orders ${WO.length?WO.length+" записів, але дати не збігаються":"порожній"}. Для кореляції потрібні WC замовлення з датами.</div>`}
+      ${igCorrelHTML||""}
+
+      ${(()=>{
+        // Best day of week to post
+        const dayNames=["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+        const byDay=[0,1,2,3,4,5,6].map(d=>{const posts=igPosts.filter(p=>{if(!p.date)return false;const dt=new Date(p.date);return dt.getDay()===d});return{day:d,name:dayNames[d],cnt:posts.length,avgLikes:posts.length?posts.reduce((s,p)=>s+p.likes,0)/posts.length:0,avgReach:posts.length?posts.reduce((s,p)=>s+p.reach,0)/posts.length:0}});
+        const bestDay=byDay.filter(d=>d.cnt>=2).sort((a,b)=>b.avgReach-a.avgReach)[0];
+        const worstDay=byDay.filter(d=>d.cnt>=2).sort((a,b)=>a.avgReach-b.avgReach)[0];
+        if(!bestDay)return"";
+        return`<div class="cc"><h3>📅 Найкращий день для публікації</h3>
+          <table class="tbl"><tr><th>День</th><th class="r">Постів</th><th class="r">Сер. ❤</th><th class="r">Сер. Reach</th></tr>
+          ${byDay.filter(d=>d.cnt>0).map(d=>{const isBest=d===bestDay;const isWorst=d===worstDay;return`<tr style="${isBest?"background:#1e2130":""}">
+            <td style="font-weight:${isBest?"700":"400"};color:${isBest?"#10b981":isWorst?"#ef4444":"#e4e5ea"}">${d.name}${isBest?" ⭐":""}</td>
+            <td class="r">${d.cnt}</td>
+            <td class="r" style="color:#e11d48">${d.avgLikes.toFixed(0)}</td>
+            <td class="r" style="color:#8b5cf6">${ff(d.avgReach.toFixed(0))}</td>
+          </tr>`}).join("")}</table>
+          <div style="font-size:9px;color:#7d8196;margin-top:6px">⭐ Найкращий: <b style="color:#10b981">${bestDay.name}</b> (сер. reach ${ff(bestDay.avgReach.toFixed(0))}). Уникайте: <b style="color:#ef4444">${worstDay.name}</b> (сер. reach ${ff(worstDay.avgReach.toFixed(0))}).</div>
+        </div>`;
+      })()}
     `:'<div class="info">IG_Posts порожній. Запустіть syncIGPosts() в Apps Script.</div>'}
 
     ${adCamps.length?`<div class="sec">📢 Meta / Facebook Ads</div>
