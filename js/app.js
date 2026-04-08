@@ -234,7 +234,12 @@ async function load(){
           const chan=(r["CATEGORY"]||gv(r,"category")||"").trim();
           const geo=(r["GEO"]||gv(r,"geo")||"").trim();
           const mgr=(r["Менеджер"]||gv(r,"менеджер")||"").trim();
-          if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr};
+          const contact=(r["Контактное лицо"]||gv(r,"контактн")||"").trim();
+          const tel=(r["Tel"]||gv(r,"tel")||gv(r,"phone")||"").trim();
+          const edrpou=(r["EDRPOU"]||gv(r,"edrpou")||"").trim();
+          const discount=(r["ЗНИЖКА"]||gv(r,"знижка")||"").trim();
+          const commission=(r["Коміссія Фінальна"]||gv(r,"коміссія фін")||gv(r,"коміссія")||"").trim();
+          if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr,contact,tel,edrpou,discount,commission};
         });
         console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
       }

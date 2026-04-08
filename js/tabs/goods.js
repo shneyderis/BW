@@ -1,6 +1,7 @@
 // js/tabs/goods.js — Product-level sales analytics (FINAL_sales_detail + worker_new)
 
 let _gdView="top",_gdYr="ALL",_gdChan="ALL",_gdSearch="",_gdSort="sum",_gdSortDir=-1;
+function stripVintage(name){return name.replace(/\s+20[12]\d\s*$/,"").trim()}
 
 // Resolve customer → WN entry (exact match or fuzzy)
 const _wnCache={};
@@ -67,13 +68,16 @@ function rGoods(){
   if(_gdView==="customers"){rGdCustomers(el,header,fd,c$);bindFlt();return}
   if(_gdView==="trends"){rGdTrends(el,header,allYrs,c$);bindFlt();return}
 
-  // === TOP PRODUCTS ===
-  const byProd={};
+  // === TOP PRODUCTS (grouped by base name, without vintage year) ===
+  const byWine={};
   fd.forEach(r=>{
-    if(!byProd[r.prod])byProd[r.prod]={qty:0,sum:0,code:r.code};
-    byProd[r.prod].qty+=r.qty;byProd[r.prod].sum+=r.sum;
+    const base=stripVintage(r.prod);
+    if(!byWine[base])byWine[base]={qty:0,sum:0,vintages:new Set()};
+    byWine[base].qty+=r.qty;byWine[base].sum+=r.sum;
+    // Extract vintage year
+    const ym=r.prod.match(/\b(20[12]\d)\s*$/);if(ym)byWine[base].vintages.add(ym[1]);
   });
-  let prodArr=Object.entries(byProd).map(([name,d])=>({name,qty:d.qty,sum:d.sum,code:d.code,avg:d.qty>0?d.sum/d.qty:0}));
+  let prodArr=Object.entries(byWine).map(([name,d])=>({name,qty:d.qty,sum:d.sum,avg:d.qty>0?d.sum/d.qty:0,vintages:[...d.vintages].sort().join(", ")}));
   if(_gdSearch){const q=_gdSearch.toLowerCase();prodArr=prodArr.filter(p=>p.name.toLowerCase().includes(q))}
 
   // Sort
@@ -96,10 +100,10 @@ function rGoods(){
     <div class="cc"><h3>Топ-25 вин по ${_gdSort==="qty"?"кількості":_gdSort==="avg"?"ціні":"виручці"}</h3><canvas id="cGdTop" height="260"></canvas></div>
 
     <div class="cc"><h3>Всі вина (${prodArr.length}) <button class="flt" style="float:right;font-size:9px" onclick="exportGoodsCSV()">Експорт CSV</button></h3>
-      <table class="tbl"><tr><th>Вино</th><th class="r" style="color:#7d8196">Код</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}${sortHdr("avg","Сер.ціна")}</tr>
+      <table class="tbl"><tr><th>Вино</th><th style="color:#7d8196">Вінтажі</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}${sortHdr("avg","Сер.ціна")}</tr>
       ${prodArr.slice(0,60).map((p,i)=>`<tr>
-        <td style="font-size:10px;font-weight:${i<5?"600":"400"}">${p.name.substring(0,40)}</td>
-        <td class="r" style="font-size:9px;color:#7d8196">${p.code}</td>
+        <td style="font-size:10px;font-weight:${i<5?"600":"400"}">${p.name.substring(0,35)}</td>
+        <td style="font-size:9px;color:#7d8196">${p.vintages||"—"}</td>
         <td class="r">${ff(p.qty)}</td>
         <td class="r g">${ff(p.sum)}₴</td>
         <td class="r" style="color:#f59e0b">${p.avg.toFixed(0)}₴</td>
@@ -108,8 +112,8 @@ function rGoods(){
 
   // Export
   window.exportGoodsCSV=function(){
-    exportCSV("goods.csv",["Вино","Код","Пляшок","Сума","Сер.ціна"],
-      prodArr.map(p=>[p.name,p.code,p.qty.toFixed(0),p.sum.toFixed(0),p.avg.toFixed(0)]));
+    exportCSV("goods.csv",["Вино","Вінтажі","Пляшок","Сума","Сер.ціна"],
+      prodArr.map(p=>[p.name,p.vintages,p.qty.toFixed(0),p.sum.toFixed(0),p.avg.toFixed(0)]));
   };
 
   // Sort toggle
@@ -194,15 +198,17 @@ function rGdTrends(el,header,allYrs,c$){
   all.filter(r=>r.yr===curYr).forEach(r=>{const m=r.date.substring(5,7);if(!byMoCur[m])byMoCur[m]={qty:0,sum:0};byMoCur[m].qty+=r.qty;byMoCur[m].sum+=r.sum});
   all.filter(r=>r.yr===prevYr).forEach(r=>{const m=r.date.substring(5,7);if(!byMoPrev[m])byMoPrev[m]={qty:0,sum:0};byMoPrev[m].qty+=r.qty;byMoPrev[m].sum+=r.sum});
 
-  // Top products year-over-year (from FULL data, both years)
-  const allProds=[...new Set(all.filter(r=>r.yr===curYr||r.yr===prevYr).map(r=>r.prod))];
-  const prodYoY=allProds.map(p=>{
-    const cur=all.filter(r=>r.yr===curYr&&r.prod===p);
-    const prev=all.filter(r=>r.yr===prevYr&&r.prod===p);
-    const sumC=cur.reduce((s,r)=>s+r.sum,0),qtyC=cur.reduce((s,r)=>s+r.qty,0);
-    const sumP=prev.reduce((s,r)=>s+r.sum,0),qtyP=prev.reduce((s,r)=>s+r.qty,0);
-    return{name:p,sumC,qtyC,sumP,qtyP,growth:sumP>0?((sumC-sumP)/sumP*100):sumC>0?999:0};
-  }).filter(p=>p.sumC>0||p.sumP>0).sort((a,b)=>b.sumC-a.sumC);
+  // Top products year-over-year (grouped by base name, no vintage)
+  const yoyData={};
+  all.filter(r=>r.yr===curYr||r.yr===prevYr).forEach(r=>{
+    const base=stripVintage(r.prod);
+    if(!yoyData[base])yoyData[base]={sumC:0,qtyC:0,sumP:0,qtyP:0};
+    if(r.yr===curYr){yoyData[base].sumC+=r.sum;yoyData[base].qtyC+=r.qty}
+    else{yoyData[base].sumP+=r.sum;yoyData[base].qtyP+=r.qty}
+  });
+  const prodYoY=Object.entries(yoyData).map(([name,d])=>({
+    name,...d,growth:d.sumP>0?((d.sumC-d.sumP)/d.sumP*100):d.sumC>0?999:0
+  })).filter(p=>p.sumC>0||p.sumP>0).sort((a,b)=>b.sumC-a.sumC);
 
   el.innerHTML=`${header}
     <div class="row">

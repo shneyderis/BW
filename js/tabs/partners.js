@@ -66,6 +66,7 @@ function rPartners(){
       <button class="sh-tab ${_partView==="debtors"?"on":""}" onclick="_partView='debtors';render()">Борги</button>
       <button class="sh-tab ${_partView==="contacts"?"on":""}" onclick="_partView='contacts';render()">Контакти</button>
       <button class="sh-tab ${_partView==="crm"?"on":""}" onclick="_partView='crm';render()">CRM</button>
+      <button class="sh-tab ${_partView==="leads"?"on":""}" onclick="_partView='leads';render()">Ліди</button>
     </div>
     <select class="flt" id="partOrgFlt">
       <option value="ALL" ${_partOrg==="ALL"?"selected":""}>Всі організації</option>
@@ -79,6 +80,7 @@ function rPartners(){
   if(_partView==="debtors"){rPartDebtors(el,tabs,debtors,now);bindOrgFlt();return}
   if(_partView==="contacts"){rPartContacts(el,tabs,merged,partners);bindOrgFlt();return}
   if(_partView==="crm"){rPartCRM(el,tabs,merged,debtors,now,bank);bindOrgFlt();return}
+  if(_partView==="leads"){rPartLeads(el,tabs);bindOrgFlt();return}
 
   // === OVERVIEW ===
   const byYr={};sales.forEach(s=>{const y=toISO(s.date).substring(0,4);if(y<"2015")return;if(!byYr[y])byYr[y]={sum:0,cnt:0};byYr[y].sum+=s.sum;byYr[y].cnt++});
@@ -197,96 +199,195 @@ function rPartDebtors(el,tabs,debtors,now){
   if(top15.length){dc("cDebtBar");CH.cDebtBar=new Chart(document.getElementById("cDebtBar"),{type:"bar",data:{labels:top15.map(p=>shortName(p.name).substring(0,14)),datasets:[{label:"Борг",data:top15.map(p=>p.debt),backgroundColor:"#ef4444",borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}})}
 }
 
+// === WN lookup for partners (fuzzy) ===
+function wnForPartner(name){
+  if(!WN||!Object.keys(WN).length)return null;
+  if(WN[name])return WN[name];
+  const nt=name.trim();if(WN[nt])return WN[nt];
+  const nl=nt.toLowerCase();
+  for(const[k,v]of Object.entries(WN)){
+    const kl=k.toLowerCase().trim();
+    if(kl&&kl.length>3&&(nl.includes(kl)||kl.includes(nl)))return v;
+  }
+  return null;
+}
+
 // === CONTACTS VIEW ===
 function rPartContacts(el,tabs,merged,partners){
   const withSales=merged.filter(p=>p.sold>0).sort((a,b)=>b.sold-a.sold);
-  el.innerHTML=`${tabs}
-    <div class="info">${withSales.length} партнерів з продажами. ЄДРПОУ: ${withSales.filter(p=>p.edrpou).length} заповнено.</div>
-    <div class="cc"><h3>Контакти партнерів</h3>
-      <table class="tbl"><tr><th>Партнер</th><th>Повна назва</th><th class="r">ЄДРПОУ</th><th class="r">Тип</th><th class="r">Канали</th><th class="r">Продано</th></tr>
-      ${withSales.slice(0,50).map(p=>`<tr>
-        <td style="font-size:9px;font-weight:600">${shortName(p.name).substring(0,25)}</td>
-        <td style="font-size:8px;color:#7d8196">${shortName(p.fullname).substring(0,30)}</td>
-        <td class="r" style="font-size:9px">${p.edrpou||"—"}</td>
-        <td class="r" style="font-size:8px;color:#7d8196">${p.type==="Юридическое лицо"?"Юр":p.type==="Физическое лицо"?"Фіз":"—"}</td>
-        <td class="r" style="font-size:8px;color:#7d8196">${p.warehouses.join(", ")}</td>
-        <td class="r g">${ff(p.sold)}₴</td>
-      </tr>`).join("")}
-      ${withSales.length>50?`<tr><td colspan="6" style="color:#7d8196;font-size:9px">+ ще ${withSales.length-50}</td></tr>`:""}</table></div>`;
-}
-
-// === CRM VIEW ===
-function rPartCRM(el,tabs,merged,debtors,now,bank){
-  // Load CRM data from Sheets (Contacts + Leads)
-  // Contacts: stored in "CRM_Contacts" sheet - partner_name, contact_name, phone, email, position, notes
-  // Leads: stored in "CRM_Leads" sheet - name, contact, phone, status, source, created, notes
-
-  // For now show what we have from 1C + actionable debt info
-  const urgentDebtors=debtors.filter(p=>{
-    const lp=toISO(p.lastPay);
-    if(!lp)return p.debt>5000;
-    return(now-new Date(lp).getTime())>30*24*60*60*1000;
-  });
-
-  // Recent payments
-  const recentPay=bank.filter(b=>b.income>0&&b.type.includes("покупат")).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,20);
-
-  // Search filter
+  const hasWN=WN&&Object.keys(WN).length>0;
+  const withContact=withSales.map(p=>{const w=wnForPartner(p.name);return{...p,wn:w}});
   const search=_partSearch.toLowerCase();
-  const filtered=search?merged.filter(p=>p.name.toLowerCase().includes(search)||p.edrpou.includes(search)):null;
+  const filtered=search?withContact.filter(p=>p.name.toLowerCase().includes(search)||(p.wn&&p.wn.alias&&p.wn.alias.toLowerCase().includes(search))||(p.wn&&p.wn.contact&&p.wn.contact.toLowerCase().includes(search))):withContact;
 
   el.innerHTML=`${tabs}
-    <div class="info">CRM: контакти, борги, оплати. Для повного CRM створіть листи "CRM_Contacts" та "CRM_Leads" в Google Sheets.</div>
-
     <div style="margin-bottom:10px">
       <input type="text" placeholder="Пошук партнера..." value="${esc(_partSearch)}"
         style="width:100%;max-width:300px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:12px"
         oninput="_partSearch=this.value;render()">
     </div>
-
-    ${filtered?`<div class="cc"><h3>Результати пошуку (${filtered.length})</h3>
-      <table class="tbl"><tr><th>Партнер</th><th class="r">ЄДРПОУ</th><th class="r">Продано</th><th class="r">Борг</th><th class="r">Ост.оплата</th><th class="r">Канали</th></tr>
-      ${filtered.slice(0,30).map(p=>{const hasDebt=p.debt>1000&&!isInternal(p.name);return`<tr>
-        <td style="font-size:10px;font-weight:600">${shortName(p.name).substring(0,25)}</td>
-        <td class="r" style="font-size:9px">${p.edrpou||"—"}</td>
+    <div class="info">${filtered.length} партнерів · контакти: ${filtered.filter(p=>p.wn&&p.wn.contact).length} · телефони: ${filtered.filter(p=>p.wn&&p.wn.tel).length}</div>
+    <div class="cc"><h3>Контакти партнерів</h3>
+      <table class="tbl"><tr><th>Партнер</th><th>Контактна особа</th><th>Телефон</th><th>Канал</th><th>Менеджер</th><th class="r">Продано</th><th class="r">Борг</th></tr>
+      ${filtered.slice(0,80).map(p=>{
+        const w=p.wn||{};const alias=w.alias||shortName(p.name);const hasDebt=p.debt>1000&&!isInternal(p.name);
+        return`<tr>
+        <td style="font-size:10px;font-weight:600">${alias.substring(0,28)}</td>
+        <td style="font-size:10px;color:#e4e5ea">${w.contact||'<span style="color:#7d8196">—</span>'}</td>
+        <td style="font-size:10px">${w.tel?`<a href="tel:${w.tel}" style="color:#3b82f6">${w.tel}</a>`:'<span style="color:#7d8196">—</span>'}</td>
+        <td style="font-size:9px;color:#8b5cf6">${w.channel||"—"}</td>
+        <td style="font-size:9px;color:#7d8196">${w.mgr||"—"}</td>
         <td class="r g">${ff(p.sold)}₴</td>
         <td class="r ${hasDebt?"rd":""}">${hasDebt?ff(p.debt)+"₴":"✓"}</td>
-        <td class="r" style="font-size:9px">${fmtDate(p.lastPay)||"—"}</td>
-        <td class="r" style="font-size:8px;color:#7d8196">${p.warehouses.join(", ")}</td>
-      </tr>`}).join("")}</table></div>`:""}
+      </tr>`}).join("")}
+      ${filtered.length>80?`<tr><td colspan="7" style="color:#7d8196;font-size:9px">+ ще ${filtered.length-80}</td></tr>`:""}</table></div>`;
+}
 
-    ${urgentDebtors.length?`<div class="cc" style="border-color:rgba(239,68,68,.4)"><h3 style="color:#ef4444">📞 Потрібно зателефонувати (борг >30 днів)</h3>
-      <table class="tbl"><tr><th>Партнер</th><th class="r">Борг</th><th class="r">Ост.оплата</th><th class="r">Днів</th><th class="r">ЄДРПОУ</th></tr>
-      ${urgentDebtors.slice(0,20).map(p=>{
-        const days=p.lastPay?Math.floor((now-new Date(toISO(p.lastPay)).getTime())/(1000*60*60*24)):"∞";
-        return`<tr>
-        <td style="font-size:10px;font-weight:600;color:#e4e5ea">${shortName(p.name).substring(0,25)}</td>
-        <td class="r rd" style="font-weight:700">${ff(p.debt)}₴</td>
-        <td class="r" style="font-size:9px">${fmtDate(p.lastPay)||"ніколи"}</td>
-        <td class="r rd">${days}</td>
-        <td class="r" style="font-size:9px;color:#7d8196">${p.edrpou||"—"}</td>
-      </tr>`}).join("")}</table></div>`:""}
+// === CRM VIEW ===
+function rPartCRM(el,tabs,merged,debtors,now,bank){
+  const urgentDebtors=debtors.filter(p=>{
+    const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;
+    return(now-new Date(lp).getTime())>30*24*60*60*1000;
+  });
+
+  // Build task list: priority-sorted actions
+  const tasks=[];
+  // 1. Overdue debtors → CALL
+  urgentDebtors.forEach(p=>{
+    const w=wnForPartner(p.name)||{};
+    const days=p.lastPay?Math.floor((now-new Date(toISO(p.lastPay)).getTime())/(1000*60*60*24)):999;
+    const priority=days>90?"critical":days>60?"high":"medium";
+    tasks.push({type:"call",priority,name:w.alias||shortName(p.name),contact:w.contact||"",tel:w.tel||"",
+      reason:`Борг ${ff(p.debt)}₴ · ${days==="∞"?"ніколи не платив":days+" днів без оплати"}`,
+      debt:p.debt,days,channel:w.channel||"",mgr:w.mgr||""});
+  });
+  // 2. Sleeping partners (had sales >6mo ago, no recent activity) → FOLLOW-UP
+  const sixMAgo=new Date();sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
+  merged.filter(p=>p.sold>20000&&!isInternal(p.name)&&toISO(p.lastSale)<sixMS&&toISO(p.lastSale)>"2020").forEach(p=>{
+    const w=wnForPartner(p.name)||{};
+    tasks.push({type:"followup",priority:"low",name:w.alias||shortName(p.name),contact:w.contact||"",tel:w.tel||"",
+      reason:`Сплячий клієнт · продажі ${ff(p.sold)}₴ · ост.продаж ${fmtDate(p.lastSale)}`,
+      debt:0,days:0,channel:w.channel||"",mgr:w.mgr||""});
+  });
+
+  tasks.sort((a,b)=>{const po={critical:0,high:1,medium:2,low:3};return(po[a.priority]||9)-(po[b.priority]||9)});
+
+  // Recent payments
+  const recentPay=bank.filter(b=>b.income>0&&b.type.includes("покупат")).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,15);
+
+  // Search
+  const search=_partSearch.toLowerCase();
+  const filteredTasks=search?tasks.filter(t=>t.name.toLowerCase().includes(search)||t.contact.toLowerCase().includes(search)):tasks;
+
+  const prClr={critical:"#ef4444",high:"#f59e0b",medium:"#3b82f6",low:"#7d8196"};
+  const prIcon={critical:"🔴",high:"🟡",medium:"🔵",low:"⚪"};
+  const typeIcon={call:"📞",followup:"💤"};
+
+  el.innerHTML=`${tabs}
+    <div style="margin-bottom:10px">
+      <input type="text" placeholder="Пошук..." value="${esc(_partSearch)}"
+        style="width:100%;max-width:300px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:12px"
+        oninput="_partSearch=this.value;render()">
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Задач</div><div class="v" style="color:#ef4444">${tasks.length}</div></div>
+      <div class="kpi"><div class="l">Критичних</div><div class="v" style="color:#ef4444">${tasks.filter(t=>t.priority==="critical").length}</div></div>
+      <div class="kpi"><div class="l">Зателефонувати</div><div class="v" style="color:#f59e0b">${tasks.filter(t=>t.type==="call").length}</div></div>
+      <div class="kpi"><div class="l">Нагадати</div><div class="v" style="color:#3b82f6">${tasks.filter(t=>t.type==="followup").length}</div></div>
+    </div>
+
+    <div class="cc"><h3>📋 Список задач (${filteredTasks.length})</h3>
+      ${filteredTasks.slice(0,40).map(t=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;margin-bottom:4px;background:#0c0e13;border-radius:6px;border-left:3px solid ${prClr[t.priority]}">
+        <div style="font-size:14px;min-width:20px">${typeIcon[t.type]||"📌"}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:#e4e5ea">${t.name.substring(0,30)}</span>
+            <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:${prClr[t.priority]}22;color:${prClr[t.priority]}">${prIcon[t.priority]} ${t.priority}</span>
+          </div>
+          <div style="font-size:10px;color:#7d8196;margin-top:2px">${t.reason}</div>
+          <div style="display:flex;gap:12px;margin-top:4px;font-size:10px">
+            ${t.contact?`<span>👤 ${t.contact}</span>`:""}
+            ${t.tel?`<a href="tel:${t.tel}" style="color:#3b82f6">📱 ${t.tel}</a>`:""}
+            ${t.channel?`<span style="color:#8b5cf6">${t.channel}</span>`:""}
+            ${t.mgr?`<span style="color:#7d8196">→ ${t.mgr}</span>`:""}
+          </div>
+        </div>
+      </div>`).join("")}
+    </div>
 
     <div class="cc"><h3>📥 Останні оплати</h3>
-      <table class="tbl"><tr><th>Дата</th><th>Партнер</th><th class="r">Сума</th><th class="r">Банк</th></tr>
-      ${recentPay.map(b=>`<tr>
+      <table class="tbl"><tr><th>Дата</th><th>Партнер</th><th class="r">Сума</th></tr>
+      ${recentPay.map(b=>{const w=wnForPartner(b.partner);const alias=w?w.alias:shortName(b.partner);return`<tr>
         <td style="font-size:9px">${fmtDate(b.date)}</td>
-        <td style="font-size:9px">${shortName(b.partner).substring(0,25)}</td>
+        <td style="font-size:9px">${alias.substring(0,28)}</td>
         <td class="r g">${ff(b.income)}₴</td>
-        <td class="r" style="font-size:8px;color:#7d8196">${b.account||""}</td>
-      </tr>`).join("")}</table></div>
+      </tr>`}).join("")}</table></div>`;
+}
 
-    <div class="cc"><h3>📋 Як підключити повний CRM</h3>
-      <div style="font-size:10px;color:#7d8196;line-height:1.6">
-        <p>Створіть в Google Sheets два листи:</p>
-        <p><b>CRM_Contacts</b>: partner_name, contact_name, phone, email, position, notes</p>
-        <p><b>CRM_Leads</b>: company, contact_name, phone, email, status (new/in_progress/won/lost), source, created_date, next_action, notes</p>
-        <p>Дашборд автоматично завантажить дані і покаже:</p>
-        <ul style="margin-left:16px">
-          <li>Контактні особи по кожному партнеру</li>
-          <li>Ліди: нові контакти → на якій стадії переговори</li>
-          <li>Автоматичні нагадування: кому зателефонувати</li>
-        </ul>
+// === LEADS VIEW ===
+function rPartLeads(el,tabs){
+  // Pipeline stages
+  const stages=[
+    {id:"new",name:"Новий",clr:"#3b82f6",icon:"🆕"},
+    {id:"contact",name:"Контакт",clr:"#8b5cf6",icon:"📞"},
+    {id:"negotiate",name:"Переговори",clr:"#f59e0b",icon:"🤝"},
+    {id:"won",name:"Виграно",clr:"#10b981",icon:"✅"},
+    {id:"lost",name:"Програно",clr:"#ef4444",icon:"❌"}
+  ];
+
+  // Demo leads (to show how it would look)
+  const demoLeads=[
+    {company:"Ресторан 'La Terrazza'",contact:"Марія Іванова",phone:"+380501234567",stage:"new",source:"Instagram",date:"2026-04-05",value:50000,notes:"Зацікавились Кара Кермен"},
+    {company:"Wine Bar Kyiv",contact:"Олексій Петров",phone:"+380671234567",stage:"contact",source:"Виставка",date:"2026-04-01",value:120000,notes:"Хочуть лінійку Artania"},
+    {company:"Мережа 'Сільпо'",contact:"Анна Коваленко",phone:"+380931234567",stage:"negotiate",source:"Холодний дзвінок",date:"2026-03-15",value:500000,notes:"Тестова поставка 3 SKU"},
+    {company:"Експорт Польща",contact:"Jan Kowalski",phone:"+48501234567",stage:"negotiate",source:"Email",date:"2026-03-20",value:800000,notes:"Loca Deserta + Kara Kermen"},
+    {company:"Готель Одеса",contact:"Ігор Шевченко",phone:"+380661234567",stage:"won",source:"Рекомендація",date:"2026-02-10",value:35000,notes:"Перше замовлення відправлено"},
+    {company:"Бар 'Дрова'",contact:"",phone:"",stage:"lost",source:"Instagram",date:"2026-01-20",value:20000,notes:"Обрали іншого постачальника"}
+  ];
+
+  const byStage={};stages.forEach(s=>{byStage[s.id]=demoLeads.filter(l=>l.stage===s.id)});
+  const totalValue=demoLeads.filter(l=>l.stage!=="lost").reduce((s,l)=>s+l.value,0);
+  const wonValue=demoLeads.filter(l=>l.stage==="won").reduce((s,l)=>s+l.value,0);
+
+  el.innerHTML=`${tabs}
+    <div class="warn" style="border-color:rgba(245,158,11,.4)">⚠ Це демо-приклад CRM. Для реальних даних створіть лист <b>CRM_Leads</b> в Google Sheets з колонками: company, contact, phone, stage, source, date, value, notes</div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Лідів</div><div class="v">${demoLeads.length}</div></div>
+      <div class="kpi"><div class="l">В воронці</div><div class="v" style="color:#f59e0b">${demoLeads.filter(l=>l.stage!=="won"&&l.stage!=="lost").length}</div></div>
+      <div class="kpi"><div class="l">Потенціал</div><div class="v g">${ff(totalValue)}₴</div></div>
+      <div class="kpi"><div class="l">Виграно</div><div class="v" style="color:#10b981">${ff(wonValue)}₴</div></div>
+    </div>
+
+    <div class="cc"><h3>Воронка продажів</h3>
+      <div style="display:flex;gap:4px;margin-bottom:12px">
+        ${stages.map(s=>{const cnt=byStage[s.id].length;const val=byStage[s.id].reduce((sum,l)=>sum+l.value,0);
+          return`<div style="flex:1;text-align:center;padding:8px;background:${s.clr}15;border:1px solid ${s.clr}40;border-radius:6px">
+            <div style="font-size:16px">${s.icon}</div>
+            <div style="font-size:10px;font-weight:600;color:${s.clr}">${s.name}</div>
+            <div style="font-size:16px;font-weight:700;color:#e4e5ea">${cnt}</div>
+            <div style="font-size:9px;color:#7d8196">${ff(val)}₴</div>
+          </div>`}).join("")}
       </div>
-    </div>`;
+    </div>
+
+    ${stages.filter(s=>byStage[s.id].length).map(s=>`<div class="cc">
+      <h3 style="color:${s.clr}">${s.icon} ${s.name} (${byStage[s.id].length})</h3>
+      ${byStage[s.id].map(l=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;margin-bottom:4px;background:#0c0e13;border-radius:6px;border-left:3px solid ${s.clr}">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:600;color:#e4e5ea">${l.company}</div>
+          <div style="display:flex;gap:10px;font-size:10px;margin-top:3px">
+            ${l.contact?`<span>👤 ${l.contact}</span>`:""}
+            ${l.phone?`<a href="tel:${l.phone}" style="color:#3b82f6">📱 ${l.phone}</a>`:""}
+            <span style="color:#7d8196">${l.source}</span>
+            <span style="color:#7d8196">${l.date}</span>
+          </div>
+          ${l.notes?`<div style="font-size:9px;color:#7d8196;margin-top:2px">${l.notes}</div>`:""}
+        </div>
+        <div style="text-align:right;min-width:70px">
+          <div style="font-size:11px;font-weight:600;color:#f59e0b">${ff(l.value)}₴</div>
+        </div>
+      </div>`).join("")}
+    </div>`).join("")}`;
 }
