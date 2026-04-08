@@ -26,7 +26,7 @@ function _buildChanMap(){
       if(k==="_err")continue;
       if(v.channel){
         const ch=CSH[v.channel]||v.channel;
-        const entry={alias:v.alias||k,channel:ch,geo:v.geo||""};
+        const entry={alias:v.alias||k,channel:ch,geo:v.geo||"",contact:v.contact||"",tel:v.tel||"",mgr:v.mgr||"",discount:v.discount||"",commission:v.commission||""};
         _chanMap.byName[k]=entry;
         if(v.alias&&v.alias!==k)_chanMap.byAlias[v.alias]=entry;
         if(v.edrpou)_chanMap.byEdr[v.edrpou]=entry;
