@@ -154,6 +154,14 @@ function rBalance(){
       <div style="font-size:11px">Борг >30 днів: <b style="color:#ef4444">${ff(overdueDebt)}₴</b> (${overdueCount} партнерів)</div>
       <div style="font-size:9px;color:#7d8196;margin-top:4px">Деталі → вкладка Партнери → Борги</div>
     </div>`:""}
+
+    <div class="cc"><h3>🏭 Основні фонди (CAPEX)</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Балансова вартість</div><div class="v" style="color:#f59e0b">${ff(toCur(fixedAssets))}${c$}</div><div class="s">рах. 10/11</div></div>
+        ${(()=>{const ft=T.filter(t=>isA(t)&&t.tp==="Расход");const totalInv=toCur(Math.abs(ft.reduce((s,t)=>s+t.nt,0)));return'<div class="kpi"><div class="l">Всього інвестицій</div><div class="v" style="color:#3b82f6">'+ff(totalInv)+c$+'</div></div>'+ACATS.map(c=>'<div class="kpi"><div class="l">'+c.replace("Обладнання ","").replace(", власний транспорт","транспорт")+'</div><div class="v">'+ff(toCur(Math.abs(ft.filter(t=>t.cat.includes(c)).reduce((s,t)=>s+t.nt,0))))+c$+'</div></div>').join("")})()}
+      </div>
+      <canvas id="cBalCapex" height="130"></canvas>
+    </div>
   `;
 
   // === CHARTS ===
@@ -164,6 +172,13 @@ function rBalance(){
       options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#7d8196",font:{size:9},boxWidth:9,padding:4}},
         tooltip:{callbacks:{label:ctx=>ctx.label+": "+ff(ctx.raw)+"₴ ("+((ctx.raw/totalAssets)*100).toFixed(0)+"%)"}}}}
     });
+  }
+
+  // CAPEX by year (stacked bar)
+  const capexFt=T.filter(t=>isA(t)&&t.tp==="Расход");
+  const capexYrs=aY();
+  if(capexFt.length){
+    dc("cBalCapex");CH.cBalCapex=new Chart(document.getElementById("cBalCapex"),{type:"bar",data:{labels:capexYrs,datasets:ACATS.map((c,i)=>({label:c.replace("Обладнання ",""),data:capexYrs.map(y=>toCur(Math.abs(capexFt.filter(t=>t.yr===y&&t.cat.includes(c)).reduce((s,t)=>s+t.nt,0)))),backgroundColor:CC[i+3],borderRadius:2}))},options:{responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9}}},scales:{x:{stacked:true,ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{stacked:true,ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
   }
 
   // Balance trend
