@@ -224,7 +224,7 @@ async function load(){
     try{
       // Try multiple possible sheet names
       let wn=[];
-      for(const name of["worker_new","Worker_New","WorkerNew","worker","Worker"]){
+      for(const name of["workerNEW","worker_new","Worker_New","WorkerNew"]){
         try{wn=await csvF(name,SID2);if(wn.length){console.log("worker_new found as '"+name+"':",wn.length,"rows");break}}catch(e){}
       }
       WN={};
