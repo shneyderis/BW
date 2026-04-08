@@ -11,7 +11,7 @@ const MMa=["01","02","03","04","05","06","07","08","09","10","11","12"];
 const COB={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9,padding:6}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
 
 // ========== GLOBALS ==========
-let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],GD=[],FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
+let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],GD=[],WN={},FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
 let wcLoaded=false,wcError="",SP={},IG={posts:[]},MA={campaigns:[]},mktLoaded=false,mktError="";
 let C1={sales:[],partners:[],products:[],osv:[],bank:[],loaded:false};
 let USERS={}; // email → {name,role,tabs,phone,active}
@@ -219,6 +219,23 @@ async function load(){
       }).filter(r=>r.prod&&r.qty>0);
       console.log("FINAL_sales_detail loaded:",GD.length,"rows");
     }catch(e){console.warn("FINAL_sales_detail not loaded:",e.message)}
+
+    // Phase 2c: worker_new — customer aliases & channels
+    try{
+      const wn=await csvF("worker_new");
+      WN={};
+      if(wn.length){
+        const k0=Object.keys(wn[0]);
+        console.log("worker_new columns:",k0.join(", "));
+        wn.forEach(r=>{
+          const cust=gv(r,"customer")||gv(r,"контрагент")||gv(r,"name")||gv(r,"клієнт")||"";
+          const alias=gv(r,"alias")||gv(r,"аліас")||gv(r,"коротка")||gv(r,"short")||"";
+          const chan=gv(r,"channel")||gv(r,"канал")||gv(r,"category")||gv(r,"група")||gv(r,"group")||"";
+          if(cust)WN[cust]={alias:alias||cust,channel:chan||""};
+        });
+        console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
+      }
+    }catch(e){console.warn("worker_new not loaded:",e.message)}
 
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{
