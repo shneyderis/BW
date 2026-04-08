@@ -37,6 +37,9 @@ function _normName(n){
 }
 function _chanLookup(cust){
   if(_chanCache[cust]!==undefined)return _chanCache[cust];
+  // 0. Manual override from customer_channels sheet (highest priority)
+  if(typeof CC_MAP!=="undefined"&&CC_MAP[cust]){_chanCache[cust]=CC_MAP[cust];return CC_MAP[cust]}
+  if(typeof CC_MAP!=="undefined"&&CC_MAP[cust.trim()]){_chanCache[cust]=CC_MAP[cust.trim()];return CC_MAP[cust.trim()]}
   _buildChanMap();
   // 1. Exact by name/alias
   if(_chanMap.byAlias[cust]){_chanCache[cust]=_chanMap.byAlias[cust];return _chanCache[cust]}
@@ -139,7 +142,9 @@ function rGoods(){
   function sortHdr(col,label){const active=_gdSort===col;const arrow=active?(_gdSortDir<0?"▼":"▲"):"";return`<th class="r" style="cursor:pointer;user-select:none${active?";color:#f59e0b":""}" onclick="gdToggleSort('${col}')">${label} ${arrow}</th>`}
 
   el.innerHTML=`${header}
-    <div class="info">${ff(fd.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}${_gdGeo!=="ALL"?" · "+_gdGeo:""}</div>
+    <div class="info">${ff(fd.length)} позицій · ${ff(totalDocs)} накладних · ${totalProds} вин · ${totalCusts} клієнтів${_gdYr!=="ALL"?" · "+_gdYr:""}${_gdChan!=="ALL"?" · "+_gdChan:""}${_gdGeo!=="ALL"?" · "+_gdGeo:""}
+      <button class="flt" style="float:right;font-size:9px" onclick="exportChannelMapping()">📋 Експорт маппінгу каналів</button>
+    </div>
     <div class="kpis">
       <div class="kpi"><div class="l">Продано пляшок</div><div class="v g">${ff(totalQty)}</div></div>
       <div class="kpi"><div class="l">Сума</div><div class="v" style="color:#f59e0b">${ff(toCur(totalSum))}${c$}</div></div>
@@ -166,6 +171,18 @@ function rGoods(){
   window.exportGoodsCSV=function(){
     exportCSV("goods.csv",["Вино","Вінтажі","Пляшок","Сума","Сер.ціна"],
       prodArr.map(p=>[p.name,p.vintages,p.qty.toFixed(0),p.sum.toFixed(0),p.avg.toFixed(0)]));
+  };
+
+  // Export channel mapping — all unique customers with their resolved channel (or "?")
+  window.exportChannelMapping=function(){
+    const custs=[...new Set(GD.map(r=>r.cust))];
+    const rows=custs.map(c=>{
+      const ch=gdChan(c)||"?";
+      const al=gdAlias(c);
+      const sum=GD.filter(r=>r.cust===c).reduce((s,r)=>s+r.sum,0);
+      return[c,ch,al,sum.toFixed(0)];
+    }).sort((a,b)=>a[1].localeCompare(b[1]));
+    exportCSV("customer_channels.csv",["Customer","Channel","Alias","Sum"],rows);
   };
 
   // Sort toggle

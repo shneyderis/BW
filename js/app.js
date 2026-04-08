@@ -249,6 +249,21 @@ async function load(){
       } else {WN._err="Sheet empty or not found (tried: worker_new, Worker_New, WorkerNew, worker, Worker)"}
     }catch(e){WN={};WN._err=e.message;console.warn("worker_new not loaded:",e.message)}
 
+    // Phase 2d: customer_channels — manual override mapping (Customer → Channel, Alias)
+    try{
+      const cc=await csvF("customer_channels");
+      if(cc.length){
+        window.CC_MAP={};
+        cc.forEach(r=>{
+          const cust=(gv(r,"customer")||gv(r,"клієнт")||gv(r,"name")||"").trim();
+          const chan=(gv(r,"channel")||gv(r,"канал")||"").trim();
+          const alias=(gv(r,"alias")||gv(r,"аліас")||"").trim();
+          if(cust&&chan)CC_MAP[cust]={channel:chan,alias:alias||cust};
+        });
+        console.log("customer_channels loaded:",Object.keys(CC_MAP).length,"mappings");
+      }
+    }catch(e){console.warn("customer_channels not found (optional):",e.message)}
+
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{
       async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");if(!r.ok)throw new Error(r.status);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
