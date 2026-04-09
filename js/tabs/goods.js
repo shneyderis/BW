@@ -157,18 +157,37 @@ function rGoods(){
   const byWine={};
   fd.forEach(r=>{
     const base=stripVintage(r.prod);
-    if(!byWine[base])byWine[base]={qty:0,sum:0,vintages:new Set(),byMonth:{}};
+    if(!byWine[base])byWine[base]={qty:0,sum:0,vintages:new Set(),byMonth:{},firstDate:"9999",lastDate:""};
     byWine[base].qty+=r.qty;byWine[base].sum+=r.sum;
     const ym=r.prod.match(/\b(20[12]\d)\s*$/);if(ym)byWine[base].vintages.add(ym[1]);
-    // Track monthly sales for velocity
     const mo=r.date?r.date.substring(0,7):"";if(mo)byWine[base].byMonth[mo]=(byWine[base].byMonth[mo]||0)+r.qty;
+    if(r.date&&r.date<byWine[base].firstDate)byWine[base].firstDate=r.date;
+    if(r.date&&r.date>byWine[base].lastDate)byWine[base].lastDate=r.date;
   });
-  // Calculate velocity: avg bottles/month over active months
+
+  // Stock from SK (3_Stock): group by base name
+  const stockByWine={};
+  if(typeof SK!=="undefined"&&SK.length){
+    SK.forEach(s=>{
+      const w=gv(s,"вино")||"";const st=pn(gv(s,"остаток")||"0");
+      if(w&&st>0){const base=stripVintage(w);stockByWine[base]=(stockByWine[base]||0)+st}
+    });
+  }
+
+  // Calculate velocity + sell-through + stock months
   let prodArr=Object.entries(byWine).map(([name,d])=>{
     const months=Object.keys(d.byMonth).sort();
     const activeMonths=months.length;
     const velocity=activeMonths>0?d.qty/activeMonths:0;
-    return{name,qty:d.qty,sum:d.sum,avg:d.qty>0?d.sum/d.qty:0,vintages:[...d.vintages].sort().join(", "),velocity,activeMonths};
+    // Sell-through period
+    const first=d.firstDate!=="9999"?d.firstDate:"";
+    const last=d.lastDate;
+    let sellMonths=0;
+    if(first&&last){const fd=new Date(first),ld=new Date(last);sellMonths=Math.max(1,Math.round((ld-fd)/(30*24*60*60*1000)))}
+    // Stock
+    const stock=stockByWine[name]||0;
+    const monthsLeft=velocity>0?stock/velocity:stock>0?999:0;
+    return{name,qty:d.qty,sum:d.sum,avg:d.qty>0?d.sum/d.qty:0,vintages:[...d.vintages].sort().join(", "),velocity,activeMonths,sellMonths,stock,monthsLeft};
   });
   if(_gdSearch){const q=_gdSearch.toLowerCase();prodArr=prodArr.filter(p=>p.name.toLowerCase().includes(q))}
 
@@ -176,6 +195,7 @@ function rGoods(){
   if(_gdSort==="qty")prodArr.sort((a,b)=>(a.qty-b.qty)*_gdSortDir);
   else if(_gdSort==="avg")prodArr.sort((a,b)=>(a.avg-b.avg)*_gdSortDir);
   else if(_gdSort==="vel")prodArr.sort((a,b)=>(a.velocity-b.velocity)*_gdSortDir);
+  else if(_gdSort==="ml")prodArr.sort((a,b)=>{const ma=a.monthsLeft===0?9999:a.monthsLeft;const mb=b.monthsLeft===0?9999:b.monthsLeft;return(ma-mb)*_gdSortDir});
   else prodArr.sort((a,b)=>(a.sum-b.sum)*_gdSortDir);
 
   function sortHdr(col,label){const active=_gdSort===col;const arrow=active?(_gdSortDir<0?"▼":"▲"):"";return`<th class="r" style="cursor:pointer;user-select:none${active?";color:#f59e0b":""}" onclick="gdToggleSort('${col}')">${label} ${arrow}</th>`}
@@ -195,22 +215,27 @@ function rGoods(){
     <div class="cc"><h3>Топ-25 вин по ${_gdSort==="qty"?"кількості":_gdSort==="avg"?"ціні":"виручці"}</h3><canvas id="cGdTop" height="260"></canvas></div>
 
     <div class="cc"><h3>Всі вина (${prodArr.length}) <button class="flt" style="float:right;font-size:9px" onclick="exportGoodsCSV()">Експорт CSV</button></h3>
-      <table class="tbl"><tr><th>Вино</th><th style="color:#7d8196">Вінтажі</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}${sortHdr("avg","Сер.ціна")}${sortHdr("vel","Пл/міс")}</tr>
-      ${prodArr.slice(0,60).map((p,i)=>`<tr>
-        <td style="font-size:10px;font-weight:${i<5?"600":"400"}">${p.name.substring(0,35)}</td>
+      <table class="tbl"><tr><th>Вино</th><th style="color:#7d8196">Вінтажі</th>${sortHdr("qty","Продано")}${sortHdr("vel","Пл/міс")}<th class="r">Склад</th><th class="r" style="cursor:pointer" onclick="gdToggleSort('ml')">Міс.зал.${_gdSort==="ml"?(_gdSortDir<0?"▼":"▲"):""}</th>${sortHdr("sum","Сума")}${sortHdr("avg","Ціна")}</tr>
+      ${prodArr.slice(0,60).map((p,i)=>{
+        const mlClr=p.monthsLeft>0&&p.monthsLeft<3?"#ef4444":p.monthsLeft>0&&p.monthsLeft<6?"#f59e0b":p.monthsLeft>=999?"#7d8196":p.monthsLeft>0?"#10b981":"#7d8196";
+        const mlTxt=p.monthsLeft===0?"—":p.monthsLeft>=999?"∞":p.monthsLeft.toFixed(0);
+        return`<tr>
+        <td style="font-size:10px;font-weight:${i<5?"600":"400"}">${p.name.substring(0,30)}</td>
         <td style="font-size:9px;color:#7d8196">${p.vintages||"—"}</td>
         <td class="r">${ff(p.qty)}</td>
+        <td class="r" style="color:#8b5cf6">${p.velocity.toFixed(0)}</td>
+        <td class="r">${p.stock>0?ff(p.stock):'<span style="color:#7d8196">—</span>'}</td>
+        <td class="r" style="color:${mlClr};font-weight:${p.monthsLeft>0&&p.monthsLeft<6?"700":"400"}">${mlTxt}</td>
         <td class="r g">${ff(p.sum)}₴</td>
         <td class="r" style="color:#f59e0b">${p.avg.toFixed(0)}₴</td>
-        <td class="r" style="color:#8b5cf6">${p.velocity.toFixed(0)}</td>
-      </tr>`).join("")}
-      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(prodArr.reduce((s,p)=>s+p.qty,0))}</td><td class="r g">${ff(prodArr.reduce((s,p)=>s+p.sum,0))}₴</td><td class="r">${prodArr.reduce((s,p)=>s+p.qty,0)>0?(prodArr.reduce((s,p)=>s+p.sum,0)/prodArr.reduce((s,p)=>s+p.qty,0)).toFixed(0):"—"}₴</td><td class="r" style="color:#8b5cf6">${ff(prodArr.reduce((s,p)=>s+p.velocity,0))}</td></tr>
-      ${prodArr.length>60?`<tr><td colspan="5" style="color:#7d8196;font-size:9px">+ ще ${prodArr.length-60}</td></tr>`:""}</table></div>`;
+      </tr>`}).join("")}
+      <tr class="tot"><td>Разом</td><td></td><td class="r">${ff(prodArr.reduce((s,p)=>s+p.qty,0))}</td><td class="r" style="color:#8b5cf6">${ff(prodArr.reduce((s,p)=>s+p.velocity,0))}</td><td class="r">${ff(prodArr.reduce((s,p)=>s+p.stock,0))}</td><td></td><td class="r g">${ff(prodArr.reduce((s,p)=>s+p.sum,0))}₴</td><td></td></tr>
+      ${prodArr.length>60?`<tr><td colspan="8" style="color:#7d8196;font-size:9px">+ ще ${prodArr.length-60}</td></tr>`:""}</table></div>`;
 
   // Export
   window.exportGoodsCSV=function(){
-    exportCSV("goods.csv",["Вино","Вінтажі","Пляшок","Сума","Сер.ціна","Пл/міс"],
-      prodArr.map(p=>[p.name,p.vintages,p.qty.toFixed(0),p.sum.toFixed(0),p.avg.toFixed(0),p.velocity.toFixed(0)]));
+    exportCSV("goods.csv",["Вино","Вінтажі","Продано","Пл/міс","Склад","Міс.зал.","Сума","Ціна"],
+      prodArr.map(p=>[p.name,p.vintages,p.qty.toFixed(0),p.velocity.toFixed(0),p.stock.toFixed(0),p.monthsLeft>=999?"∞":p.monthsLeft.toFixed(0),p.sum.toFixed(0),p.avg.toFixed(0)]));
   };
 
   // Export channel mapping — all unique customers with their resolved channel (or "?")
