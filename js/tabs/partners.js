@@ -320,7 +320,6 @@ function rPartCRM(el,tabs,merged,debtors,now,bank){
 
 // === LEADS VIEW ===
 function rPartLeads(el,tabs){
-  // Pipeline stages
   const stages=[
     {id:"new",name:"Новий",clr:"#3b82f6",icon:"🆕"},
     {id:"contact",name:"Контакт",clr:"#8b5cf6",icon:"📞"},
@@ -329,8 +328,9 @@ function rPartLeads(el,tabs){
     {id:"lost",name:"Програно",clr:"#ef4444",icon:"❌"}
   ];
 
-  // Demo leads (to show how it would look)
-  const demoLeads=[
+  // Use real CRM_Leads if loaded, demo fallback
+  const hasReal=typeof CRM_LEADS!=="undefined"&&CRM_LEADS.length>0;
+  const leads=hasReal?CRM_LEADS:[
     {company:"Ресторан 'La Terrazza'",contact:"Марія Іванова",phone:"+380501234567",stage:"new",source:"Instagram",date:"2026-04-05",value:50000,notes:"Зацікавились Кара Кермен"},
     {company:"Wine Bar Kyiv",contact:"Олексій Петров",phone:"+380671234567",stage:"contact",source:"Виставка",date:"2026-04-01",value:120000,notes:"Хочуть лінійку Artania"},
     {company:"Мережа 'Сільпо'",contact:"Анна Коваленко",phone:"+380931234567",stage:"negotiate",source:"Холодний дзвінок",date:"2026-03-15",value:500000,notes:"Тестова поставка 3 SKU"},
@@ -339,16 +339,17 @@ function rPartLeads(el,tabs){
     {company:"Бар 'Дрова'",contact:"",phone:"",stage:"lost",source:"Instagram",date:"2026-01-20",value:20000,notes:"Обрали іншого постачальника"}
   ];
 
-  const byStage={};stages.forEach(s=>{byStage[s.id]=demoLeads.filter(l=>l.stage===s.id)});
-  const totalValue=demoLeads.filter(l=>l.stage!=="lost").reduce((s,l)=>s+l.value,0);
-  const wonValue=demoLeads.filter(l=>l.stage==="won").reduce((s,l)=>s+l.value,0);
+  const byStage={};stages.forEach(s=>{byStage[s.id]=leads.filter(l=>l.stage===s.id)});
+  const totalValue=leads.filter(l=>l.stage!=="lost").reduce((s,l)=>s+l.value,0);
+  const wonValue=leads.filter(l=>l.stage==="won").reduce((s,l)=>s+l.value,0);
+  const needAction=leads.filter(l=>l.next&&l.stage!=="won"&&l.stage!=="lost");
 
   el.innerHTML=`${tabs}
-    <div class="warn" style="border-color:rgba(245,158,11,.4)">⚠ Це демо-приклад CRM. Для реальних даних створіть лист <b>CRM_Leads</b> в Google Sheets з колонками: company, contact, phone, stage, source, date, value, notes</div>
+    ${!hasReal?'<div class="warn" style="border-color:rgba(245,158,11,.4)">Демо-дані. Створіть лист <b>CRM_Leads</b> в Google Sheets: company, contact, phone, stage (new/contact/negotiate/won/lost), source, date, value, next, notes</div>':""}
 
     <div class="kpis">
-      <div class="kpi"><div class="l">Лідів</div><div class="v">${demoLeads.length}</div></div>
-      <div class="kpi"><div class="l">В воронці</div><div class="v" style="color:#f59e0b">${demoLeads.filter(l=>l.stage!=="won"&&l.stage!=="lost").length}</div></div>
+      <div class="kpi"><div class="l">Лідів</div><div class="v">${leads.length}</div></div>
+      <div class="kpi"><div class="l">В воронці</div><div class="v" style="color:#f59e0b">${leads.filter(l=>l.stage!=="won"&&l.stage!=="lost").length}</div></div>
       <div class="kpi"><div class="l">Потенціал</div><div class="v g">${ff(totalValue)}₴</div></div>
       <div class="kpi"><div class="l">Виграно</div><div class="v" style="color:#10b981">${ff(wonValue)}₴</div></div>
     </div>
@@ -365,6 +366,19 @@ function rPartLeads(el,tabs){
       </div>
     </div>
 
+    ${needAction.length?`<div class="cc" style="border-color:rgba(245,158,11,.4)"><h3 style="color:#f59e0b">⏰ Потрібна дія</h3>
+      ${needAction.map(l=>{const s=stages.find(s=>s.id===l.stage)||stages[0];return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;margin-bottom:4px;background:#0c0e13;border-radius:6px;border-left:3px solid ${s.clr}">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:600">${l.company}</div>
+          <div style="font-size:10px;color:#f59e0b;margin-top:2px">→ ${l.next}</div>
+          <div style="display:flex;gap:10px;font-size:10px;margin-top:2px">
+            ${l.contact?`<span>👤 ${l.contact}</span>`:""}${l.phone?`<a href="tel:${l.phone}" style="color:#3b82f6">📱 ${l.phone}</a>`:""}
+          </div>
+        </div>
+        <div style="font-size:10px;color:#f59e0b">${ff(l.value)}₴</div>
+      </div>`}).join("")}
+    </div>`:""}
+
     ${stages.filter(s=>byStage[s.id].length).map(s=>`<div class="cc">
       <h3 style="color:${s.clr}">${s.icon} ${s.name} (${byStage[s.id].length})</h3>
       ${byStage[s.id].map(l=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;margin-bottom:4px;background:#0c0e13;border-radius:6px;border-left:3px solid ${s.clr}">
@@ -373,9 +387,11 @@ function rPartLeads(el,tabs){
           <div style="display:flex;gap:10px;font-size:10px;margin-top:3px">
             ${l.contact?`<span>👤 ${l.contact}</span>`:""}
             ${l.phone?`<a href="tel:${l.phone}" style="color:#3b82f6">📱 ${l.phone}</a>`:""}
+            ${l.email?`<a href="mailto:${l.email}" style="color:#3b82f6">${l.email}</a>`:""}
             <span style="color:#7d8196">${l.source}</span>
             <span style="color:#7d8196">${l.date}</span>
           </div>
+          ${l.next?`<div style="font-size:9px;color:#f59e0b;margin-top:2px">→ ${l.next}</div>`:""}
           ${l.notes?`<div style="font-size:9px;color:#7d8196;margin-top:2px">${l.notes}</div>`:""}
         </div>
         <div style="text-align:right;min-width:70px">

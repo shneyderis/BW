@@ -141,13 +141,29 @@ function rBalance(){
       </div>
     </div>
 
-    <div class="cc"><h3>📊 P&L ${curYr} YTD</h3>
-      <div class="kpis">
-        <div class="kpi"><div class="l">Виручка</div><div class="v g">${ff(toCur(revYTD))}${c$}</div><div class="s">${revGrowth>0?"+":""}${revGrowth.toFixed(0)}% vs ${prevYr}</div></div>
-        <div class="kpi"><div class="l">OPEX</div><div class="v rd">${ff(toCur(Math.abs(expYTD)))}${c$}</div></div>
-        <div class="kpi"><div class="l">Прибуток</div><div class="v" style="color:${profitYTD>0?"#10b981":"#ef4444"}">${ff(toCur(profitYTD))}${c$}</div><div class="s">маржа ${marginYTD.toFixed(1)}%</div></div>
+    <div class="cc"><h3>📊 P&L ${curYr} YTD + Прогноз</h3>
+      ${(()=>{
+        // Forecast: extrapolate current year based on completed months
+        const completedMonths=parseInt(mxMM(curYr));
+        const forecastRev=completedMonths>0?(revYTD/completedMonths*12):0;
+        const forecastExp=completedMonths>0?(expYTD/completedMonths*12):0;
+        const forecastProfit=forecastRev+forecastExp;
+        const forecastMargin=forecastRev?(forecastProfit/forecastRev*100):0;
+        return`<div class="kpis">
+        <div class="kpi"><div class="l">Виручка YTD</div><div class="v g">${ff(toCur(revYTD))}${c$}</div><div class="s">${revGrowth>0?"+":""}${revGrowth.toFixed(0)}% vs ${prevYr}</div></div>
+        <div class="kpi"><div class="l">OPEX YTD</div><div class="v rd">${ff(toCur(Math.abs(expYTD)))}${c$}</div></div>
+        <div class="kpi"><div class="l">Прибуток YTD</div><div class="v" style="color:${profitYTD>0?"#10b981":"#ef4444"}">${ff(toCur(profitYTD))}${c$}</div><div class="s">маржа ${marginYTD.toFixed(1)}%</div></div>
         ${ukRev>0?`<div class="kpi"><div class="l">🇬🇧 UK виручка</div><div class="v g">${ff(ukRev)}£</div></div>`:""}
       </div>
+      ${completedMonths<12?`<div style="margin-top:8px;padding:8px;background:#0c0e13;border-radius:6px;border-left:3px solid #8b5cf6">
+        <div style="font-size:10px;color:#8b5cf6;font-weight:600">📈 Прогноз на ${curYr} (${completedMonths} міс → 12 міс)</div>
+        <div style="display:flex;gap:16px;margin-top:4px;font-size:11px">
+          <span>Виручка: <b class="g">${ff(toCur(forecastRev))}${c$}</b></span>
+          <span>OPEX: <b class="rd">${ff(toCur(Math.abs(forecastExp)))}${c$}</b></span>
+          <span>Прибуток: <b style="color:${forecastProfit>0?"#10b981":"#ef4444"}">${ff(toCur(forecastProfit))}${c$}</b></span>
+          <span>Маржа: <b>${forecastMargin.toFixed(1)}%</b></span>
+        </div>
+      </div>`:""}`})()}
     </div>
 
     ${overdueDebt>0?`<div class="cc" style="border-color:rgba(239,68,68,.4)"><h3 style="color:#ef4444">⚠ Прострочена заборгованість</h3>

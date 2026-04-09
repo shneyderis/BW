@@ -264,6 +264,33 @@ async function load(){
       }
     }catch(e){console.warn("customer_channels not found (optional):",e.message)}
 
+    // Phase 2e: CRM_Leads + CRM_Contacts (optional)
+    try{
+      const[leads,contacts]=await Promise.all([csvF("CRM_Leads").catch(()=>[]),csvF("CRM_Contacts").catch(()=>[])]);
+      window.CRM_LEADS=leads.map(r=>({
+        company:gv(r,"company")||gv(r,"компанія")||"",
+        contact:gv(r,"contact")||gv(r,"контакт")||"",
+        phone:gv(r,"phone")||gv(r,"телефон")||"",
+        email:gv(r,"email")||"",
+        stage:gv(r,"stage")||gv(r,"стадія")||gv(r,"status")||"new",
+        source:gv(r,"source")||gv(r,"джерело")||"",
+        date:gv(r,"date")||gv(r,"дата")||"",
+        value:pn(gv(r,"value")||gv(r,"сума")),
+        next:gv(r,"next")||gv(r,"next_action")||gv(r,"наступний")||"",
+        notes:gv(r,"notes")||gv(r,"нотатки")||gv(r,"коментар")||""
+      })).filter(r=>r.company);
+      window.CRM_CONTACTS=contacts.map(r=>({
+        partner:gv(r,"partner")||gv(r,"партнер")||"",
+        contact:gv(r,"contact")||gv(r,"контакт")||gv(r,"name")||"",
+        phone:gv(r,"phone")||gv(r,"телефон")||"",
+        email:gv(r,"email")||"",
+        position:gv(r,"position")||gv(r,"посада")||"",
+        notes:gv(r,"notes")||gv(r,"нотатки")||""
+      })).filter(r=>r.partner);
+      if(CRM_LEADS.length)console.log("CRM_Leads loaded:",CRM_LEADS.length);
+      if(CRM_CONTACTS.length)console.log("CRM_Contacts loaded:",CRM_CONTACTS.length);
+    }catch(e){}
+
     // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
     try{
       async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");if(!r.ok)throw new Error(r.status);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
