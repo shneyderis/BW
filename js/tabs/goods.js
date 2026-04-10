@@ -165,14 +165,44 @@ function rGoods(){
     if(r.date&&r.date>byWine[base].lastDate)byWine[base].lastDate=r.date;
   });
 
-  // Stock from SK (3_Stock): group by base name
-  const stockByWine={};
-  if(typeof SK!=="undefined"&&SK.length){
-    SK.forEach(s=>{
-      const w=gv(s,"вино")||"";const st=pn(gv(s,"остаток")||"0");
-      if(w&&st>0){const base=stripVintage(w);stockByWine[base]=(stockByWine[base]||0)+st}
+  // Stock: collect all raw stock entries from SD (Stock_Data) or SK (3_Stock)
+  const rawStock=[]; // {name, qty}
+  if(typeof SD!=="undefined"&&SD.length){
+    const wines=[...new Set(SD.map(r=>gv(r,"wine")||""))].filter(Boolean);
+    wines.forEach(w=>{
+      const rows=SD.filter(r=>(gv(r,"wine")||"")===w).sort((a,b)=>(gv(a,"date")||"").localeCompare(gv(b,"date")||""));
+      const lastBal=rows.filter(r=>(gv(r,"type")||"").toLowerCase()==="balance").pop();
+      if(lastBal){const qty=pn(gv(lastBal,"qty"));if(qty>0)rawStock.push({name:w,qty})}
     });
   }
+  if(!rawStock.length&&typeof SK!=="undefined"&&SK.length){
+    SK.forEach(s=>{
+      const w=gv(s,"вино")||gv(s,"wine")||"";const st=pn(gv(s,"остаток")||gv(s,"stock")||"0");
+      if(w&&st>0)rawStock.push({name:w,qty:st});
+    });
+  }
+  // Match stock names to wine base names (fuzzy)
+  function _stockNorm(n){return n.toLowerCase().replace(/\s+20[12]\d/g,"").replace(/бейкуш|beykush/gi,"").replace(/[""«»"']/g,"").replace(/\s+/g," ").trim()}
+  const stockByWine={};
+  const gdBaseNames=[...new Set(Object.keys(byWine))];
+  rawStock.forEach(s=>{
+    const sn=_stockNorm(s.name);
+    // Try exact normalized match first
+    let matched=null;
+    for(const base of gdBaseNames){
+      const bn=_stockNorm(base);
+      if(bn===sn){matched=base;break}
+    }
+    // Fuzzy: substring match
+    if(!matched){
+      for(const base of gdBaseNames){
+        const bn=_stockNorm(base);
+        if(bn.length>3&&sn.length>3&&(bn.includes(sn)||sn.includes(bn))){matched=base;break}
+      }
+    }
+    const key=matched||stripVintage(s.name);
+    stockByWine[key]=(stockByWine[key]||0)+s.qty;
+  });
 
   // Calculate velocity + sell-through + stock months
   let prodArr=Object.entries(byWine).map(([name,d])=>{
