@@ -4,7 +4,7 @@ const IGN=["#ignore","Конвертація","ІГНОР!!!","Банк???","Б�
 const ZP=["ЗП менеджерів","ЗП Виноградник","ЗП Виноробня","ЗП Готель","ЗП Цибак","BW Света","BW Наташа","BW Таня"];
 const ACATS=["Обладнання виноробні","Обладнання виноградник","Обладнання, власний транспорт"];
 const CHS=["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ","Продаж,  Дістрібʼютор Укр","Продаж, Інтернет магазини","Продаж, на виноробні"];
-const CSH={"Продаж, Мережі":"Сети","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Экспорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Инет","Продаж, на виноробні":"Виноробня"};
+const CSH={"Продаж, Мережі":"Мережі","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Експорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Інет","Продаж, на виноробні":"Виноробня"};
 const CC=["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1","#a855f7"];
 const MN=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
 const MMa=["01","02","03","04","05","06","07","08","09","10","11","12"];
@@ -257,12 +257,12 @@ function bldFlt(yrs){
   const chs=[...new Set(T.filter(t=>t.tp==="Доход").map(t=>t.cat))].sort();
   const mgrs=[...new Set(T.filter(t=>t.mgr&&t.mgr!=="-"&&t.mgr!=="="&&t.mgr.trim()).map(t=>t.mgr))].sort();
   fb.innerHTML=`
-    <select class="flt" id="fY"><option value="ALL">Все годы</option>${yrs.map(y=>'<option>'+y+'</option>').join("")}</select>
-    <select class="flt" id="fM"><option value="ALL">Все мес</option>${["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>'<option>'+m+'</option>').join("")}</select>
+    <select class="flt" id="fY"><option value="ALL">Всі роки</option>${yrs.map(y=>'<option>'+y+'</option>').join("")}</select>
+    <select class="flt" id="fM"><option value="ALL">Всі міс</option>${["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>'<option>'+m+'</option>').join("")}</select>
     <select class="flt" id="fS"><option value="ALL">1Ф+2Ф</option><option>1Ф</option><option>2Ф</option></select>
-    <select class="flt" id="fC"><option value="ALL">Все каналы</option>${chs.map(c=>'<option value="'+c+'">'+(c.length>22?c.substring(0,22)+"…":c)+'</option>').join("")}</select>
+    <select class="flt" id="fC"><option value="ALL">Всі канали</option>${chs.map(c=>'<option value="'+c+'">'+(c.length>22?c.substring(0,22)+"…":c)+'</option>').join("")}</select>
     <select class="flt" id="fG"><option value="ALL">Все гео</option>${geos.map(g=>'<option>'+g+'</option>').join("")}</select>
-    <select class="flt" id="fMgr"><option value="ALL">Все менедж.</option>${mgrs.map(m=>'<option>'+m+'</option>').join("")}</select>
+    <select class="flt" id="fMgr"><option value="ALL">Всі менедж.</option>${mgrs.map(m=>'<option>'+m+'</option>').join("")}</select>
     <select class="flt" id="fCur"><option value="UAH">₴</option><option value="EUR">€</option><option value="USD">$</option></select>`;
   ["fY","fM","fS","fC","fG","fMgr","fCur"].forEach(id=>document.getElementById(id).onchange=()=>{if(id==="fCur")SETS.dispCur=document.getElementById("fCur").value;render()});
 }
@@ -271,12 +271,12 @@ function fl(list,f,tp){let r=list;if(f.yr!=="ALL")r=r.filter(t=>t.yr===f.yr);if(
 function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['balance','pl','sales','goods','exp','salary','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 function aY(){return[...new Set(T.map(x=>x.yr))].sort()}
-function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||"2026"}
+function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||String(new Date().getFullYear())}
 function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn);[()=>rBalance(),()=>rPL(f),()=>rSales(f),()=>rGoods(),()=>rExp(f),()=>rSalary(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rProduction(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
+function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn||!document.getElementById("t-production").classList.contains("hidden")||!document.getElementById("t-goods").classList.contains("hidden")||!document.getElementById("t-stock").classList.contains("hidden")||!document.getElementById("t-mkt").classList.contains("hidden")||!document.getElementById("t-settings").classList.contains("hidden")||!document.getElementById("t-unrec").classList.contains("hidden"));[()=>rBalance(),()=>rPL(f),()=>rSales(f),()=>rGoods(),()=>rExp(f),()=>rSalary(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rProduction(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========

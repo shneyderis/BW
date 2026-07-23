@@ -20,7 +20,7 @@ function _buildChanMap(){
       }
       // Currency-based: EUR/USD income → Експорт (fallback for "?" channels)
       if(t.tp==="Доход"&&t.money&&t.money!=="UAH"&&(t.money==="EUR"||t.money==="USD")){
-        const expCh=CSH["Продаж, Експорт"]||"Экспорт";
+        const expCh=CSH["Продаж, Експорт"]||"Експорт";
         if(t.alias&&!_chanMap.byCurrency[t.alias])_chanMap.byCurrency[t.alias]={alias:t.alias,channel:expCh,geo:t.geo||""};
         if(t.name&&!_chanMap.byCurrency[t.name])_chanMap.byCurrency[t.name]={alias:t.alias||t.name,channel:expCh,geo:t.geo||""};
       }
@@ -357,7 +357,7 @@ function rGdTrends(el,header,allYrs,c$){
   const yrArr=Object.entries(byYr).sort();
 
   // Current & previous year
-  const curYr=_gdYr!=="ALL"?_gdYr:allYrs[allYrs.length-1]||"2026";
+  const curYr=_gdYr!=="ALL"?_gdYr:allYrs[allYrs.length-1]||String(new Date().getFullYear());
   const prevYr=String(parseInt(curYr)-1);
 
   // By month

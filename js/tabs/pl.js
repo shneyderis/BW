@@ -33,7 +33,7 @@ function rPL(f){
     opex.filter(t=>t.yr===py&&t.tp==="Расход").forEach(t=>{me2[t.mm]=(me2[t.mm]||0)+toCur(Math.abs(t.nt))});
     T.filter(t=>isA(t)&&t.yr===sy&&t.tp==="Расход").forEach(t=>{ma1[t.mm]=(ma1[t.mm]||0)+toCur(Math.abs(t.nt))});
     chartHTML=`<div class="cc"><h3>Виручка помісячно ${sy} vs ${py}</h3><canvas id="c2r" height="90"></canvas></div>
-      <div class="cc"><h3>Витрати помісячно ${sy} vs ${py} + осн.фонды</h3><canvas id="c2e" height="90"></canvas></div>
+      <div class="cc"><h3>Витрати помісячно ${sy} vs ${py} + осн.фонди</h3><canvas id="c2e" height="90"></canvas></div>
       <div class="cc"><h3>Сезонність: прибуток ${sy} vs ${py}</h3><canvas id="c2s" height="80"></canvas></div>`;
     const chD=CHS.map(c=>{const v=opex.filter(t=>t.yr===sy&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);const vp=opex.filter(t=>t.yr===py&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);return{n:CSH[c]||c,v:toCur(v),vp:toCur(vp)}}).filter(x=>x.v>0||x.vp>0);
     const expD=[...new Set(opex.filter(t=>t.yr===sy&&t.tp==="Расход").map(t=>t.cat))].map(c=>{const v=opex.filter(t=>t.yr===sy&&t.tp==="Расход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);const vp=opex.filter(t=>t.yr===py&&t.tp==="Расход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);return{c,v:toCur(Math.abs(v)),vp:toCur(Math.abs(vp))}}).sort((a,b)=>b.v-a.v).slice(0,12);
@@ -43,7 +43,7 @@ function rPL(f){
       <div class="cc"><h3>Доходи по каналах</h3><table class="tbl"><tr><th>Канал</th><th class="r">${sy}</th><th class="r">${py}</th><th class="r">Δ%</th></tr>
         ${chD.map(x=>{const d=x.vp?((x.v-x.vp)/x.vp*100).toFixed(0):"—";return'<tr><td>'+x.n+'</td><td class="r g">'+ff(x.v)+'</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td><td class="r" style="color:'+(d>0?"#10b981":"#ef4444")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}
         <tr class="tot"><td>Разом</td><td class="r g">${ff(trS)}</td><td class="r" style="color:#7d8196">${ff(trP)}</td><td class="r">${trP?((trS-trP)/trP*100).toFixed(0)+"%":"—"}</td></tr></table></div>
-      <div class="cc"><h3>Витрати по категоріях (OPEX)</h3><table class="tbl"><tr><th>Категорія</th><th class="r">${sy}</th><th class="r">%выр</th><th class="r">${py}</th></tr>
+      <div class="cc"><h3>Витрати по категоріях (OPEX)</h3><table class="tbl"><tr><th>Категорія</th><th class="r">${sy}</th><th class="r">%вир</th><th class="r">${py}</th></tr>
         ${expD.map(x=>{const pct=trS?(x.v/trS*100).toFixed(1):"—";return'<tr><td>'+x.c.substring(0,22)+'</td><td class="r rd">'+ff(x.v)+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td></tr>'}).join("")}
         <tr class="tot"><td>Разом OPEX</td><td class="r rd">${ff(teS)}</td><td class="r">${trS?(teS/trS*100).toFixed(1):"—"}%</td><td class="r" style="color:#7d8196">${ff(teP)}</td></tr></table></div>
     </div>`;

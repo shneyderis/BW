@@ -85,7 +85,7 @@ function rPartners(){
   // === OVERVIEW ===
   const byYr={};sales.forEach(s=>{const y=toISO(s.date).substring(0,4);if(y<"2015")return;if(!byYr[y])byYr[y]={sum:0,cnt:0};byYr[y].sum+=s.sum;byYr[y].cnt++});
   const yrArr=Object.entries(byYr).sort((a,b)=>b[0].localeCompare(a[0]));
-  const active=merged.filter(p=>toISO(p.lastSale)>="2025");
+  const active=merged.filter(p=>toISO(p.lastSale)>=String(new Date().getFullYear()));
   const overdue=debtors.filter(p=>{const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;return(now-new Date(lp).getTime())>30*24*60*60*1000}).slice(0,10);
 
   el.innerHTML=`${tabs}

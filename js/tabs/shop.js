@@ -4,7 +4,7 @@ function shopSw(s){shopSub=s;shopCityFlt="ALL";render()}
 
 function rShop(f){
   const el=document.getElementById("t-shop"),c$=cs();
-  if(!WO.length&&!wcLoaded){el.innerHTML='<div class="info">⏳ WooCommerce загружается...</div>';return}
+  if(!WO.length&&!wcLoaded){el.innerHTML='<div class="info">⏳ WooCommerce завантажується...</div>';return}
   if(!WO.length&&wcLoaded){el.innerHTML='<div class="warn">WooCommerce: немає даних.'+(wcError?' Помилка: '+wcError:'')+'<br><button class="flt" style="margin-top:6px" onclick="location.reload()">Оновити</button></div>';return}
   const yr=f.yr;
   const allOrd=yr==="ALL"?WO:WO.filter(o=>(o.date_created||"").startsWith(yr));
@@ -41,7 +41,7 @@ function rShopSales(el,tabs,orders,allOrd,f,c$){
   const ms=Object.keys(byM).sort();
   const byW={};orders.forEach(o=>{try{const ds=(o.date_created||"").replace(" ","T");const d=new Date(ds);if(isNaN(d))return;const w=new Date(d);w.setDate(d.getDate()-d.getDay());const wk=w.toISOString().substring(0,10);if(!byW[wk])byW[wk]={r:0,c:0};byW[wk].r+=parseFloat(o.total||0);byW[wk].c++}catch(e){}});
   const ws=Object.keys(byW).sort().slice(-12);
-  const payM={};orders.forEach(o=>{const m=o.payment_method_title||o.payment_method||"Не указан";payM[m]=(payM[m]||0)+parseFloat(o.total||0)});
+  const payM={};orders.forEach(o=>{const m=o.payment_method_title||o.payment_method||"Не вказано";payM[m]=(payM[m]||0)+parseFloat(o.total||0)});
   const payS=Object.entries(payM).sort((a,b)=>b[1]-a[1]);const payTotal=payS.reduce((s,[,v])=>s+v,0);
   const srcs={};orders.forEach(o=>{const s=o.utm_source||((o.meta_data||[]).find(x=>x.key==="_metorik_utm_source")||{}).value||"direct";srcs[s]=(srcs[s]||0)+1});
   const srcS=Object.entries(srcs).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -89,12 +89,12 @@ function rShopProducts(el,tabs,orders,c$){
         <div class="sh-kpi"><div class="l">Мало / Немає</div><div class="v rd">${outStock}</div></div>
       </div>
       <div class="row">
-        <div class="cc"><h3>ABC-анализ</h3><div style="display:flex;gap:6px;margin-bottom:8px;font-size:10px"><span style="color:#10b981;font-weight:600">A: ${aCount}</span><span style="color:#f59e0b;font-weight:600">B: ${bCount}</span><span style="color:#7d8196;font-weight:600">C: ${cCount}</span></div><canvas id="csABC" height="100"></canvas></div>
-        <div class="cc"><h3>По категориям</h3><canvas id="csCat" height="100"></canvas></div>
+        <div class="cc"><h3>ABC-аналіз</h3><div style="display:flex;gap:6px;margin-bottom:8px;font-size:10px"><span style="color:#10b981;font-weight:600">A: ${aCount}</span><span style="color:#f59e0b;font-weight:600">B: ${bCount}</span><span style="color:#7d8196;font-weight:600">C: ${cCount}</span></div><canvas id="csABC" height="100"></canvas></div>
+        <div class="cc"><h3>По категоріях</h3><canvas id="csCat" height="100"></canvas></div>
       </div>
       <div class="cc"><h3>Топ товарів</h3><table class="tbl"><tr><th>ABC</th><th>Товар</th><th class="r">Виручка</th><th class="r">Шт</th><th class="r">%</th></tr>
         ${prodArr.slice(0,20).map(p=>{const abcC=p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196";return`<tr><td style="color:${abcC};font-weight:700">${p.abc}</td><td>${p.n.substring(0,30)}</td><td class="r g">${ff(toCur(p.r))}${c$}</td><td class="r">${p.q}</td><td class="r" style="color:#7d8196">${totalR>0?(p.r/totalR*100).toFixed(1):0}%</td></tr>`}).join("")}</table></div>
-      ${stockAlerts.length?`<div class="cc"><h3>⚠ Stock Alerts</h3><table class="tbl"><tr><th>Товар</th><th class="r">Остаток</th><th class="r">Статус</th></tr>${stockAlerts.slice(0,15).map(p=>{const sq=p.stock_quantity;const cls=p.stock_status==="outofstock"?"stock-out":"stock-low";return`<tr><td>${(p.name||"?").substring(0,35)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${cls}">${p.stock_status==="outofstock"?"Нет":"Мало"}</span></td></tr>`}).join("")}</table></div>`:""}`;
+      ${stockAlerts.length?`<div class="cc"><h3>⚠ Stock Alerts</h3><table class="tbl"><tr><th>Товар</th><th class="r">Остаток</th><th class="r">Статус</th></tr>${stockAlerts.slice(0,15).map(p=>{const sq=p.stock_quantity;const cls=p.stock_status==="outofstock"?"stock-out":"stock-low";return`<tr><td>${(p.name||"?").substring(0,35)}</td><td class="r">${sq!==null?sq:"—"}</td><td class="r"><span class="stock-badge ${cls}">${p.stock_status==="outofstock"?"Немає":"Мало"}</span></td></tr>`}).join("")}</table></div>`:""}`;
     dc("csABC");CH.csABC=new Chart(document.getElementById("csABC"),{type:"bar",data:{labels:prodArr.slice(0,15).map(p=>p.n.substring(0,12)),datasets:[{data:prodArr.slice(0,15).map(p=>toCur(p.r)),backgroundColor:prodArr.slice(0,15).map(p=>p.abc==="A"?"#10b981":p.abc==="B"?"#f59e0b":"#7d8196"),borderRadius:2}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196",font:{size:8},callback:v=>fm(v)},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:8}},grid:{display:false}}}}});
     // Categories doughnut
     const cats={};orders.forEach(o=>{(o.line_items||[]).forEach(li=>{const wp=WP.find(p=>p.id===li.product_id);const cn=wp&&wp.categories?wp.categories.map(c=>c.name).filter(Boolean):["Без категорії"];cn.forEach(c=>{if(!cats[c])cats[c]=0;cats[c]+=parseFloat(li.total||0)})})});
