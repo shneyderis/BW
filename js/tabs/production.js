@@ -108,6 +108,45 @@ function rProduction(){
       <table class="tbl"><tr><th>Лот</th><th>Назва</th><th class="r">Об'єм</th><th class="r">Сорт</th><th class="r">Врожай</th></tr>
       ${readyToBtl.map(l=>`<tr><td style="font-weight:600">${l.code}</td><td style="font-size:9px">${l.name}</td><td class="r g">${ff(l.volume)}л</td><td class="r" style="font-size:9px">${l.varietal}</td><td class="r">${l.vintage}</td></tr>`).join("")}</table></div>`:""}
 
+    ${(()=>{
+      // === Lots → Sales pipeline ===
+      if(typeof GD==="undefined"||!GD.length)return"";
+      const lotSales=[];
+      lots.forEach(l=>{
+        const tags=(l.tags||"").toLowerCase();
+        // Match lot wine name to FINAL_sales_detail product names
+        const nameWords=(l.name||"").toLowerCase().split(/\s+/).filter(w=>w.length>3);
+        const varLower=(l.varietal||"").toLowerCase();
+        // Find matching sales by varietal or name
+        const matches=GD.filter(g=>{
+          const pLow=(g.prod||"").toLowerCase();
+          return nameWords.some(w=>pLow.includes(w))||pLow.includes(varLower);
+        });
+        if(matches.length){
+          const soldQty=matches.reduce((s,m)=>s+m.qty,0);
+          const soldSum=matches.reduce((s,m)=>s+m.sum,0);
+          const bottles=Math.floor(l.volume/0.75);
+          lotSales.push({code:l.code,name:l.name,varietal:l.varietal,volume:l.volume,bottles,color:l.color,soldQty,soldSum,matchCount:matches.length});
+        }
+      });
+      if(!lotSales.length)return"";
+      lotSales.sort((a,b)=>b.soldSum-a.soldSum);
+      return`<div class="cc"><h3>🔗 Лоти → Продажі (зв'язка)</h3>
+        <div style="font-size:9px;color:#7d8196;margin-bottom:6px">Автоматичний matching по назві сорту з FINAL_sales_detail</div>
+        <table class="tbl"><tr><th>Лот</th><th class="r">В бочках</th><th class="r">~Пляшок</th><th class="r">Продано шт</th><th class="r">Продано ₴</th><th class="r">Швидкість</th></tr>
+        ${lotSales.slice(0,20).map(l=>{
+          const monthsOfSales=12;const monthlyRate=l.soldQty/monthsOfSales;const monthsLeft=monthlyRate>0?Math.floor(l.bottles/monthlyRate):999;
+          const speedClr=monthsLeft<6?"#ef4444":monthsLeft<12?"#f59e0b":"#10b981";
+          return`<tr>
+            <td style="font-size:9px;font-weight:600">${l.code}</td>
+            <td class="r">${ff(l.volume)}л</td>
+            <td class="r">${ff(l.bottles)}</td>
+            <td class="r">${ff(l.soldQty)}</td>
+            <td class="r g">${ff(l.soldSum)}₴</td>
+            <td class="r" style="color:${speedClr}">${monthsLeft<999?monthsLeft+"м":"—"}</td>
+          </tr>`}).join("")}</table></div>`;
+    })()}
+
     <div class="cc"><h3>🌿 Виноградник · середня врожайність</h3>
       <div style="font-size:9px;color:#7d8196;margin-bottom:6px">Дані за 2021-2025 по ділянках (з таблиці лотів)</div>
       <table class="tbl"><tr><th>Ділянка</th><th class="r">Сортів</th><th class="r">Сер.кг/рік</th><th class="r">Тренд</th></tr>
