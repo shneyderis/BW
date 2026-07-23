@@ -25,7 +25,7 @@ function rSales(f){
 
   // Period filter
   const now=new Date();const curMM=String(now.getMonth()+1).padStart(2,"0");const curYM=_s.year+"-"+curMM;
-  const prevMM=String(now.getMonth()).padStart(2,"0")||"12";const prevYM=(prevMM==="00"?String(parseInt(_s.year)-1)+"-12":_s.year+"-"+prevMM);
+  const prevMonth=now.getMonth()===0?12:now.getMonth();const prevMM=String(prevMonth).padStart(2,"0");const prevYM=prevMonth===12?String(parseInt(_s.year)-1)+"-12":_s.year+"-"+prevMM;
   let pdCur,pdPrev,periodLabel;
   if(_s.period==="month"){pdCur=yrData.filter(t=>t.mm===curMM);pdPrev=yrData.filter(t=>t.mm===prevMM);periodLabel=MN[parseInt(curMM)-1]+" "+_s.year}
   else if(_s.period==="prev"){pdCur=yrData.filter(t=>t.mm===prevMM);pdPrev=yrData.filter(t=>t.mm===String(Math.max(1,parseInt(prevMM)-1)).padStart(2,"0"));periodLabel=MN[parseInt(prevMM)-1]+" "+_s.year}

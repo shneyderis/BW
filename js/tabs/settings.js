@@ -1,15 +1,19 @@
 // js/tabs/settings.js — Settings tab with role/permissions management
 
 const ALL_TABS=[
+  {id:"balance",label:"Баланс",icon:"💰"},
   {id:"pl",label:"P&L",icon:"📊"},
-  {id:"sales",label:"Продажі",icon:"💰"},
+  {id:"sales",label:"Продажі",icon:"💹"},
+  {id:"goods",label:"Товари",icon:"🏷"},
   {id:"exp",label:"Витрати",icon:"📉"},
-  {id:"assets",label:"Осн.фонди",icon:"🏭"},
+  {id:"salary",label:"ЗП",icon:"💼"},
   {id:"shop",label:"Магазин",icon:"🛒"},
   {id:"stock",label:"Склад",icon:"📦"},
   {id:"cash",label:"Кеш-фло",icon:"💵"},
   {id:"mkt",label:"Маркетинг",icon:"📣"},
   {id:"partners",label:"Партнери",icon:"🤝"},
+  {id:"uk",label:"UK",icon:"🇬🇧"},
+  {id:"production",label:"Виробн.",icon:"🍷"},
   {id:"unrec",label:"Нерозпізнані",icon:"⚠️"},
   {id:"settings",label:"Налаштування",icon:"⚙"}
 ];
@@ -157,8 +161,8 @@ window.togglePerm=function(role,tabId,enabled){
 
 // Reset to defaults
 window.resetPerms=function(){
-  ROLES.owner.tabs=["pl","sales","exp","assets","shop","stock","cash","mkt","partners","unrec","settings"];
-  ROLES.manager.tabs=["sales","shop","stock","mkt"];
-  ROLES.accountant.tabs=["pl","exp","assets","cash","partners","unrec"];
+  ROLES.owner.tabs=["balance","pl","sales","goods","exp","salary","shop","stock","cash","mkt","partners","uk","production","unrec","settings"];
+  ROLES.manager.tabs=["sales","goods","shop","stock","mkt","partners"];
+  ROLES.accountant.tabs=["balance","pl","goods","exp","salary","cash","partners","unrec"];
   render();
 };
