@@ -13,11 +13,13 @@ Dashboard for Beykush Winery — a web application for monitoring finances, sale
 ## Authorization
 
 ### Password (always works)
-| Role | Password | Access |
-|---|---|---|
-| **owner** | `beykush2024` | All tabs |
-| **manager** | `sales2024` | Sales, Shop, Stock, Marketing, Partners |
-| **accountant** | `acc2024` | P&L, Expenses, Fixed Assets, Cash Flow, Partners, Unrecognized |
+Passwords are stored as SHA-256 hashes in `js/config.js` (never in plaintext). To change a password: ⚙ Settings tab → "Change password" → copy the hash into `config.js`.
+
+| Role | Access |
+|---|---|
+| **owner** | All tabs |
+| **manager** | Sales, Shop, Stock, Marketing, Partners |
+| **accountant** | P&L, Expenses, Fixed Assets, Cash Flow, Partners, Unrecognized |
 
 ### Google Sign-In (prepared, not activated)
 Requires `GOOGLE_CLIENT_ID` in `js/config.js`. To set up:
@@ -39,7 +41,7 @@ Requires `GOOGLE_CLIENT_ID` in `js/config.js`. To set up:
 ```
 index.html              — HTML skeleton, script imports
 css/style.css           — Styles (dark theme)
-js/config.js            — Sheet IDs, passwords, roles, Google OAuth
+js/config.js            — Sheet IDs, password hashes, roles, Google OAuth
 js/data.js              — CSV loader, NBU exchange rates, Settings
 js/app.js               — Authorization, load(), filters, render(), modals
 js/tabs/pl.js           — P&L

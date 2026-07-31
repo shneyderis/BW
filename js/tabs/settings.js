@@ -76,17 +76,18 @@ function rSettings(){
     :`<div style="margin-top:6px;font-size:9px;color:#7d8196">Тільки owner може змінювати права доступу.</div>`}
   </div>`;
 
-  // Passwords (only for owner)
-  const pwHTML=isOwner?`<div class="cc"><h3>Паролі</h3>
+  // Password rotation (only for owner) — plaintext passwords are never stored or shown
+  const pwHTML=isOwner?`<div class="cc"><h3>Зміна паролю</h3>
+    <div class="info">Паролі зберігаються як SHA-256 хеші в config.js. Введіть новий пароль — хеш скопіюйте в config.js (поле passHash) і закомітьте.</div>
     <table class="tbl">
-      <tr><th>Роль</th><th>Пароль</th><th class="r">Вкладок</th></tr>
-      ${Object.entries(ROLES).map(([role,cfg])=>`<tr>
+      <tr><th>Роль</th><th>Новий пароль</th><th>SHA-256 хеш для config.js</th></tr>
+      ${Object.keys(ROLES).map(role=>`<tr>
         <td style="font-weight:600;text-transform:capitalize">${role}</td>
-        <td><input type="text" value="${cfg.password}" style="width:120px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:2px 5px;border-radius:3px;font-family:inherit;font-size:11px" onchange="ROLES['${role}'].password=this.value"></td>
-        <td class="r">${cfg.tabs.length}</td>
+        <td><input type="password" style="width:120px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:2px 5px;border-radius:3px;font-family:inherit;font-size:11px" onchange="genPassHash('${role}',this.value)"></td>
+        <td id="npwh_${role}" style="font-size:9px;word-break:break-all;color:#7d8196">—</td>
       </tr>`).join("")}
     </table>
-    <div style="margin-top:6px;font-size:9px;color:#f59e0b">⚠ Паролі зберігаються в коді (config.js). Для збереження змін потрібен коміт.</div>
+    <div style="margin-top:6px;font-size:9px;color:#f59e0b">⚠ Новий хеш діє одразу для цієї сесії; постійна зміна — тільки через коміт config.js.</div>
   </div>`:"";
 
   // Users management
@@ -157,6 +158,15 @@ window.togglePerm=function(role,tabId,enabled){
     });
   }
   render();
+};
+
+// Generate SHA-256 hash for a new role password (applies to current session immediately)
+window.genPassHash=async function(role,pass){
+  if(!ROLES[role]||!pass)return;
+  const h=await sha256Hex(pass);
+  ROLES[role].passHash=h;
+  const el=document.getElementById("npwh_"+role);
+  if(el){el.textContent=h;el.style.color="#10b981"}
 };
 
 // Reset to defaults

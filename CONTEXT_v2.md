@@ -50,12 +50,12 @@ vercel.json         — proxy rewrites для WC, SP, Meta
 - `syncAll()` — полная синхронизация (триггер: ежедневно 6:00-7:00)
 - `syncWCOrdersIncremental()` — инкрементальная WC (триггер: каждый час)
 - `syncSendPulse()` — только SP
-- SendPulse: Bearer token auth, API key: `sp_apikey_d946cffb25603f31e60a035793c33da83a21328418b2d5d63a4bb5056022a70c`
+- SendPulse: Bearer token auth, API key — в Script Properties Apps Script (ключ `SP_APIKEY`)
 - Статистика кампаний: поля `statistics.opening` и `statistics.link_redirected`
 
 ### WooCommerce REST API
 - Через Vercel proxy: `/api/wc/:path*` → `beykush.com/wp-json/wc/v3/:path*`
-- Ключи: `ck_5b87215529858139d17b602945170ae4d9c8adbd` / `cs_3ad054a505185162e849a92bf019979e6c037c93`
+- Ключи — в Script Properties Apps Script (`WC_KEY` / `WC_SECRET`)
 - Загрузка: ~957 заказов за год, пагинация по 100
 - localStorage кэш с TTL 15 мин
 
@@ -81,9 +81,8 @@ vercel.json         — proxy rewrites для WC, SP, Meta
 ```
 
 ## Авторизация
-- owner: `beykush2024` — все вкладки
-- manager: `sales2024` — Продажи, Магазин, Склад, Маркетинг
-- accountant: `acc2024` — P&L, Расходы, Осн.фонды, Кэш-фло
+- Пароли — SHA-256 хеши в `js/config.js` (plaintext нигде не хранится; смена — через ⚙ Настройки → «Смена пароля»)
+- owner — все вкладки; manager — Продажи, Магазин, Склад, Маркетинг; accountant — P&L, Расходы, Осн.фонды, Кэш-фло
 - sessionStorage для сессии
 
 ## Продажи (sales.js v3) — текущая реализация

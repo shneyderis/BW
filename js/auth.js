@@ -2,10 +2,23 @@
 
 let currentRole=null,currentUser=null;
 
+// SHA-256 → hex (потребує secure context: https або localhost)
+async function sha256Hex(s){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
 // Google Sign-In callback
+// Увага: підпис JWT клієнтом не перевіряється (немає бекенду) — перевіряємо aud/exp/email_verified.
 window.handleGoogleAuth=function(response){
-  const payload=JSON.parse(atob(response.credential.split('.')[1]));
-  const email=payload.email;
+  let payload;
+  try{
+    const b64=response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    payload=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64),c=>c.charCodeAt(0))));
+  }catch(e){document.getElementById("login-err").textContent="Помилка авторизації";return}
+  if(payload.aud!==GOOGLE_CLIENT_ID||payload.exp*1000<Date.now()||payload.email_verified===false){
+    document.getElementById("login-err").textContent="Недійсний токен";return}
+  const email=(payload.email||"").toLowerCase();
   const user=USERS[email]||USERS_DEFAULT[email];
   if(!user||!user.active){document.getElementById("login-err").textContent="Доступ заборонено: "+email;return}
   const role=user.role||"manager";
@@ -15,20 +28,22 @@ window.handleGoogleAuth=function(response){
   sessionStorage.setItem("bw_role",role);
   sessionStorage.setItem("bw_user",JSON.stringify(currentUser));
   sessionStorage.setItem("bw_ts",String(Date.now()));
-  document.getElementById("user-info").innerHTML=currentUser.name;
+  document.getElementById("user-info").textContent=currentUser.name;
   showApp(tabs);
 };
 
-function doLogin(){
+async function doLogin(){
   const p=document.getElementById("login-pass").value;
+  if(!p)return;
+  const h=await sha256Hex(p);
   for(const[role,cfg]of Object.entries(ROLES)){
-    if(cfg.password===p){
+    if(cfg.passHash===h){
       currentRole=role;
       currentUser={email:"",name:role,role,picture:""};
       sessionStorage.setItem("bw_role",role);
       sessionStorage.setItem("bw_user",JSON.stringify(currentUser));
       sessionStorage.setItem("bw_ts",String(Date.now()));
-      document.getElementById("user-info").innerHTML=role;
+      document.getElementById("user-info").textContent=role;
       showApp(cfg.tabs);return}
   }
   document.getElementById("login-err").textContent="Невірний пароль";
@@ -40,7 +55,7 @@ function doLogout(){
   document.getElementById("app").classList.add("hidden");
   document.getElementById("login-screen").classList.remove("hidden");
   document.getElementById("login-pass").value="";
-  document.getElementById("user-info").innerHTML="";
+  document.getElementById("user-info").textContent="";
 }
 
 function showApp(tabs){
@@ -77,7 +92,7 @@ function showApp(tabs){
   if(r&&(Date.now()-ts<30*60*1000)){
     currentRole=r;
     try{currentUser=JSON.parse(sessionStorage.getItem("bw_user"))}catch(e){}
-    if(currentUser)document.getElementById("user-info").innerHTML=currentUser.name||r;
+    if(currentUser)document.getElementById("user-info").textContent=currentUser.name||r;
     const user=currentUser&&currentUser.email?USERS[currentUser.email]||USERS_DEFAULT[currentUser.email]:null;
     const tabs=user?.tabs||ROLES[r]?.tabs||[];
     showApp(tabs);

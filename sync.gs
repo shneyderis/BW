@@ -3,19 +3,23 @@
  * SendPulse + WooCommerce + Meta/Instagram + Facebook
  */
 
+// Секрети зберігаються в Script Properties, НЕ в коді:
+// Apps Script редактор → Project Settings (⚙) → Script Properties → додати ключі:
+// SP_APIKEY, WC_KEY, WC_SECRET, META_TOKEN, META_PAGE_TOKEN, METORIK_UK_TOKEN
+const PROPS = PropertiesService.getScriptProperties();
 const CONFIG = {
-  SP_APIKEY: 'sp_apikey_d946cffb25603f31e60a035793c33da83a21328418b2d5d63a4bb5056022a70c',
+  SP_APIKEY: PROPS.getProperty('SP_APIKEY'),
   SP_BASE: 'https://api.sendpulse.com',
   WC_BASE: 'https://beykush.com/wp-json/wc/v3',
-  WC_KEY: 'ck_5b87215529858139d17b602945170ae4d9c8adbd',
-  WC_SECRET: 'cs_3ad054a505185162e849a92bf019979e6c037c93',
+  WC_KEY: PROPS.getProperty('WC_KEY'),
+  WC_SECRET: PROPS.getProperty('WC_SECRET'),
   SPREADSHEET_ID: '1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ',
-  META_TOKEN: 'EAAoOzvxe9CgBRH4dIlKSAZCy6tWZBxRFYLaaY2mKVNgCaKNXQnTdHEDuIbS5jcMdlUixBPpvB2Jp3SbAO3nfdOwwxBpY4kjH5LVsWnSQE0mr6zWMPE01Pgl4W0KQEeZAV702zSZAr4JlJUHkTaIgkKSCUOaYigYfMFfOjZA8sZArmUajsyB6wbSaopQ06Sm0rnjAZDZD', // System User token (безстроковий) v3 with Page access
+  META_TOKEN: PROPS.getProperty('META_TOKEN'), // System User token (безстроковий) v3 with Page access
   IG_ACCOUNT_ID: '17841400059003944',
   META_PAGE_ID: '160594843975804',
-  META_PAGE_TOKEN: 'EAAoOzvxe9CgBRFCSgm1rq5MRWKL5YhVVx8ZCZAoYvkAc1GX4xJjnDyvrVBLjbliSAqWgZBU1ni90hqKRMFZCH4YWpdFcxY2n0nf11Lh7u1SR5PTSSSsgmlrFdC722nIZBVjALAmNc5ORRw3rvZBMUqVfsXASQyXy4LZBRZC2ogm3ZCIgJXQGSc8auXZBQZBvQpQp1tULBOHQIkZD', // Page token for FB Posts
+  META_PAGE_TOKEN: PROPS.getProperty('META_PAGE_TOKEN'), // Page token for FB Posts
   META_AD_ACCOUNT_ID: 'act_2205073692870663',
-  METORIK_UK_TOKEN: 'mtk_8yjvfwcu0gjhkn0z53wpliv6el0jfc1a7gvm5d8z6icvqvao',
+  METORIK_UK_TOKEN: PROPS.getProperty('METORIK_UK_TOKEN'),
   METORIK_UK_BASE: 'https://app.metorik.com/api/v1',
 };
 
