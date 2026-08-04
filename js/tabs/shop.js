@@ -18,7 +18,7 @@ function rShop(f){
     <button class="sh-tab ${shopSub==="customers"?"on":""}" onclick="shopSw('customers')">Клієнти</button>
     <button class="sh-tab ${shopSub==="orders"?"on":""}" onclick="shopSw('orders')">Замовлення</button>
   </div>
-  ${srcN(srcP("Google Sheets (основна) → листи WC_Orders / WC_Products — інтернет-магазин WooCommerce (sync.gs)",maxD(WO,o=>o.date_created)))}`;
+  ${srcN(srcP(BK_MAIN()+" → листи WC_Orders / WC_Products — інтернет-магазин WooCommerce (sync.gs)",maxD(WO,o=>o.date_created)))}`;
   if(shopSub==="sales") rShopSales(el,tabs,completed,allOrd,f,c$);
   else if(shopSub==="products") rShopProducts(el,tabs,completed,c$);
   else if(shopSub==="customers") rShopCustomers(el,tabs,completed,c$);

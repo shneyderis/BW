@@ -34,7 +34,7 @@ function rProduction(){
     <button class="sh-tab ${prodView==="lots"?"on":""}" onclick="prodView='lots';render()">Лоти</button>
     <button class="sh-tab ${prodView==="wines"?"on":""}" onclick="prodView='wines';render()">По винах</button>
   </div>
-  ${srcN([srcP("data/lots.csv — лоти виноробні (експорт з InnoVint)"),(typeof GD!=="undefined"&&GD.length)?srcP("FINAL_sales_detail — зв'язка з продажами",maxD(GD,r=>r.date)):""])}`;
+  ${srcN([srcP("файл data/lots.csv — лоти виноробні (експорт з InnoVint)"),(typeof GD!=="undefined"&&GD.length)?srcP(BK_MAIN()+" → FINAL_sales_detail — зв'язка з продажами",maxD(GD,r=>r.date)):""])}`;
 
   if(prodView==="lots")return rProdLots(el,tabs,lots);
   if(prodView==="wines")return rProdWines(el,tabs,lots);

@@ -37,7 +37,7 @@ function rUK(){
     <button class="sh-tab ${ukView==="orders"?"on":""}" onclick="ukView='orders';render()">Замовлення</button>
     <button class="sh-tab ${ukView==="products"?"on":""}" onclick="ukView='products';render()">Продукти</button>
   </div>
-  ${srcN(srcP("Google Sheets (основна) → листи UK_Orders / UK_Products — Wines of Ukraine (sync.gs)",maxD(UK.orders,o=>o.date)))}`;
+  ${srcN(srcP(BK_MAIN()+" → листи UK_Orders / UK_Products — Wines of Ukraine (sync.gs)",maxD(UK.orders,o=>o.date)))}`;
 
   if(ukView==="orders")return rUKOrders(el,tabs);
   if(ukView==="products")return rUKProducts(el,tabs);

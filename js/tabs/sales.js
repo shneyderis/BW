@@ -64,7 +64,7 @@ function rSales(f){
   const clr=_s.chan?CHAN_CLR[_s.chan]||"#10b981":"#10b981";
 
   el.innerHTML=`
-    ${srcN(srcP("Google Sheets (основна) → лист Dashboard_Data — банківські виписки, доходи",maxD(allInc,t=>t.ym)))}
+    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data — банківські виписки, доходи",maxD(allInc,t=>t.ym)))}
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <select class="flt" id="sY">${yrs.map(y=>`<option ${y===_s.year?"selected":""}>${y}</option>`).join("")}</select>
       ${CHAN_ORDER.filter(ch=>{const d=allInc.filter(t=>t.yr===_s.year&&getChan(t.cat)===ch);return d.length>0}).map(ch=>`<button class="flt" style="${_s.chan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_s.chan=${_s.chan===ch?"null":"'"+ch+"'"};render()">${ch}</button>`).join("")}
@@ -138,7 +138,7 @@ function rSalesPartner(el,c$,allInc,back){
   const txs=[...yData].sort((a,b)=>b.mo.localeCompare(a.mo)).slice(0,100);
 
   el.innerHTML=`${back}
-    ${srcN(srcP("Google Sheets (основна) → лист Dashboard_Data",maxD(pData,t=>t.ym)))}
+    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data",maxD(pData,t=>t.ym)))}
     <div class="kpis"><div class="kpi"><div class="l">${esc(p)}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${info?.edrpou||""} ${_s.year} · ${yData.length} опер</div></div></div>
     <div class="cc"><h3>Продажі по місяцях</h3><canvas id="sPartCh" height="100"></canvas></div>
     <div class="row">

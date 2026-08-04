@@ -62,7 +62,7 @@ function rPL(f){
     </div>`;
   }
   el.innerHTML=`
-    ${srcN([srcP("Google Sheets (основна) → лист Dashboard_Data — банківські виписки",tLast),BL.length?srcP("BW_Accounts → лист PRIVAT_BALANCES — залишки на рахунках"):""])}
+    ${srcN([srcP(BK_MAIN()+" → лист Dashboard_Data — банківські виписки",tLast),BL.length?srcP(BK_ACC()+" → лист PRIVAT_BALANCES — залишки на рахунках"):""])}
     <div class="kpis">
       <div class="kpi"><div class="l">Виручка нетто ${sy}${ytd}</div><div class="v g">${fm(toCur(sr))}${c$}</div><div class="s">${gr>0?"+":""}${gr}% vs ${py}${ytd}</div></div>
       <div class="kpi"><div class="l">OPEX ${sy}</div><div class="v rd">${fm(toCur(Math.abs(se)))}${c$}</div></div>

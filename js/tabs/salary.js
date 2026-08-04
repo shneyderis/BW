@@ -56,7 +56,7 @@ function rSalary(f){
 
   el.innerHTML=`
     <div class="sec">💼 Зарплати · ${sy}</div>
-    ${srcN([srcP("Dashboard_Data — виписки, категорії «ЗП …» та «BW …»",maxD(allZP,t=>t.ym)),staff.length?srcP("1С → співробітники (1c_staff.csv)"):""])}
+    ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — виписки, категорії «ЗП …» та «BW …»",maxD(allZP,t=>t.ym)),staff.length?srcP("1С: файл data/1c_staff.csv — співробітники"):""])}
     <div class="kpis">
       <div class="kpi"><div class="l">ФОП за ${sy}</div><div class="v rd">${ff(toCur(totalYr))}${c$}</div><div class="s">${delta>0?"+":""}${delta.toFixed(0)}% vs ${py}</div></div>
       <div class="kpi"><div class="l">Сер./місяць</div><div class="v">${ff(toCur(avgMonthly))}${c$}</div></div>

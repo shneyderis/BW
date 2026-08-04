@@ -17,6 +17,11 @@ function srcP(name,last){return name+(last?` · дані до <b>${last}</b>`:""
 function srcN(parts){const a=(Array.isArray(parts)?parts:[parts]).filter(Boolean);return a.length?`<div class="srcnote">ℹ ${a.join("&ensp;·&ensp;")}</div>`:""}
 // srcI("лист","дата") → маленька примітка в заголовку таблиці
 function srcI(name,last){return`<span class="srcnote-i">${srcP(name,last)}</span>`}
+// Книги (файли) Google Sheets — реальні назви + клікабельні посилання на файл
+function bkA(sid,name){return`<a href="https://docs.google.com/spreadsheets/d/${sid}/edit" target="_blank" rel="noopener">${name}</a>`}
+function BK_MAIN(){return bkA(SID,"BW_Looker_Data")}
+function BK_ACC(){return bkA(SID2,"BW_accounts")}
+function BK_1C(){return bkA(SID3,"beykush_data")}
 
 // CSV export utility
 function exportCSV(filename,headers,rows){
