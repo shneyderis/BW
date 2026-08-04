@@ -96,6 +96,7 @@ function rBalance(){
   // === RENDER ===
   el.innerHTML=`
     <div class="sec">💰 Баланс · Beykush Winery</div>
+    ${srcN([srcP("Dashboard_Data — виписки (P&L, CAPEX)",maxD(T,t=>t.ym)),BL.length?srcP("BW_Accounts → PRIVAT_BALANCES — рахунки"):"",lots.length?srcP("data/lots.csv — лоти виноробні"):"",C1.osv&&C1.osv.length?srcP("1С → ОСВ — дебіторка, осн.засоби, рах.28"):""])}
 
     <div class="kpis">
       <div class="kpi"><div class="l">Загальні активи</div><div class="v" style="color:#f59e0b">${ff(toCur(totalAssets))}${c$}</div></div>
@@ -109,7 +110,7 @@ function rBalance(){
       <div class="cc"><h3>Динаміка (кумулятивний P&L)</h3><canvas id="cBalTrend" height="160"></canvas></div>
     </div>
 
-    <div class="cc"><h3>💵 Грошові рахунки</h3>
+    <div class="cc"><h3>💵 Грошові рахунки${srcI("BW_Accounts → PRIVAT_BALANCES",maxD(BL,b=>gv(b,"dpd")))}</h3>
       ${BL.length?`<table class="tbl"><tr><th>Рахунок</th><th class="r">Валюта</th><th class="r">Баланс</th><th class="r">В ₴</th></tr>
         ${BL.map(b=>{const cur=gv(b,"валют")||"";const bal=pn(gv(b,"баланс"));const acc=gv(b,"рахунок")||gv(b,"account")||gv(b,"назва")||"—";const inUAH=cur==="EUR"?bal*FX.EUR:cur==="USD"?bal*FX.USD:bal;const curClr=cur==="UAH"?"#f59e0b":cur==="EUR"?"#3b82f6":"#10b981";return`<tr>
           <td style="font-size:9px">${acc}</td>
@@ -122,7 +123,7 @@ function rBalance(){
     </div>
 
     <div class="row">
-      <div class="cc"><h3>🍷 Вино в бочках/ємностях</h3>
+      <div class="cc"><h3>🍷 Вино в бочках/ємностях${srcI("data/lots.csv")}</h3>
         <div class="kpis" style="grid-template-columns:1fr 1fr">
           <div class="sh-kpi"><div class="l">Літрів</div><div class="v" style="color:#8b5cf6">${ff(lotsVol)}</div></div>
           <div class="sh-kpi"><div class="l">~Пляшок</div><div class="v">${ff(lotsBottles)}</div></div>
@@ -132,7 +133,7 @@ function rBalance(){
           ${(()=>{const byClr={};lots.forEach(l=>{const c=l.color||"?";if(!byClr[c])byClr[c]=0;byClr[c]+=l.volume});const colorClr={"red":"#e11d48","white":"#f59e0b","rose":"#ec4899","orange":"#f97316","sparkling":"#8b5cf6"};return Object.entries(byClr).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const pct=lotsVol>0?(v/lotsVol*100):0;return`<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span style="color:${colorClr[c]||"#7d8196"}">${c}</span><span>${ff(v)}л (${pct.toFixed(0)}%)</span></div>`}).join("")})()}
         </div>
       </div>
-      <div class="cc"><h3>🍾 Вино в пляшках (склад)</h3>
+      <div class="cc"><h3>🍾 Вино в пляшках (склад)${srcI("Sheets → 3_Stock + 1С рах.28")}</h3>
         <div class="kpis" style="grid-template-columns:1fr 1fr">
           <div class="sh-kpi"><div class="l">Пляшок</div><div class="v">${ff(stockBottles)}</div></div>
           <div class="sh-kpi"><div class="l">Оцінка</div><div class="v" style="color:#e11d48">${ff(stockValue)}₴</div></div>
@@ -141,7 +142,7 @@ function rBalance(){
       </div>
     </div>
 
-    <div class="cc"><h3>📊 P&L ${curYr} YTD + Прогноз</h3>
+    <div class="cc"><h3>📊 P&L ${curYr} YTD + Прогноз${srcI("Dashboard_Data",maxD(T,t=>t.ym))}</h3>
       ${(()=>{
         // Forecast: extrapolate current year based on completed months
         const completedMonths=parseInt(mxMM(curYr));
@@ -171,7 +172,7 @@ function rBalance(){
       <div style="font-size:9px;color:#7d8196;margin-top:4px">Деталі → вкладка Партнери → Борги</div>
     </div>`:""}
 
-    <div class="cc"><h3>🏭 Основні фонди (CAPEX)</h3>
+    <div class="cc"><h3>🏭 Основні фонди (CAPEX)${srcI("Dashboard_Data + 1С ОСВ рах.10/11")}</h3>
       <div class="kpis">
         <div class="kpi"><div class="l">Балансова вартість</div><div class="v" style="color:#f59e0b">${ff(toCur(fixedAssets))}${c$}</div><div class="s">рах. 10/11</div></div>
         ${(()=>{const ft=T.filter(t=>isA(t)&&t.tp==="Расход");const totalInv=toCur(Math.abs(ft.reduce((s,t)=>s+t.nt,0)));return'<div class="kpi"><div class="l">Всього інвестицій</div><div class="v" style="color:#3b82f6">'+ff(totalInv)+c$+'</div></div>'+ACATS.map(c=>'<div class="kpi"><div class="l">'+c.replace("Обладнання ","").replace(", власний транспорт","транспорт")+'</div><div class="v">'+ff(toCur(Math.abs(ft.filter(t=>t.cat.includes(c)).reduce((s,t)=>s+t.nt,0))))+c$+'</div></div>').join("")})()}

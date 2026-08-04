@@ -64,6 +64,7 @@ function rSales(f){
   const clr=_s.chan?CHAN_CLR[_s.chan]||"#10b981":"#10b981";
 
   el.innerHTML=`
+    ${srcN(srcP("Google Sheets (основна) → лист Dashboard_Data — банківські виписки, доходи",maxD(allInc,t=>t.ym)))}
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <select class="flt" id="sY">${yrs.map(y=>`<option ${y===_s.year?"selected":""}>${y}</option>`).join("")}</select>
       ${CHAN_ORDER.filter(ch=>{const d=allInc.filter(t=>t.yr===_s.year&&getChan(t.cat)===ch);return d.length>0}).map(ch=>`<button class="flt" style="${_s.chan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_s.chan=${_s.chan===ch?"null":"'"+ch+"'"};render()">${ch}</button>`).join("")}
@@ -99,12 +100,12 @@ function rSales(f){
       const partArr=Object.entries(parts).sort((a,b)=>b[1].sum-a[1].sum);
       const partTotal=partArr.reduce((s,[,d])=>s+d.sum,0);
       if(!partArr.length)return"";
-      return`<div class="cc"><h3>Партнери${_s.chan?" · "+_s.chan:""} · ${periodLabel} <span style="font-size:8px;color:#7d8196;font-weight:400">клік → транзакції</span></h3>
+      return`<div class="cc"><h3>Партнери${_s.chan?" · "+_s.chan:""} · ${periodLabel} <span style="font-size:8px;color:#7d8196;font-weight:400">клік → транзакції</span>${srcI("Dashboard_Data")}</h3>
       <table class="tbl"><tr><th>Партнер</th><th class="r">Сума</th><th class="r">%</th><th class="r">Опер.</th></tr>
       ${partArr.slice(0,25).map(([n,d])=>`<tr class="click" onclick="_s.partner='${n.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}';_s.view='partner';render()"><td style="font-size:9px">${esc(n.substring(0,32))}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${partTotal?(d.sum/partTotal*100).toFixed(1):"0.0"}%</td><td class="r">${d.cnt}</td></tr>`).join("")}
       ${partArr.length>25?`<tr><td colspan="4" style="color:#7d8196;font-size:9px">…ще ${partArr.length-25} партнерів</td></tr>`:""}</table></div>`})()}
 
-    <div class="cc"><h3>Менеджери</h3>
+    <div class="cc"><h3>Менеджери${srcI("Dashboard_Data")}</h3>
       <table class="tbl"><tr><th>Менеджер</th><th class="r">Продажі</th><th class="r">Комісія</th><th class="r">Опер.</th></tr>
       ${mgrArr.map(([n,d])=>`<tr class="click" onclick="_s.mgr='${n.replace(/'/g,"\\'")}';_s.view='manager';render()"><td>${n}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${ff(d.com)}${c$}</td><td class="r">${d.cnt}</td></tr>`).join("")}
       ${noMgr.cnt?`<tr style="color:#f59e0b" class="click" onclick="_s.mgr='__none__';_s.view='manager';render()"><td>⚠ Не призначений</td><td class="r">${ff(noMgr.sum)}${c$}</td><td class="r">—</td><td class="r">${noMgr.cnt}</td></tr>`:""}
@@ -137,6 +138,7 @@ function rSalesPartner(el,c$,allInc,back){
   const txs=[...yData].sort((a,b)=>b.mo.localeCompare(a.mo)).slice(0,100);
 
   el.innerHTML=`${back}
+    ${srcN(srcP("Google Sheets (основна) → лист Dashboard_Data",maxD(pData,t=>t.ym)))}
     <div class="kpis"><div class="kpi"><div class="l">${esc(p)}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${info?.edrpou||""} ${_s.year} · ${yData.length} опер</div></div></div>
     <div class="cc"><h3>Продажі по місяцях</h3><canvas id="sPartCh" height="100"></canvas></div>
     <div class="row">

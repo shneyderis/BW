@@ -145,7 +145,8 @@ function rGoods(){
     <button class="flt" style="${_gdChan==="ALL"?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='ALL';render()">Всі канали</button>
     ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
     <button class="flt" style="${_gdChan==="?"?"background:#7d8196;color:#fff;border-color:#7d8196":""}" onclick="_gdChan='?';render()">Невизначений</button>
-  </div>`;
+  </div>
+  ${srcN([srcP("Google Sheets (основна) → лист FINAL_sales_detail — продажі по пляшках (накладні з 1С)",maxD(GD,r=>r.date)),(typeof SD!=="undefined"&&SD.length)?srcP("лист Stock_Data — залишки складу",maxD(SD,r=>gv(r,"date"))):(typeof SK!=="undefined"&&SK.length?srcP("лист 3_Stock — залишки складу"):""),"канали: Dashboard_Data + worker_new + customer_channels"])}`;
 
   function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
 
@@ -244,7 +245,7 @@ function rGoods(){
 
     <div class="cc"><h3>Топ-25 вин по ${_gdSort==="qty"?"кількості":_gdSort==="avg"?"ціні":"виручці"}</h3><canvas id="cGdTop" height="260"></canvas></div>
 
-    <div class="cc"><h3>Всі вина (${prodArr.length}) <button class="flt" style="float:right;font-size:9px" onclick="exportGoodsCSV()">Експорт CSV</button></h3>
+    <div class="cc"><h3>Всі вина (${prodArr.length})${srcI("FINAL_sales_detail + Stock_Data")} <button class="flt" style="float:right;font-size:9px" onclick="exportGoodsCSV()">Експорт CSV</button></h3>
       <table class="tbl"><tr><th>Вино</th><th style="color:#7d8196">Вінтажі</th>${sortHdr("qty","Продано")}${sortHdr("vel","Пл/міс")}<th class="r">Склад</th><th class="r" style="cursor:pointer" onclick="gdToggleSort('ml')">Міс.зал.${_gdSort==="ml"?(_gdSortDir<0?"▼":"▲"):""}</th>${sortHdr("sum","Сума")}${sortHdr("avg","Ціна")}</tr>
       ${prodArr.slice(0,60).map((p,i)=>{
         const mlClr=p.monthsLeft>0&&p.monthsLeft<3?"#ef4444":p.monthsLeft>0&&p.monthsLeft<6?"#f59e0b":p.monthsLeft>=999?"#7d8196":p.monthsLeft>0?"#10b981":"#7d8196";
@@ -321,7 +322,7 @@ function rGdCustomers(el,header,fd,c$){
       <div class="kpi"><div class="l">Сер. чек</div><div class="v" style="color:#f59e0b">${custArr.length?(toCur(custArr.reduce((s,c)=>s+c.sum,0)/custArr.length)).toFixed(0):"—"}${c$}</div></div>
     </div>
     <div class="cc"><h3>Топ клієнтів</h3><canvas id="cGdCust" height="240"></canvas></div>
-    <div class="cc"><h3>Клієнти (${custArr.length})</h3>
+    <div class="cc"><h3>Клієнти (${custArr.length})${srcI("FINAL_sales_detail")}</h3>
       <table class="tbl"><tr><th>Клієнт</th><th>Канал</th><th>Гео</th>${sortHdr("qty","Пляшок")}${sortHdr("sum","Сума")}<th class="r">%</th><th class="r">Накладних</th><th class="r">Вин</th><th class="r">Ост.покупка</th></tr>
       ${custArr.slice(0,60).map(c=>`<tr>
         <td style="font-size:10px">${c.name.substring(0,28)}</td>
@@ -382,7 +383,7 @@ function rGdTrends(el,header,allYrs,c$){
       <div class="cc"><h3>Продажі по роках (пляшки)</h3><canvas id="cGdYr" height="120"></canvas></div>
       <div class="cc"><h3>Помісячно: ${curYr} vs ${prevYr}</h3><canvas id="cGdMo" height="120"></canvas></div>
     </div>
-    <div class="cc"><h3>Топ вина ${curYr} vs ${prevYr}${_gdChan!=="ALL"?" · "+_gdChan:""}</h3>
+    <div class="cc"><h3>Топ вина ${curYr} vs ${prevYr}${_gdChan!=="ALL"?" · "+_gdChan:""}${srcI("FINAL_sales_detail")}</h3>
       <table class="tbl"><tr><th>Вино</th><th class="r">Пл. ${curYr}</th><th class="r">Сума ${curYr}</th><th class="r">Пл. ${prevYr}</th><th class="r">Сума ${prevYr}</th><th class="r">Ріст</th></tr>
       ${prodYoY.slice(0,40).map(p=>{const gc=p.growth>0?"g":p.growth<0?"rd":"";const gTxt=p.growth===999?"new":p.sumP===0&&p.sumC===0?"—":(p.growth>0?"+":"")+p.growth.toFixed(0)+"%";return`<tr>
         <td style="font-size:10px">${p.name.substring(0,35)}</td>
@@ -458,7 +459,7 @@ function rGdABC(el,header,fd,c$){
 
     <div class="cc"><h3>Парето: кумулятивна виручка</h3><canvas id="cAbcPareto" height="160"></canvas></div>
 
-    <div class="cc"><h3>ABC по винах</h3>
+    <div class="cc"><h3>ABC по винах${srcI("FINAL_sales_detail")}</h3>
       <table class="tbl"><tr><th>Вино</th><th class="r">Клас</th><th class="r">Пляшок</th><th class="r">Сума</th><th class="r">%</th><th class="r">Кум.%</th></tr>
       ${wines.map(w=>`<tr>
         <td style="font-size:10px">${w.name.substring(0,35)}</td>

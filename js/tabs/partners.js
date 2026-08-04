@@ -72,7 +72,8 @@ function rPartners(){
       <option value="ALL" ${_partOrg==="ALL"?"selected":""}>Всі організації</option>
       ${allOrgs.map(o=>`<option ${o===_partOrg?"selected":""}>${o}</option>`).join("")}
     </select>
-  </div>`;
+  </div>
+  ${srcN([srcP("1С → продажі (1c_sales.csv)",maxD(C1.sales,s=>s.date)),C1.bank&&C1.bank.length?srcP("1С → банк (1c_bank.csv)",maxD(C1.bank,b=>toISO(b.date))):"",(window.CRM_LEADS&&CRM_LEADS.length)?srcP("Sheets → CRM_Leads"):""])}`;
 
   function bindOrgFlt(){const s=document.getElementById("partOrgFlt");if(s)s.onchange=e=>{_partOrg=e.target.value;render()}}
 
