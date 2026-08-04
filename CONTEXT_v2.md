@@ -13,9 +13,10 @@ index.html          — HTML + подключение скриптов (65 ст�
 css/style.css       — все стили (32 строки)
 js/data.js          — CSV загрузчик, WC fetch, NBU, Settings, утилиты (pn, fm, ff, gv, toCur, cs)
 js/app.js           — auth, load(), filters, render(), modals, глобальные переменные
-js/tabs/pl.js       — P&L
-js/tabs/sales.js    — Продажи v3 (каналы, drill-down, FOP из Settings)
-js/tabs/exp.js      — Расходы
+js/drill.js         — универсальный drill-down модал: категория → контрагенты → транзакции (drID/drillGo/drillPush)
+js/tabs/pl.js       — P&L (таблицы кликабельны → drill-down)
+js/tabs/sales.js    — Продажи v3 (каналы, drill-down, партнёры → транзакции, FOP из Settings)
+js/tabs/exp.js      — Расходы (категории кликабельны → drill-down)
 js/tabs/assets.js   — Осн.фонды
 js/tabs/shop.js     — Магазин (4 подвкладки: sales, products, customers, orders)
 js/tabs/stock.js    — Склад (Stock_Data + 3_Stock fallback)

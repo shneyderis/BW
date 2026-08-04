@@ -19,10 +19,10 @@ function rPL(f){
     const yrs=aY();
     const bd=yrs.map(y=>{const ox=opex.filter(t=>t.yr===y);const r=ox.filter(t=>t.tp==="Доход").reduce((s,t)=>s+t.nt,0);const e=ox.filter(t=>t.tp==="Расход").reduce((s,t)=>s+t.nt,0);const a=T.filter(t=>isA(t)&&t.yr===y&&t.tp==="Расход").reduce((s,t)=>s+Math.abs(t.nt),0);return{y,r:toCur(r),e:toCur(Math.abs(e)),p:toCur(r+e),a:toCur(a),m:r?((r+e)/r*100):0}});
     chartHTML=`<div class="row"><div class="cc"><h3>P&L по роках (без осн.фондів)</h3><canvas id="c1" height="150"></canvas></div><div class="cc"><h3>Маржинальність %</h3><canvas id="c1m" height="150"></canvas></div></div>`;
-    detailHTML=`<div class="cc"><h3>Зведена таблиця <button class="flt" style="float:right;font-size:9px" onclick="exportPLcsv()">Експорт CSV</button></h3><table class="tbl"><tr><th></th>${yrs.map(y=>'<th class="r">'+y+'</th>').join("")}<th class="r">Разом</th></tr>
-      <tr><td>Виручка нетто</td>${bd.map(d=>'<td class="r g">'+fm(d.r)+'</td>').join("")}<td class="r g">${fm(bd.reduce((s,d)=>s+d.r,0))}</td></tr>
-      <tr><td>OPEX</td>${bd.map(d=>'<td class="r rd">'+fm(d.e)+'</td>').join("")}<td class="r rd">${fm(bd.reduce((s,d)=>s+d.e,0))}</td></tr>
-      <tr><td>Осн.фонди</td>${bd.map(d=>'<td class="r" style="color:#3b82f6">'+fm(d.a)+'</td>').join("")}<td class="r" style="color:#3b82f6">${fm(bd.reduce((s,d)=>s+d.a,0))}</td></tr>
+    detailHTML=`<div class="cc"><h3>Зведена таблиця <span style="font-size:8px;color:#7d8196;font-weight:400">клік по рядку → деталізація</span> <button class="flt" style="float:right;font-size:9px" onclick="exportPLcsv()">Експорт CSV</button></h3><table class="tbl"><tr><th></th>${yrs.map(y=>'<th class="r">'+y+'</th>').join("")}<th class="r">Разом</th></tr>
+      <tr class="click" onclick="drillGo(${drID({tp:"Доход"})})"><td>Виручка нетто ▸</td>${bd.map(d=>'<td class="r g">'+fm(d.r)+'</td>').join("")}<td class="r g">${fm(bd.reduce((s,d)=>s+d.r,0))}</td></tr>
+      <tr class="click" onclick="drillGo(${drID({tp:"Расход"})})"><td>OPEX ▸</td>${bd.map(d=>'<td class="r rd">'+fm(d.e)+'</td>').join("")}<td class="r rd">${fm(bd.reduce((s,d)=>s+d.e,0))}</td></tr>
+      <tr class="click" onclick="drillGo(${drID({tp:"Расход",asset:1})})"><td>Осн.фонди ▸</td>${bd.map(d=>'<td class="r" style="color:#3b82f6">'+fm(d.a)+'</td>').join("")}<td class="r" style="color:#3b82f6">${fm(bd.reduce((s,d)=>s+d.a,0))}</td></tr>
       <tr class="tot"><td>Прибуток</td>${bd.map(d=>'<td class="r '+(d.p>0?"g":"rd")+'">'+fm(d.p)+'</td>').join("")}<td class="r">${fm(bd.reduce((s,d)=>s+d.p,0))}</td></tr>
       <tr><td>Маржа</td>${bd.map(d=>'<td class="r">'+d.m.toFixed(1)+'%</td>').join("")}<td class="r"></td></tr></table></div>`;
   } else if(yearSelected && !monthSelected){
@@ -35,29 +35,29 @@ function rPL(f){
     chartHTML=`<div class="cc"><h3>Виручка помісячно ${sy} vs ${py}</h3><canvas id="c2r" height="90"></canvas></div>
       <div class="cc"><h3>Витрати помісячно ${sy} vs ${py} + осн.фонди</h3><canvas id="c2e" height="90"></canvas></div>
       <div class="cc"><h3>Сезонність: прибуток ${sy} vs ${py}</h3><canvas id="c2s" height="80"></canvas></div>`;
-    const chD=CHS.map(c=>{const v=opex.filter(t=>t.yr===sy&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);const vp=opex.filter(t=>t.yr===py&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);return{n:CSH[c]||c,v:toCur(v),vp:toCur(vp)}}).filter(x=>x.v>0||x.vp>0);
+    const chD=CHS.map(c=>{const v=opex.filter(t=>t.yr===sy&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);const vp=opex.filter(t=>t.yr===py&&t.tp==="Доход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);return{c,n:CSH[c]||c,v:toCur(v),vp:toCur(vp)}}).filter(x=>x.v>0||x.vp>0);
     const expD=[...new Set(opex.filter(t=>t.yr===sy&&t.tp==="Расход").map(t=>t.cat))].map(c=>{const v=opex.filter(t=>t.yr===sy&&t.tp==="Расход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);const vp=opex.filter(t=>t.yr===py&&t.tp==="Расход"&&t.cat===c).reduce((s,t)=>s+t.nt,0);return{c,v:toCur(Math.abs(v)),vp:toCur(Math.abs(vp))}}).sort((a,b)=>b.v-a.v).slice(0,12);
     const trS=chD.reduce((s,x)=>s+x.v,0),trP=chD.reduce((s,x)=>s+x.vp,0);
     const teS=expD.reduce((s,x)=>s+x.v,0),teP=expD.reduce((s,x)=>s+x.vp,0);
     detailHTML=`<div class="row">
-      <div class="cc"><h3>Доходи по каналах</h3><table class="tbl"><tr><th>Канал</th><th class="r">${sy}</th><th class="r">${py}</th><th class="r">Δ%</th></tr>
-        ${chD.map(x=>{const d=x.vp?((x.v-x.vp)/x.vp*100).toFixed(0):"—";return'<tr><td>'+x.n+'</td><td class="r g">'+ff(x.v)+'</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td><td class="r" style="color:'+(d>0?"#10b981":"#ef4444")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}
-        <tr class="tot"><td>Разом</td><td class="r g">${ff(trS)}</td><td class="r" style="color:#7d8196">${ff(trP)}</td><td class="r">${trP?((trS-trP)/trP*100).toFixed(0)+"%":"—"}</td></tr></table></div>
-      <div class="cc"><h3>Витрати по категоріях (OPEX)</h3><table class="tbl"><tr><th>Категорія</th><th class="r">${sy}</th><th class="r">%вир</th><th class="r">${py}</th></tr>
-        ${expD.map(x=>{const pct=trS?(x.v/trS*100).toFixed(1):"—";return'<tr><td>'+x.c.substring(0,22)+'</td><td class="r rd">'+ff(x.v)+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td></tr>'}).join("")}
-        <tr class="tot"><td>Разом OPEX</td><td class="r rd">${ff(teS)}</td><td class="r">${trS?(teS/trS*100).toFixed(1):"—"}%</td><td class="r" style="color:#7d8196">${ff(teP)}</td></tr></table></div>
+      <div class="cc"><h3>Доходи по каналах <span style="font-size:8px;color:#7d8196;font-weight:400">клік → контрагенти</span></h3><table class="tbl"><tr><th>Канал</th><th class="r">${sy}</th><th class="r">${py}</th><th class="r">Δ%</th></tr>
+        ${chD.map(x=>{const d=x.vp?((x.v-x.vp)/x.vp*100).toFixed(0):"—";return'<tr class="click" onclick="drillGo('+drID({tp:"Доход",cat:x.c,yr:sy})+')"><td>'+x.n+'</td><td class="r g">'+ff(x.v)+'</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td><td class="r" style="color:'+(d>0?"#10b981":"#ef4444")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}
+        <tr class="tot click" onclick="drillGo(${drID({tp:"Доход",yr:sy})})"><td>Разом</td><td class="r g">${ff(trS)}</td><td class="r" style="color:#7d8196">${ff(trP)}</td><td class="r">${trP?((trS-trP)/trP*100).toFixed(0)+"%":"—"}</td></tr></table></div>
+      <div class="cc"><h3>Витрати по категоріях (OPEX) <span style="font-size:8px;color:#7d8196;font-weight:400">клік → контрагенти</span></h3><table class="tbl"><tr><th>Категорія</th><th class="r">${sy}</th><th class="r">%вир</th><th class="r">${py}</th></tr>
+        ${expD.map(x=>{const pct=trS?(x.v/trS*100).toFixed(1):"—";return'<tr class="click" onclick="drillGo('+drID({tp:"Расход",cat:x.c,yr:sy})+')"><td>'+x.c.substring(0,22)+'</td><td class="r rd">'+ff(x.v)+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(x.vp)+'</td></tr>'}).join("")}
+        <tr class="tot click" onclick="drillGo(${drID({tp:"Расход",yr:sy})})"><td>Разом OPEX</td><td class="r rd">${ff(teS)}</td><td class="r">${trS?(teS/trS*100).toFixed(1):"—"}%</td><td class="r" style="color:#7d8196">${ff(teP)}</td></tr></table></div>
     </div>`;
   } else {
     chartHTML=`<div class="info">Дані згруповані помісячно.</div>`;
     const ft=fl(opex,f);const rev=ft.filter(t=>t.tp==="Доход");const exp=ft.filter(t=>t.tp==="Расход");
-    const byAlias={};rev.forEach(t=>{const a=t.alias||t.name;if(!byAlias[a])byAlias[a]={s:0,c:0};byAlias[a].s+=toCur(t.nt);byAlias[a].c++});
+    const byAlias={};rev.forEach(t=>{const a=t.alias||t.name||"(без назви)";if(!byAlias[a])byAlias[a]={s:0,c:0};byAlias[a].s+=toCur(t.nt);byAlias[a].c++});
     const top=Object.entries(byAlias).sort((a,b)=>b[1].s-a[1].s).slice(0,10);
     detailHTML=`<div class="row">
-      <div class="cc"><h3>Доходи за ${MN[parseInt(f.mm)-1]} ${sy}: 1Ф / 2Ф</h3>
+      <div class="cc"><h3>Доходи за ${MN[parseInt(f.mm)-1]} ${sy}: 1Ф / 2Ф <span style="font-size:8px;color:#7d8196;font-weight:400">клік → транзакції</span></h3>
         <div class="kpis"><div class="kpi"><div class="l">1Ф</div><div class="v g">${ff(toCur(rev.filter(t=>t.st==="1Ф").reduce((s,t)=>s+t.nt,0)))}${c$}</div></div><div class="kpi"><div class="l">2Ф</div><div class="v g">${ff(toCur(rev.filter(t=>t.st==="2Ф").reduce((s,t)=>s+t.nt,0)))}${c$}</div></div></div>
-        <table class="tbl"><tr><th>Контрагент</th><th class="r">Сума</th></tr>${top.map(([n,d])=>'<tr><td>'+n.substring(0,30)+'</td><td class="r g">'+ff(d.s)+c$+'</td></tr>').join("")}</table></div>
-      <div class="cc"><h3>Витрати за ${MN[parseInt(f.mm)-1]} ${sy}</h3>
-        ${(()=>{const bc={};exp.forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+toCur(Math.abs(t.nt))});return Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px"><span>'+c.substring(0,25)+'</span><span class="rd">'+ff(v)+c$+'</span></div>').join("")})()}</div>
+        <table class="tbl"><tr><th>Контрагент</th><th class="r">Сума</th></tr>${top.map(([n,d])=>'<tr class="click" onclick="drillGo('+drID({tp:"Доход",...drF(f),acc:n})+')"><td>'+esc(n.substring(0,30))+'</td><td class="r g">'+ff(d.s)+c$+'</td></tr>').join("")}</table></div>
+      <div class="cc"><h3>Витрати за ${MN[parseInt(f.mm)-1]} ${sy} <span style="font-size:8px;color:#7d8196;font-weight:400">клік → контрагенти</span></h3>
+        ${(()=>{const bc={};exp.forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+toCur(Math.abs(t.nt))});return Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;cursor:pointer" onclick="drillGo('+drID({tp:"Расход",...drF(f),cat:c})+')"><span>'+esc(c.substring(0,25))+'</span><span class="rd" style="color:#ef4444">'+ff(v)+c$+'</span></div>').join("")})()}</div>
     </div>`;
   }
   el.innerHTML=`
