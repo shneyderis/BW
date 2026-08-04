@@ -13,6 +13,7 @@ function rCash(f){
   let cum=0;const cumData=netto.map(n=>{cum+=n;return cum});
   const lastD={};T.forEach(t=>{if(!lastD[t.src]||t.ym>lastD[t.src])lastD[t.src]=t.ym});
   el.innerHTML=`
+    ${srcN([srcP("Dashboard_Data — рухи по рахунках",maxD(T,t=>t.ym)),BL.length?srcP("BW_Accounts → PRIVAT_BALANCES — поточні залишки"):""])}
     <div class="kpis">
       <div class="kpi"><div class="l">Всього ₴</div><div class="v" style="color:#f59e0b">${ff(totalB)} ₴</div></div>
       <div class="kpi"><div class="l">Всього €</div><div class="v" style="color:#3b82f6">${ff(totalEUR)} €</div></div>
@@ -23,7 +24,7 @@ function rCash(f){
       <div class="kpi"><div class="l">€ рахунок</div><div class="v">${ff(eurB)}</div><div class="s">=${ff(eurB*FX.EUR)}₴</div></div>
       <div class="kpi"><div class="l">$ рахунок</div><div class="v">${ff(usdB)}</div><div class="s">=${ff(usdB*FX.USD)}₴</div></div>
     </div>
-    ${BL.length?`<div class="cc"><h3>Баланси по рахунках</h3><table class="tbl"><tr><th>Рахунок</th><th class="r">Валюта</th><th class="r">Баланс</th><th class="r">DPD</th></tr>
+    ${BL.length?`<div class="cc"><h3>Баланси по рахунках${srcI("BW_Accounts → PRIVAT_BALANCES")}</h3><table class="tbl"><tr><th>Рахунок</th><th class="r">Валюта</th><th class="r">Баланс</th><th class="r">DPD</th></tr>
       ${BL.map(b=>{const cur=gv(b,"валют")||"";const bal=pn(gv(b,"баланс"));const acc=gv(b,"рахунок")||gv(b,"account")||gv(b,"назва")||gv(b,"name")||"—";const dpd=gv(b,"dpd")||gv(b,"DPD")||"";const curClr=cur==="UAH"?"#f59e0b":cur==="EUR"?"#3b82f6":"#10b981";return`<tr><td style="font-size:9px">${acc}</td><td class="r" style="color:${curClr}">${cur}</td><td class="r" style="font-weight:600">${ff(bal)}</td><td class="r" style="color:#7d8196">${dpd||"—"}</td></tr>`}).join("")}</table></div>`:""}
     <div class="cc"><h3>Вхідні vs Вихідні</h3><canvas id="cc1" height="100"></canvas></div>
     <div class="row">

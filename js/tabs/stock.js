@@ -18,7 +18,7 @@ function rStock(){
     const totalBtl=Object.values(current).reduce((s,c)=>s+c.bal,0);const totalBottling=Object.values(current).reduce((s,c)=>s+c.bottling,0);
     const recentDates=dates.slice(-8);const balByDate={};
     recentDates.forEach(d=>{balByDate[d]={};wines.forEach(w=>{const row=SD.find(r=>(gv(r,"wine")||"")===w&&(gv(r,"date")||"")===d&&(gv(r,"type")||"").toLowerCase()==="balance");balByDate[d][w]=row?pn(gv(row,"qty")):null})});
-    el.innerHTML=`${tabs}<div class="info">Stock_Data · до: ${lastDate} · ${wines.length} позицій</div>
+    el.innerHTML=`${tabs}${srcN(srcP("Google Sheets (основна) → лист Stock_Data — рухи та залишки складу",lastDate))}<div class="info">Stock_Data · до: ${lastDate} · ${wines.length} позицій</div>
       <div class="kpis"><div class="kpi"><div class="l">Позицій</div><div class="v">${wines.length}</div></div><div class="kpi"><div class="l">Пляшок</div><div class="v">${ff(totalBtl)}</div></div><div class="kpi"><div class="l">Розлито</div><div class="v" style="color:#3b82f6">${ff(totalBottling)}</div></div></div>
       <div class="cc"><h3>Залишки</h3>${Object.entries(current).sort((a,b)=>b[1].bal-a[1].bal).map(([w,d])=>{const pct=totalBtl>0?(d.bal/totalBtl*100):0;const co=d.bal<=0?"#ef4444":d.bal<50?"#f59e0b":"#10b981";return'<div class="si"><div class="top"><span class="nm">'+w+'</span><span style="color:'+co+';font-weight:600">'+ff(d.bal)+' бут</span></div><div class="bar"><div class="bf" style="width:'+Math.min(pct*3,100)+'%;background:'+co+'"></div></div><div class="bot"><span>Розлито: '+ff(d.bottling)+'</span><span>'+d.lastDate+'</span></div></div>'}).join("")}</div>
       ${recentDates.length>1?'<div class="cc"><h3>Динаміка</h3><canvas id="cStk" height="120"></canvas></div>':""}`;
@@ -28,7 +28,7 @@ function rStock(){
     it.sort((a,b)=>{if(a.mo===null)return 1;if(b.mo===null)return-1;return a.mo-b.mo});
     const tb=it.reduce((s,i)=>s+i.st,0),lo=it.filter(i=>i.mo!==null&&i.mo<2).length,lo3=it.filter(i=>i.mo!==null&&i.mo<3).length,sk=it.filter(i=>i.mo!==null&&i.mo>15).length;
     const top10=it.slice().sort((a,b)=>b.st-a.st).slice(0,10);
-    el.innerHTML=`${tabs}<div class="info">3_Stock (старий). Stock_Data порожній.</div>
+    el.innerHTML=`${tabs}${srcN(srcP("Google Sheets (основна) → лист 3_Stock — залишки складу (старий формат)"))}<div class="info">3_Stock (старий). Stock_Data порожній.</div>
       <div class="row"><div>
       <div class="kpis"><div class="kpi"><div class="l">Позицій</div><div class="v">${it.length}</div></div><div class="kpi"><div class="l">Пляшок</div><div class="v">${ff(tb)}</div></div><div class="kpi"><div class="l">Крит.</div><div class="v rd">${lo}</div><div class="s">&lt;2м</div></div><div class="kpi"><div class="l">Закінч.</div><div class="v" style="color:#e11d48">${lo3}</div></div><div class="kpi"><div class="l">Застр.</div><div class="v" style="color:#f59e0b">${sk}</div></div></div>
       </div><div class="cc"><h3>Топ-10 по залишках</h3><canvas id="cStkD" height="160"></canvas></div></div>
@@ -60,6 +60,7 @@ function rStock1C(el,tabs){
     sku,name:d.names[d.names.length-1],unit:d.unit,variants:d.names.length,allNames:d.names
   })).sort((a,b)=>a.name.localeCompare(b.name));
   el.innerHTML=`${tabs}
+    ${srcN(srcP("1С → номенклатура (1c_products.csv) + ОСВ (1c_osv.csv)"))}
     <div class="info">Тільки товари зі штрих-кодом: ${wineArr.length} позицій (з ${products.length} в номенклатурі). Залишки по кожному товару потребують вигрузки ОСВ рах.28 по номенклатурі.</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Товари на складі (рах.28)</div><div class="v" style="color:#3b82f6">${ff(acc28.saldoEndDt||0)}₴</div><div class="s">загальна сума</div></div>

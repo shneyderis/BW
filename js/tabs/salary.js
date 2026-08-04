@@ -56,6 +56,7 @@ function rSalary(f){
 
   el.innerHTML=`
     <div class="sec">💼 Зарплати · ${sy}</div>
+    ${srcN([srcP("Dashboard_Data — виписки, категорії «ЗП …» та «BW …»",maxD(allZP,t=>t.ym)),staff.length?srcP("1С → співробітники (1c_staff.csv)"):""])}
     <div class="kpis">
       <div class="kpi"><div class="l">ФОП за ${sy}</div><div class="v rd">${ff(toCur(totalYr))}${c$}</div><div class="s">${delta>0?"+":""}${delta.toFixed(0)}% vs ${py}</div></div>
       <div class="kpi"><div class="l">Сер./місяць</div><div class="v">${ff(toCur(avgMonthly))}${c$}</div></div>
@@ -67,7 +68,7 @@ function rSalary(f){
     <div class="cc"><h3>ЗП помісячно: ${sy} vs ${py}</h3><canvas id="cSalM" height="100"></canvas></div>
 
     <div class="row">
-      <div class="cc"><h3>По категоріях</h3>
+      <div class="cc"><h3>По категоріях${srcI("Dashboard_Data")}</h3>
         <table class="tbl"><tr><th>Категорія</th><th class="r">${sy}</th><th class="r">${py}</th><th class="r">Δ%</th><th class="r">% від ЗП</th></tr>
         ${catArr.map(([c,d])=>{const prev=byCatPy[c]?.sum||0;const chg=prev>0?((d.sum-prev)/prev*100):0;const pct=totalYr>0?(d.sum/totalYr*100):0;return`<tr>
           <td style="font-size:9px">${c}</td>
@@ -91,7 +92,7 @@ function rSalary(f){
       </tr>`}).join("")}
       </table></div>
 
-    ${activeStaff.length?`<div class="cc"><h3>Співробітники (1С)</h3>
+    ${activeStaff.length?`<div class="cc"><h3>Співробітники (1С)${srcI("1c_staff.csv")}</h3>
       <table class="tbl"><tr><th>ПІБ</th><th class="r">Актуальний</th><th class="r">В архіві</th></tr>
       ${activeStaff.map(s=>`<tr>
         <td style="font-size:9px">${s.name||"—"}</td>

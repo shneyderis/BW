@@ -36,7 +36,8 @@ function rUK(){
     <button class="sh-tab ${ukView==="overview"?"on":""}" onclick="ukView='overview';render()">Огляд</button>
     <button class="sh-tab ${ukView==="orders"?"on":""}" onclick="ukView='orders';render()">Замовлення</button>
     <button class="sh-tab ${ukView==="products"?"on":""}" onclick="ukView='products';render()">Продукти</button>
-  </div>`;
+  </div>
+  ${srcN(srcP("Google Sheets (основна) → листи UK_Orders / UK_Products — Wines of Ukraine (sync.gs)",maxD(UK.orders,o=>o.date)))}`;
 
   if(ukView==="orders")return rUKOrders(el,tabs);
   if(ukView==="products")return rUKProducts(el,tabs);

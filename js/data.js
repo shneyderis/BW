@@ -8,6 +8,16 @@ function gv(o,s){for(const k of Object.keys(o)){if(k.trim().toLowerCase().starts
 function toCur(v){if(SETS.dispCur==="EUR")return v/FX.EUR;if(SETS.dispCur==="USD")return v/FX.USD;return v}
 function cs(){return SETS.dispCur==="EUR"?"€":SETS.dispCur==="USD"?"$":"₴"}
 
+// ===== Службові примітки про джерела даних =====
+// maxD(arr, r=>r.date) → остання дата у наборі (YYYY-MM-DD або YYYY-MM)
+function maxD(arr,fn){let m="";(arr||[]).forEach(r=>{const d=String(fn(r)||"").substring(0,10);if(d>m)m=d});return/^\d{4}/.test(m)?m:""}
+// srcP("Книга → лист","2025-07") → рядок "Книга → лист · дані до 2025-07"
+function srcP(name,last){return name+(last?` · дані до <b>${last}</b>`:"")}
+// srcN([...]) → непомітний блок-примітка вгорі вкладки
+function srcN(parts){const a=(Array.isArray(parts)?parts:[parts]).filter(Boolean);return a.length?`<div class="srcnote">ℹ ${a.join("&ensp;·&ensp;")}</div>`:""}
+// srcI("лист","дата") → маленька примітка в заголовку таблиці
+function srcI(name,last){return`<span class="srcnote-i">${srcP(name,last)}</span>`}
+
 // CSV export utility
 function exportCSV(filename,headers,rows){
   const csvRows=[headers.join(",")];
