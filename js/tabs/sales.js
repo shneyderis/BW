@@ -93,6 +93,17 @@ function rSales(f){
       </div>`}).join("")}
     </div>
 
+    ${(()=>{
+      const pdChan=_s.chan?pdCur.filter(t=>getChan(t.cat)===_s.chan):pdCur;
+      const parts={};pdChan.forEach(t=>{const n=t.alias||t.name||"(без назви)";if(!parts[n])parts[n]={sum:0,cnt:0};parts[n].sum+=toCur(t.nt);parts[n].cnt++});
+      const partArr=Object.entries(parts).sort((a,b)=>b[1].sum-a[1].sum);
+      const partTotal=partArr.reduce((s,[,d])=>s+d.sum,0);
+      if(!partArr.length)return"";
+      return`<div class="cc"><h3>Партнери${_s.chan?" · "+_s.chan:""} · ${periodLabel} <span style="font-size:8px;color:#7d8196;font-weight:400">клік → транзакції</span></h3>
+      <table class="tbl"><tr><th>Партнер</th><th class="r">Сума</th><th class="r">%</th><th class="r">Опер.</th></tr>
+      ${partArr.slice(0,25).map(([n,d])=>`<tr class="click" onclick="_s.partner='${n.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}';_s.view='partner';render()"><td style="font-size:9px">${esc(n.substring(0,32))}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${partTotal?(d.sum/partTotal*100).toFixed(1):"0.0"}%</td><td class="r">${d.cnt}</td></tr>`).join("")}
+      ${partArr.length>25?`<tr><td colspan="4" style="color:#7d8196;font-size:9px">…ще ${partArr.length-25} партнерів</td></tr>`:""}</table></div>`})()}
+
     <div class="cc"><h3>Менеджери</h3>
       <table class="tbl"><tr><th>Менеджер</th><th class="r">Продажі</th><th class="r">Комісія</th><th class="r">Опер.</th></tr>
       ${mgrArr.map(([n,d])=>`<tr class="click" onclick="_s.mgr='${n.replace(/'/g,"\\'")}';_s.view='manager';render()"><td>${n}</td><td class="r g">${ff(d.sum)}${c$}</td><td class="r">${ff(d.com)}${c$}</td><td class="r">${d.cnt}</td></tr>`).join("")}
@@ -116,14 +127,25 @@ function rSales(f){
 // === PARTNER DRILL-DOWN ===
 function rSalesPartner(el,c$,allInc,back){
   const p=_s.partner;
-  const pData=allInc.filter(t=>(t.alias||t.name)===p);
-  const byM={};pData.filter(t=>t.yr===_s.year).forEach(t=>{byM[t.mm]=(byM[t.mm]||0)+toCur(t.nt)});
-  const total=pData.filter(t=>t.yr===_s.year).reduce((s,t)=>s+toCur(t.nt),0);
+  const pData=allInc.filter(t=>(t.alias||t.name||"(без назви)")===p);
+  const yData=pData.filter(t=>t.yr===_s.year);
+  const byM={};yData.forEach(t=>{byM[t.mm]=(byM[t.mm]||0)+toCur(t.nt)});
+  const total=yData.reduce((s,t)=>s+toCur(t.nt),0);
   const info=C1&&C1.partners?C1.partners.find(x=>x.name===p||p.includes(x.name)):null;
+  const byYr={};pData.forEach(t=>{byYr[t.yr]=(byYr[t.yr]||0)+toCur(t.nt)});
+  const byCh={};yData.forEach(t=>{const ch=getChan(t.cat);byCh[ch]=(byCh[ch]||0)+toCur(t.nt)});
+  const txs=[...yData].sort((a,b)=>b.mo.localeCompare(a.mo)).slice(0,100);
 
   el.innerHTML=`${back}
-    <div class="kpis"><div class="kpi"><div class="l">${esc(p)}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${info?.edrpou||""} ${_s.year}</div></div></div>
-    <div class="cc"><h3>Продажі по місяцях</h3><canvas id="sPartCh" height="100"></canvas></div>`;
+    <div class="kpis"><div class="kpi"><div class="l">${esc(p)}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${info?.edrpou||""} ${_s.year} · ${yData.length} опер</div></div></div>
+    <div class="cc"><h3>Продажі по місяцях</h3><canvas id="sPartCh" height="100"></canvas></div>
+    <div class="row">
+      <div class="cc"><h3>По роках</h3><table class="tbl">${Object.entries(byYr).sort().map(([y,v])=>`<tr${y===_s.year?' style="font-weight:700"':""}><td>${y}</td><td class="r g">${ff(v)}${c$}</td></tr>`).join("")}</table></div>
+      <div class="cc"><h3>По каналах · ${_s.year}</h3><table class="tbl">${Object.entries(byCh).sort((a,b)=>b[1]-a[1]).map(([ch,v])=>`<tr><td>${ch}</td><td class="r g">${ff(v)}${c$}</td></tr>`).join("")}</table></div>
+    </div>
+    <div class="cc"><h3>Транзакції · ${_s.year}${yData.length>100?` (показано 100 з ${yData.length})`:` (${yData.length})`}</h3>
+      <div class="tbl-wrap"><table class="tbl"><tr><th>Місяць</th><th>Категорія</th><th>Призначення</th><th class="r">Сума</th><th>Менеджер</th><th class="r">Дж.</th></tr>
+      ${txs.map(t=>`<tr><td>${t.ym}</td><td style="font-size:9px;color:#7d8196">${esc(t.cat.substring(0,24))}</td><td style="font-size:9px">${esc((t.name||"—").substring(0,36))}</td><td class="r g">${ff(toCur(t.nt))}${c$}</td><td style="font-size:9px;color:#7d8196">${esc(t.mgr||"")}</td><td class="r" style="color:#7d8196;font-size:9px">${t.st}</td></tr>`).join("")}</table></div></div>`;
   dc("sPartCh");CH.sPartCh=new Chart(document.getElementById("sPartCh"),{type:"bar",data:{labels:MN,datasets:[{data:MMa.map(m=>byM[m]||0),backgroundColor:"#10b981",borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7d8196"},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",callback:v=>fm(v)},grid:{color:"#1e2130"}}}}});
 }
 
