@@ -10,7 +10,7 @@ function rExp(f){
   const dbase={tp:"Расход",...drF(f)};delete dbase.cat;
   const tLast=maxD(T,t=>t.ym);
   el.innerHTML=`
-    ${srcN(srcP("Google Sheets (основна) → лист Dashboard_Data — банківські виписки, категорії витрат",tLast))}
+    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data — банківські виписки, категорії витрат",tLast))}
     <div class="cc"><h3>OPEX (без осн.фондів)</h3><canvas id="c4" height="${Math.max(120,so.length*14)}"></canvas></div>
     <div class="cc"><h3>Деталізація <span style="font-size:8px;color:#7d8196;font-weight:400">клік → контрагенти → транзакції</span>${srcI("Dashboard_Data",tLast)}</h3><table class="tbl"><tr><th>Категорія</th><th class="r">Сума</th><th class="r">%вир</th><th class="r">${py}</th><th class="r">Δ</th></tr>
       ${so.map(e=>{const cv=toCur(Math.abs(e.a));const pv=toCur(Math.abs(prevBc[e.c]||0));const pct=revT?(Math.abs(e.a)/revT*100).toFixed(1):"—";const d=pv?((cv-pv)/pv*100).toFixed(0):"—";return'<tr class="click" onclick="drillGo('+drID({...dbase,cat:e.c})+')"><td>'+esc(e.c.substring(0,24))+'</td><td class="r rd">'+ff(cv)+c$+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#7d8196">'+ff(pv)+'</td><td class="r" style="color:'+(d>0?"#ef4444":"#10b981")+'">'+(d>0?"+":"")+d+'%</td></tr>'}).join("")}

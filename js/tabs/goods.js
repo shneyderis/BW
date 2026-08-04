@@ -146,7 +146,7 @@ function rGoods(){
     ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
     <button class="flt" style="${_gdChan==="?"?"background:#7d8196;color:#fff;border-color:#7d8196":""}" onclick="_gdChan='?';render()">Невизначений</button>
   </div>
-  ${srcN([srcP("Google Sheets (основна) → лист FINAL_sales_detail — продажі по пляшках (накладні з 1С)",maxD(GD,r=>r.date)),(typeof SD!=="undefined"&&SD.length)?srcP("лист Stock_Data — залишки складу",maxD(SD,r=>gv(r,"date"))):(typeof SK!=="undefined"&&SK.length?srcP("лист 3_Stock — залишки складу"):""),"канали: Dashboard_Data + worker_new + customer_channels"])}`;
+  ${srcN([srcP(BK_MAIN()+" → лист FINAL_sales_detail — продажі по пляшках (накладні з 1С)",maxD(GD,r=>r.date)),(typeof SD!=="undefined"&&SD.length)?srcP("лист Stock_Data — залишки складу",maxD(SD,r=>gv(r,"date"))):(typeof SK!=="undefined"&&SK.length?srcP("лист 3_Stock — залишки складу"):""),"канали: Dashboard_Data + customer_channels, worker_new ("+BK_ACC()+")"])}`;
 
   function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
 

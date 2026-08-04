@@ -238,7 +238,7 @@ async function rMkt(){
   // ========== RENDER ==========
   el.innerHTML=`
     ${mktError?'<div class="warn">⚠ '+mktError+'</div>':""}
-    ${srcN([spCamp.length?srcP("Sheets → SP_Campaigns — email-розсилки",maxD(spCamp,c=>c.send_date)):"",igPosts.length?srcP("Sheets → IG_Posts — Instagram",maxD(igPosts,p=>p.date)):"",adCamps.length?srcP("Sheets → ADD1 / Meta_Ads — реклама",maxD(adCamps,a=>a.date_stop)):"",WO.length?srcP("WC_Orders — замовлення",maxD(WO,o=>o.date_created)):""])}
+    ${srcN([srcP("книга "+BK_MAIN()+", листи:"),spCamp.length?srcP("SP_Campaigns — email-розсилки",maxD(spCamp,c=>c.send_date)):"",igPosts.length?srcP("IG_Posts — Instagram",maxD(igPosts,p=>p.date)):"",adCamps.length?srcP("ADD1 / Meta_Ads — реклама",maxD(adCamps,a=>a.date_stop)):"",WO.length?srcP("WC_Orders — замовлення",maxD(WO,o=>o.date_created)):""])}
 
     ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline
       <span style="float:right;font-size:10px;font-weight:400">
