@@ -37,12 +37,12 @@ function rBalance(){
   let overdueDebt=0,overdueCount=0;
   if(C1&&C1.sales&&C1.bank){
     const byP={};C1.sales.filter(s=>s.org==="Бейкуш Вайнери").forEach(s=>{const p=s.partner;if(!byP[p])byP[p]={sold:0,paid:0,lastPay:""};byP[p].sold+=s.sum});
-    C1.bank.filter(b=>b.income>0&&b.type.includes("покупат")).forEach(b=>{const p=b.partner;if(byP[p]){byP[p].paid+=b.income;if(b.date>byP[p].lastPay)byP[p].lastPay=b.date}});
+    C1.bank.filter(b=>b.income>0&&b.type.includes("покупат")).forEach(b=>{const p=b.partner;if(byP[p]){byP[p].paid+=b.income;const d=b.iso||d2iso(b.date);if(d>byP[p].lastPay)byP[p].lastPay=d}});
     const now=c1RefDate(); // станом на дату останніх даних 1С
     Object.values(byP).forEach(p=>{
       const debt=p.sold-p.paid;
       if(debt>1000){
-        const lp=p.lastPay?new Date(p.lastPay.split(/[.\-\/]/).reverse().join("-")):null;
+        const lp=p.lastPay?new Date(p.lastPay):null;
         if(!lp||now-lp.getTime()>30*24*60*60*1000){overdueDebt+=debt;overdueCount++}
       }
     });

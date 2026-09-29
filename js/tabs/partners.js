@@ -34,7 +34,7 @@ function rPartners(){
   // === Payments ===
   const payments=bank.filter(b=>b.income>0&&b.type.includes("покупат"));
   const byPay={};
-  payments.forEach(b=>{const p=b.partner||"";if(!p)return;if(!byPay[p])byPay[p]={paid:0,cntP:0,lastPay:""};byPay[p].paid+=b.income;byPay[p].cntP++;if(b.date>byPay[p].lastPay)byPay[p].lastPay=b.date});
+  payments.forEach(b=>{const p=b.partner||"";if(!p)return;if(!byPay[p])byPay[p]={paid:0,cntP:0,lastPay:""};byPay[p].paid+=b.income;byPay[p].cntP++;const d=b.iso||toISO(b.date);if(d>byPay[p].lastPay)byPay[p].lastPay=d});
 
   // === Merge ===
   const allNames=new Set([...Object.keys(byP),...Object.keys(byPay)]);
@@ -268,7 +268,7 @@ function rPartCRM(el,tabs,merged,debtors,now,bank){
   tasks.sort((a,b)=>{const po={critical:0,high:1,medium:2,low:3};return(po[a.priority]||9)-(po[b.priority]||9)});
 
   // Recent payments
-  const recentPay=bank.filter(b=>b.income>0&&b.type.includes("покупат")).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,15);
+  const recentPay=bank.filter(b=>b.income>0&&b.type.includes("покупат")).sort((a,b)=>(b.iso||toISO(b.date)).localeCompare(a.iso||toISO(a.date))).slice(0,15);
 
   // Search
   const search=_partSearch.toLowerCase();
@@ -314,7 +314,7 @@ function rPartCRM(el,tabs,merged,debtors,now,bank){
     <div class="cc"><h3>📥 Останні оплати</h3>
       <table class="tbl"><tr><th>Дата</th><th>Партнер</th><th class="r">Сума</th></tr>
       ${recentPay.map(b=>{const w=wnForPartner(b.partner);const alias=w?w.alias:shortName(b.partner);return`<tr>
-        <td style="font-size:9px">${fmtDate(b.date)}</td>
+        <td style="font-size:9px">${b.iso||fmtDate(b.date)}</td>
         <td style="font-size:9px">${alias.substring(0,28)}</td>
         <td class="r g">${ff(b.income)}₴</td>
       </tr>`}).join("")}</table></div>`;

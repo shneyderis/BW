@@ -16,7 +16,7 @@ const DATA_SRC_DIR=DATA_SRC==="local"?"data/sheets/":DATA_SRC==="test"?"tests/fi
 
 // ===== Службові примітки про джерела даних =====
 // maxD(arr, r=>r.date) → остання дата у наборі (YYYY-MM-DD або YYYY-MM)
-function maxD(arr,fn){let m="";(arr||[]).forEach(r=>{const d=String(fn(r)||"").substring(0,10);if(d>m)m=d});return/^\d{4}/.test(m)?m:""}
+function maxD(arr,fn){let m="";const lim=new Date(Date.now()+86400000).toISOString().substring(0,10);(arr||[]).forEach(r=>{let d=String(fn(r)||"").substring(0,10);const x=d.match(/^(\d{2})\.(\d{2})\.(\d{4})/);if(x)d=x[3]+"-"+x[2]+"-"+x[1];if(d>m&&d<=lim)m=d});return/^\d{4}/.test(m)?m:""}
 // srcP("Книга → лист","2025-07","dd") → "● Книга → лист · дані до 2025-07 (2 міс тому)"; id — джерело з health.js (кольорова крапка)
 function srcP(name,last,id){
   const h=(typeof HEALTH!=="undefined"&&id)?HEALTH.byId[id]:null;

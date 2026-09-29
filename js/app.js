@@ -155,7 +155,7 @@ async function load1C(){
     C1.partners=(partners1c||[]).map(r=>({name:gv(r,"наименование")||"",code:gv(r,"код")||"",fullname:gv(r,"полное")||"",type:gv(r,"вид")||"",edrpou:gv(r,"код по едрпоу")||gv(r,"едрпоу")||r["Код по ЕДРПОУ"]||"",tax:gv(r,"схема")||""}));
     C1.products=(products1c||[]).map(r=>({name:gv(r,"наименование")||"",code:gv(r,"код")||"",sku:gv(r,"артикул")||"",unit:gv(r,"ед")||"",vat:gv(r,"ндс")||"",comment:gv(r,"комментарий")||""}));
     C1.osv=(osv1c||[]).map(r=>{const v=Object.values(r);return{account:v[0]||"",saldoStartDt:pn(v[1]),saldoStartKt:pn(v[2]),turnDt:pn(v[3]),turnKt:pn(v[4]),saldoEndDt:pn(v[5]),saldoEndKt:pn(v[6])}}).filter(r=>r.account);
-    C1.bank=(bank1c||[]).map(r=>({date:gv(r,"дата")||"",income:pn(gv(r,"поступление")),expense:pn(gv(r,"списание")),purpose:gv(r,"назначение")||"",partner:gv(r,"контрагент")||"",type:gv(r,"вид")||"",org:gv(r,"организация")||"",account:gv(r,"банковский")||""}));
+    C1.bank=(bank1c||[]).map(r=>({date:gv(r,"дата")||"",iso:d2iso(gv(r,"дата")||""),income:pn(gv(r,"поступление")),expense:pn(gv(r,"списание")),purpose:gv(r,"назначение")||"",partner:gv(r,"контрагент")||"",type:gv(r,"вид")||"",org:gv(r,"организация")||"",account:gv(r,"банковский")||""}));
     C1.staff=(staff1c||[]).map(r=>({code:gv(r,"код")||"",name:gv(r,"фио")||gv(r,"піб")||"",active:gv(r,"актуален")||"",archived:gv(r,"в архиве")||gv(r,"в архів")||""}));
     C1.loaded=true;
     console.log("1C loaded: sales",C1.sales.length,", partners",C1.partners.length,", staff",C1.staff.length);

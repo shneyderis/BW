@@ -215,7 +215,7 @@ function healthBizTasks(tasks){
   // 4. прострочена дебіторка (1С)
   if(C1_.sales&&C1_.sales.length&&C1_.bank&&C1_.bank.length){
     const byP={};C1_.sales.filter(s=>s.org==="Бейкуш Вайнери").forEach(s=>{const p=s.partner;if(!byP[p])byP[p]={sold:0,paid:0,lastPay:""};byP[p].sold+=s.sum});
-    C1_.bank.filter(b=>b.income>0&&b.type.includes("покупат")).forEach(b=>{const p=b.partner;if(byP[p]){byP[p].paid+=b.income;const iso=parseAnyDate(b.date);const s=iso?iso.toISOString().substring(0,10):"";if(s>byP[p].lastPay)byP[p].lastPay=s}});
+    C1_.bank.filter(b=>b.income>0&&b.type.includes("покупат")).forEach(b=>{const p=b.partner;if(byP[p]){byP[p].paid+=b.income;const s=b.iso||"";if(s>byP[p].lastPay)byP[p].lastPay=s}});
     const INT=["інтернет магазин","конечный потребитель","корпорат.клиент","садовой","кінцевий споживач"];
     const refT=typeof c1RefDate==="function"?c1RefDate():Date.now();const ref=new Date(refT).toISOString().substring(0,10);
     let cnt=0,sum=0;Object.entries(byP).forEach(([p,d])=>{const debt=d.sold-d.paid;if(debt>1000&&!INT.some(x=>p.toLowerCase().includes(x))){const age=d.lastPay?Math.floor((refT-parseAnyDate(d.lastPay).getTime())/86400000):999;if(age>30){cnt++;sum+=debt}}});
