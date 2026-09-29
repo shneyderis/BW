@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beykush Winery Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=29">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/style.css?v=30">
+<script src="js/vendor/chart.umd.min.js?v=30"></script><!-- Chart.js 4.4.1, локально: працює без CDN/офлайн -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -21,7 +21,7 @@
   <div class="err" id="login-err"></div>
 </div>
 <div id="app" class="hidden">
-<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="st" id="status" style="color:#f59e0b">⏳</span><span id="user-info" style="font-size:9px;color:#7d8196;margin-left:auto;margin-right:8px"></span><button class="logout-btn" onclick="doLogout()">Вийти</button></div>
+<div class="hdr"><div class="dot"></div><h1>BEYKUSH WINERY</h1><span class="badge">Live</span><span class="badge hchip" id="hchip" onclick="goTab('status')" title="Стан даних і задачі → 📋 Статус">…</span><span class="st" id="status" style="color:#f59e0b">⏳</span><span id="user-info" style="font-size:9px;color:#7d8196;margin-left:auto;margin-right:8px"></span><button class="logout-btn" onclick="doLogout()">Вийти</button></div>
 <div class="sub" id="subtitle">Завантаження...</div>
 <div class="tabs" id="tabs">
   <button class="tab on" onclick="sw('balance',this)">💰 Баланс</button>
@@ -38,7 +38,9 @@
   <button class="tab" onclick="sw('uk',this)">🇬🇧 UK</button>
   <button class="tab" onclick="sw('production',this)">🍷 Виробн.</button>
   <button class="tab" onclick="sw('unrec',this)">⚠️</button>
+  <button class="tab" onclick="sw('status',this)">📋 Статус</button>
   <button class="tab" onclick="sw('settings',this)">⚙</button>
+  <button class="tab help" onclick="showHelp()" title="Довідка по поточній вкладці">ⓘ довідка</button>
 </div>
 <div id="filterbar" class="filters"></div>
 <div id="ld"><p style="text-align:center;padding:80px 0;color:#7d8196">Завантаження даних...</p></div>
@@ -56,28 +58,34 @@
 <div id="t-uk" class="hidden"></div>
 <div id="t-production" class="hidden"></div>
 <div id="t-unrec" class="hidden"></div>
+<div id="t-status" class="hidden"></div>
 <div id="t-settings" class="hidden"></div>
 <div id="modal" class="modal hidden"></div>
 </div>
-<script src="js/config.js?v=25"></script>
-<script src="js/data.js?v=29"></script>
-<script src="js/drill.js?v=27"></script>
-<script src="js/tabs/balance.js?v=29"></script>
-<script src="js/tabs/pl.js?v=29"></script>
-<script src="js/tabs/sales.js?v=29"></script>
-<script src="js/tabs/exp.js?v=29"></script>
-<script src="js/tabs/salary.js?v=29"></script>
-<script src="js/tabs/goods.js?v=29"></script>
-<script src="js/tabs/shop.js?v=29"></script>
-<script src="js/tabs/stock.js?v=29"></script>
-<script src="js/tabs/cash.js?v=29"></script>
-<script src="js/tabs/mkt.js?v=29"></script>
-<script src="js/tabs/partners.js?v=29"></script>
-<script src="js/tabs/production.js?v=29"></script>
-<script src="js/tabs/uk.js?v=29"></script>
-<script src="js/tabs/unrec.js?v=29"></script>
-<script src="js/tabs/settings.js?v=25"></script>
-<script src="js/auth.js?v=26"></script>
-<script src="js/app.js?v=26"></script>
+<script src="js/config.js?v=30"></script>
+<script src="js/version.js?v=30"></script>
+<script src="js/data.js?v=30"></script>
+<script src="js/md.js?v=30"></script>
+<script src="js/health.js?v=30"></script>
+<script src="js/help.js?v=30"></script>
+<script src="js/drill.js?v=30"></script>
+<script src="js/tabs/balance.js?v=30"></script>
+<script src="js/tabs/pl.js?v=30"></script>
+<script src="js/tabs/sales.js?v=30"></script>
+<script src="js/tabs/exp.js?v=30"></script>
+<script src="js/tabs/salary.js?v=30"></script>
+<script src="js/tabs/goods.js?v=30"></script>
+<script src="js/tabs/shop.js?v=30"></script>
+<script src="js/tabs/stock.js?v=30"></script>
+<script src="js/tabs/cash.js?v=30"></script>
+<script src="js/tabs/mkt.js?v=30"></script>
+<script src="js/tabs/partners.js?v=30"></script>
+<script src="js/tabs/production.js?v=30"></script>
+<script src="js/tabs/uk.js?v=30"></script>
+<script src="js/tabs/unrec.js?v=30"></script>
+<script src="js/tabs/status.js?v=30"></script>
+<script src="js/tabs/settings.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
+<script src="js/auth.js?v=30"></script>
 </body>
 </html>

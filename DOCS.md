@@ -1,375 +1,190 @@
 # Beykush Winery Dashboard — Документація
 
-## Загальний опис
+Стан проєкту, план і журнал змін — у **STATUS.md** (і у вкладці 📋 Статус). Інструкції для Claude — **CLAUDE.md**.
+Цей файл — довідник для людей: як влаштовано, звідки дані, як їх оновлювати.
 
-Дашборд для виноробні Бейкуш — веб-додаток для моніторингу фінансів, продажів, складу, маркетингу та партнерів. Працює як статичний сайт на Vercel, дані читає з Google Sheets та локальних CSV файлів.
-
-**URL**: https://project-33ms4.vercel.app
-**Репозиторій**: https://github.com/shneyderis/BW
-**Деплой**: автоматичний через Vercel при push в main
+**URL**: https://project-33ms4.vercel.app · **Репозиторій**: https://github.com/shneyderis/BW · **Деплой**: автоматично через Vercel при push у `main`
 
 ---
 
+## Як користуватись
+
+- **Шапка**: чіп «● N задач / дані актуальні» → клік відкриває 📋 Статус. Підзаголовок: кількість операцій, до якого місяця є виписки, курси.
+- **На кожній вкладці** зверху — рядок джерел: кольорова крапка (● актуально · ● застаріває · ● застаріло/помилка), назва книги → листа (клікабельно), «дані до …».
+- **💰 Баланс** (головна): угорі блок «Що потрібно зробити» — задачі по даних і бізнесу з інструкцією «Як зробити» і посиланням на таблицю.
+- **📋 Статус**: усі задачі, таблиця джерел (тип, рядків, дані до, синхронізація, стан), Sync_Log, стан проєкту (STATUS.md), останній аналіз даних (reports/latest.md), версія.
+- **ⓘ довідка** (праворуч від вкладок): що є на поточній вкладці, її джерела, обмеження.
+
 ## Авторизація
 
-### Пароль (завжди працює)
-| Роль | Пароль | Доступ |
-|---|---|---|
-| **owner** | `beykush2024` | Всі вкладки |
-| **manager** | `sales2024` | Продажі, Магазин, Склад, Маркетинг, Партнери |
-| **accountant** | `acc2024` | P&L, Витрати, Кеш-фло, Партнери, Нерозпізнані |
+| Роль | Доступ |
+|---|---|
+| **owner** | усі вкладки |
+| **manager** | Продажі, Товари, Магазин, Склад, Маркетинг, Партнери, Статус |
+| **accountant** | Баланс, P&L, Товари, Витрати, ЗП, Кеш-фло, Партнери, Нерозпізнані, Статус |
 
-### Google Sign-In (підготовлено, не активовано)
-Потребує `GOOGLE_CLIENT_ID` в `js/config.js`. Для налаштування:
-1. `console.cloud.google.com` → APIs → Credentials → OAuth 2.0 Client ID
-2. Authorized origins: `https://project-33ms4.vercel.app`
-3. Вставити Client ID в config.js → `GOOGLE_CLIENT_ID`
-4. Додати користувачів в лист "Users" в Google Sheets
-
-### Сесія
-- Таймаут: 30 хвилин неактивності
-- Скидається при будь-якій дії (клік, скрол, клавіша)
-- Зберігається в sessionStorage
+Паролі — у `js/config.js` (ROLES). ⚠ Це статичний сайт: паролі видно у вихідному коді. Google Sign-In підготовлено (потрібен `GOOGLE_CLIENT_ID`).
+Сесія: sessionStorage, 30 хв неактивності.
 
 ---
 
 ## Архітектура
 
-### Файли проекту
 ```
-index.html              — HTML каркас, підключення скриптів
-css/style.css           — Стилі (темна тема)
-js/config.js            — Sheet IDs, паролі, ролі, Google OAuth
-js/data.js              — CSV завантажувач, НБУ курси, Settings
-js/app.js               — Авторизація, load(), фільтри, render(), модалки
-js/tabs/pl.js           — P&L
-js/tabs/sales.js        — Продажі (канали, drill-down, менеджери)
-js/tabs/exp.js          — Витрати
-js/tabs/shop.js         — Магазин (4 підвкладки: продажі, продукти, клієнти, замовлення)
-js/tabs/stock.js        — Склад (залишки + 1С номенклатура)
-js/tabs/cash.js         — Кеш-фло
-js/tabs/mkt.js          — Маркетинг (Email + Instagram + Meta Ads)
-js/tabs/partners.js     — Партнери (огляд, канали, борги, контакти, CRM)
-js/tabs/unrec.js        — Нерозпізнані транзакції
-js/tabs/settings.js     — Налаштування, ролі, користувачі, джерела даних
-js/tabs/production.js   — Виробництво (лоти Innovint, витримка, розлив)
-js/tabs/uk.js           — Wines of Ukraine UK (Metorik/Shopify)
-vercel.json             — Vercel конфігурація (Cache-Control)
-sync.gs                 — Google Apps Script для синхронізації даних
-data/1c_*.csv           — CSV дані з 1С бухгалтерії
-data/lots.csv           — лоти з Innovint
-beykush_data.xlsx       — Вихідний xlsx файл з 1С
+index.html              каркас, вкладки, скрипти
+css/style.css           стилі (темна тема)
+js/config.js            ID книг Google Sheets, ролі, паролі
+js/version.js           версія дашборду (BUILD)
+js/data.js              завантаження CSV (Sheets або локально), утиліти, примітки про джерела
+js/md.js                Markdown → HTML (STATUS.md, звіти)
+js/health.js            стан даних: реєстр джерел, свіжість, Sync_Log, задачі оператору
+js/help.js              довідка ⓘ по вкладках
+js/drill.js             drill-down категорія → контрагенти → транзакції
+js/app.js               константи, глобальні дані, load(), фільтри, render()
+js/auth.js              авторизація, сесія
+js/tabs/balance.js      💰 Баланс + задачі
+js/tabs/pl.js           P&L
+js/tabs/sales.js        Продажі (канали, партнери, менеджери, періоди)
+js/tabs/exp.js          Витрати
+js/tabs/salary.js       💼 ЗП: аналітика виплат, комісії менеджерів, відомість
+js/tabs/goods.js        Товари (накладні 1С: топ вин, ABC, клієнти, тренди, склад)
+js/tabs/shop.js         Магазин (WooCommerce)
+js/tabs/stock.js        Склад
+js/tabs/cash.js         Кеш-фло
+js/tabs/mkt.js          Маркетинг (Email, Instagram, Meta Ads, timeline, інсайти)
+js/tabs/partners.js     Партнери (1С: борги, канали, контакти, CRM, ліди)
+js/tabs/uk.js           🇬🇧 UK (Metorik/Shopify)
+js/tabs/production.js   🍷 Виробництво (лоти InnoVint)
+js/tabs/unrec.js        ⚠️ Нерозпізнані
+js/tabs/status.js       📋 Статус
+js/tabs/settings.js     ⚙ Налаштування
+tools/convert_1c.py     1С xlsx → data/1c_*.csv + data/manifest.json
+tools/pull_sheets.py    знімок Google Sheets → data/sheets/*.csv
+tools/analyze.py        аналіз даних → reports/latest.md
+tests/                  синтетичні дані + smoke-тест (Playwright)
+sync.gs                 Google Apps Script — синхронізація API → Sheets
+data/                   1С CSV, lots.csv, manifest.json, (sheets/ — знімок)
+reports/                звіти аналізу
 ```
 
-### Джерела даних
+Дані завантажуються у 2 фази: спочатку Dashboard_Data, баланси, склад (сторінка вже показується), потім паралельно все інше
+(магазин, накладні, workerNEW, 1С, лоти, UK, маркетинг, Payroll, Sync_Log, manifest). Після 2-ї фази рахується стан даних (`healthCompute`).
 
-#### 1. Google Sheets — основна таблиця (SID)
-**ID**: `1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ`
+---
 
-| Лист | Що містить | Як оновлюється |
-|---|---|---|
-| Dashboard_Data | 5950 транзакцій (доходи/витрати) | Вручну |
-| 3_Stock | Залишки вин (старий формат) | Вручну |
-| Stock_Data | Залишки вин (новий формат) | Вручну |
-| Settings | Налаштування (fop_tax, vat_rate) | Вручну |
-| SP_Lists | SendPulse списки розсилок | sync.gs → syncAll() |
-| SP_Campaigns | SendPulse кампанії зі статистикою | sync.gs → syncAll() |
-| WC_Orders | WooCommerce замовлення | sync.gs → syncAll() |
-| WC_Products | WooCommerce товари | sync.gs → syncAll() |
-| IG_Posts | Instagram пости з engagement | sync.gs → syncIGPosts() |
-| Meta_Ads | Meta рекламні кампанії | sync.gs → syncMetaAds() |
-| FB_Posts | Facebook пости | sync.gs → syncFBPosts() |
-| UK_Orders | Замовлення Wines of Ukraine UK (Shopify) | sync.gs → syncUK() |
-| UK_Products | Товари Wines of Ukraine UK (Shopify) | sync.gs → syncUK() |
-| ADD1 | Meta Ads (з Ads Manager експорту) | Вручну |
-| Sync_Log | Лог синхронізацій | Автоматично |
-| Users | Користувачі для Google Auth | Вручну |
+## Джерела даних
 
-#### 2. Google Sheets — баланси (SID2)
-**ID**: `1NGC2iicXsEZRzOASBz2KZY46Lu7EO7jNd28UOWmQK7w`
+### 1. Google Sheets — BW_Looker_Data (SID `1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ`)
+
+| Лист | Що містить | Як оновлюється | Очікувана частота |
+|---|---|---|---|
+| Dashboard_Data | банківські виписки: month, money, name, alias, category, geo, менеджер, sum_uah, commission, sum_money, source | вручну | щомісяця |
+| 3_Stock / Stock_Data | залишки вин (старий / новий формат: wine, date, type=balance\|bottling, qty) | вручну | раз на 1–1.5 міс |
+| FINAL_sales_detail | накладні з 1С по пляшках: date, document, customer, warehouse, product, product code, quantity, price, sum, vat | вручну | щомісяця |
+| Settings | setting_key, value, date_from, description (fop_tax, fop_bank, vat_rate, mgr_commission_default) | вручну | за потреби |
+| customer_channels | customer, channel, alias — ручне перекриття каналу клієнта | вручну | за потреби |
+| CRM_Leads / CRM_Contacts | ліди (company, contact, phone, email, stage, source, date, value, next, notes) / контакти | вручну | за потреби |
+| Payroll / Payroll_Adj | оклади та ставки / бонуси-аванси (схема нижче) | вручну | при змінах / щомісяця |
+| Users | email, name, role, tabs, phone, active (для Google Sign-In) | вручну | — |
+| WC_Orders, WC_Products | WooCommerce | sync.gs (щогодини / щодня) | автоматично |
+| SP_Lists, SP_Campaigns | SendPulse | sync.gs (щодня) | автоматично |
+| IG_Posts, FB_Posts, Meta_Ads, ADD1 | Instagram / Facebook / реклама (ADD1 — ручний експорт Ads Manager) | sync.gs / вручну | автоматично / за потреби |
+| UK_Orders, UK_Products | Wines of Ukraine (Metorik) | sync.gs → syncUK | автоматично |
+| Sync_Log | source, result, timestamp — журнал синхронізацій | sync.gs | автоматично |
+
+### 2. Google Sheets — BW_accounts (SID2 `1NGC2iicXsEZRzOASBz2KZY46Lu7EO7jNd28UOWmQK7w`)
 
 | Лист | Що містить |
 |---|---|
-| PRIVAT_BALANCES | Баланси рахунків (₴, €, $) |
+| PRIVAT_BALANCES | рахунок, валюта, баланс, dpd (дата) |
+| workerNEW | довідник клієнтів: F (назва в 1С), ALIAS, CATEGORY (канал), GEO, Менеджер, Контактное лицо, Tel, EDRPOU, ЗНИЖКА, Коміссія Фінальна |
 
-#### 3. 1С Бухгалтерія — CSV файли (data/)
-Вигрузка з 1С "Бухгалтерія для України". Конвертовано з xlsx в CSV.
+### 3. Файли в репозиторії (data/)
 
-| Файл | Записів | Що містить |
+| Файл | Що містить | Оновлення |
 |---|---|---|
-| 1c_sales.csv | 11 885 | Реалізації (дата, сума, контрагент, склад) |
-| 1c_partners.csv | 670 | Контрагенти (назва, ЄДРПОУ, тип) |
-| 1c_products.csv | 630 | Номенклатура (назва, артикул, од. виміру) |
-| 1c_bank.csv | 4 781 | Банківські операції (оплати від покупців) |
-| 1c_osv.csv | 14 | Оборотно-сальдова відомість |
-| 1c_contracts.csv | 1 519 | Договори |
-| 1c_warehouses.csv | 9 | Склади |
-| 1c_orgs.csv | 4 | Організації |
-| 1c_staff.csv | 37 | Співробітники |
-| 1c_assets.csv | 116 | Основні засоби |
+| 1c_sales.csv, 1c_bank.csv, 1c_partners.csv, 1c_products.csv, 1c_osv.csv, 1c_contracts.csv, 1c_warehouses.csv, 1c_orgs.csv, 1c_staff.csv, 1c_assets.csv | вивантаження з 1С «Бухгалтерія для України» | `tools/convert_1c.py` з `beykush_data.xlsx` |
+| lots.csv | лоти InnoVint | експорт CSV з InnoVint |
+| manifest.json | дати вивантажень і кількість рядків (читає дашборд) | генерує `convert_1c.py` |
+| sheets/*.csv | знімок Google Sheets для офлайн-аналізу / режиму `?src=local` | `tools/pull_sheets.py` |
 
-#### 3b. Innovint — CSV файл (data/)
-| Файл | Що містить |
+### 4. Онлайн
+
+- НБУ: курси EUR/USD (`bank.gov.ua`), без ключа.
+
+---
+
+## Як оновлювати дані
+
+### Виписки (Dashboard_Data)
+1. Книга BW_Looker_Data → лист Dashboard_Data → додати операції за місяць (month = YYYYMM, category з існуючого списку, sum_uah зі знаком, source = PRIVAT/VOSTOK/2fMK/2fKiev, менеджер для продажів).
+2. Перевірити вкладку ⚠️ (категорії «???»).
+3. Оновити сторінку. Чіп у шапці та крапки мають позеленіти.
+
+### 1С
+1. Вивантажити з 1С `beykush_data.xlsx` (аркуші Продажи, Контрагенты, Номенклатура, ОСВ, Банк, Склады, Договоры, Организации, Сотрудники, ОС).
+2. Покласти файл у корінь репозиторію, виконати `python3 tools/convert_1c.py` (потрібен `pip install openpyxl`).
+3. `git add data beykush_data.xlsx && git commit -m "Update 1C data" && git push` — Vercel задеплоїть.
+   (Без git: GitHub → data → Add file → Upload files; `manifest.json` тоді оновити командою `python3 tools/convert_1c.py --manifest` при нагоді.)
+
+### Лоти InnoVint
+1. InnoVint → Lots → Export CSV → замінити `data/lots.csv`.
+2. `python3 tools/convert_1c.py --lots-only` (оновить дату в manifest) → commit → push.
+
+### Автосинхронізації (sync.gs)
+- Книга BW_Looker_Data → Extensions → Apps Script → файл з кодом `sync.gs`.
+- **Ключі** — Project Settings → Script Properties: `SP_APIKEY`, `WC_KEY`, `WC_SECRET`, `META_TOKEN`, `META_PAGE_TOKEN` (опційно), `METORIK_UK_TOKEN`. Перевірка: Run → `checkConfig` → Logs.
+- Тригери (Triggers → Add): `syncPart1` щодня 6–7, `syncPart2` щодня 7–8, `syncWCOrdersIncremental` щогодини, `syncUK` щодня.
+- Результати — лист Sync_Log; дашборд показує їх у 📋 Статус і робить задачу при помилці.
+
+| Функція | Що робить |
 |---|---|
-| lots.csv | Лоти з Innovint (виробничі партії, витримка, розлив) |
+| `syncAll()` = `syncPart1()` + `syncPart2()` | SP + WC, потім IG + FB + Ads |
+| `syncWCOrdersIncremental()` | замовлення WC за 2 дні |
+| `syncSendPulse()`, `syncWooCommerce()`, `syncAllMarketing()`, `syncIGPosts()`, `syncFBPosts()`, `syncMetaAds()`, `syncUK()` | окремі джерела |
+| `discoverMetaIds()` | показує Page/IG/Ad IDs |
+| `checkConfig()` | перевірка Script Properties |
 
-#### 4. Зовнішні API (через sync.gs)
-| API | Що дає | Ключ/Токен |
-|---|---|---|
-| НБУ | Курси EUR/USD | Публічний API |
-| SendPulse | Розсилки, кампанії | Bearer token в sync.gs |
-| WooCommerce | Замовлення, товари | ck/cs ключі в sync.gs |
-| Meta Graph API | IG пости, FB пости, Ads | OAuth token в sync.gs |
-| Metorik | UK замовлення, товари (Shopify) | API token в sync.gs |
+### Meta токен
+System User token (безстроковий): business.facebook.com → Settings → System Users → Generate token (pages_show_list, pages_read_engagement, instagram_basic, instagram_manage_insights, ads_read) → зберегти у Script Properties `META_TOKEN` → Run `syncIGPosts`.
 
 ---
 
-## Вкладки дашборду
+## 💼 ЗП — схема листів
 
-### Баланс
-- KPI: загальні активи, гроші (₴/€/$), дебіторка, вино всього
-- Структура активів (doughnut chart)
-- Динаміка (кумулятивний P&L)
-- Грошові рахунки (таблиця з валютами)
-- Вино в бочках (літри, оцінка по брендах, розподіл по кольору)
-- Вино в пляшках (залишки, оцінка)
-- **Основні фонди (CAPEX)**: балансова вартість (рах. 10/11), інвестиції по категоріях (виноробня, виноградник, транспорт), stacked bar по роках
-- P&L YTD
-- Прострочена заборгованість
+**Payroll** (один рядок на співробітника; зміна окладу = новий рядок з новою `date_from`):
 
-### P&L (Profit & Loss)
-- KPI: виручка, OPEX, осн.фонди, прибуток, маржа, баланс
-- Графіки: по роках / по місяцях з порівнянням з минулим роком
-- Таблиці: доходи по каналах, витрати по категоріях
-- Drill-down: при виборі конкретного місяця показує деталі
-
-### Продажі
-- **Свої фільтри**: рік + місяць (не глобальні)
-- 8 каналів: Сети, HoReCa, Дистрибьютори, Експорт, Інтернет-магазин, Корп.клієнти, Каса БВ, Продажі на виноробні
-- Клік на канал → drill-down (клієнти, міста, помісячно)
-- Інтернет-магазин: нетто = сума × (1 - fop_tax% - fop_bank%)
-- Менеджери: продажі, комісія, клік → модалка з деталями
-- Графік: поточний рік vs попередній
-
-### Витрати
-- OPEX без осн.фондів
-- Горизонтальний бар по категоріях
-- Топ-5 категорій помісячно (stacked bar)
-- Порівняння з минулим роком
-
-### Магазин (WooCommerce з Google Sheets)
-Підвкладки:
-- **Продажі**: виручка, замовлення, ср.чек, ФОП податки, помісячно, по тижнях, оплати, UTM
-- **Продукти**: каталог з WC_Products (якщо line_items немає в Sheets)
-- **Клієнти**: LTV, повторні, географія, фільтр по місту
-- **Замовлення**: воронка, статуси, по містах, останні замовлення
-
-### Склад
-Підвкладки:
-- **Залишки**: 3_Stock або Stock_Data (пляшки, критичні, застрявші)
-- **1С Номенклатура**: 35 вин зі штрих-кодом, ОСВ (рах.28, 36, 70)
-
-### Кеш-фло
-- Баланси в 3 валютах (₴, €, $)
-- Таблиця рахунків з DPD
-- Вхідні vs вихідні помісячно
-- Нетто та кумулятивний графік
-
-### Маркетинг
-3 секції:
-
-**📧 Email (SendPulse)**:
-- KPI: підписники, кампанії, open rate, click rate
-- Графік розсилок помісячно (opened vs not opened)
-- Списки, кампанії по роках, останні кампанії
-- Кореляція розсилки → замовлення (±3 дні)
-
-**📸 Instagram**:
-- KPI: engagement rate, сер. лайків/reach, всього лайків/reach
-- Типи контенту з порівнянням ER% (VIDEO vs CAROUSEL vs IMAGE)
-- Топ-5 по лайках, Топ-5 по reach
-- Engagement графік по постах
-- Останні пости
-
-**📢 Meta Ads**:
-- Список кампаній з назвами, статусами, датами
-- Якщо є витрати: spend, ROAS, CTR, покупки
-
-### Партнери (1С дані)
-Підвкладки:
-- **Огляд**: KPI (продано/оплачено/борг), прострочені >30д, по роках, канали
-- **Канали**: склади → клік → список партнерів каналу
-- **Борги**: прострочені, всі боржники, сплячі, графік боргів
-- **Контакти**: повна назва, ЄДРПОУ, тип, канали
-- **CRM**: пошук партнера, "потрібно зателефонувати", останні оплати
-
-Фільтр по організації: Бейкуш Вайнери / Бейкуш Ф2 / Всі
-⚠ Банківські операції є тільки для Бейкуш Вайнери
-
-### 🍷 Виробництво
-Дані з Innovint (lots.csv). Підвкладки:
-- **Overview**: KPI (загальний об'єм, оцінка пляшок, вартість), розподіл по кольору, стадії, вінтажу, сорту
-- **Lots**: повна таблиця всіх лотів з пошуком та фільтрами
-- **Wines**: лоти згруповані по цільовому вину (intended wine)
-
-### 🇬🇧 UK
-Wines of Ukraine Ltd — продажі в Великобританії через Shopify.
-Інтеграція через Metorik API (sync.gs → syncUK()).
-- Замовлення з UK_Orders
-- Товари з UK_Products
-- KPI: виручка, замовлення, середній чек
-- Помісячна динаміка
-
-### ⚠ Нерозпізнані
-- Транзакції з категорією "???" або порожньою
-- Експорт CSV
-
-### ⚙ Налаштування
-- ФОП ставки (єдиний податок, банк комісія)
-- Ролі та доступ (матриця вкладок × ролей з чекбоксами)
-- Паролі (тільки для owner)
-- Користувачі
-- Налаштування з Google Sheet (з історією змін)
-- Курси НБУ
-- Джерела даних зі статусами
-- Інформація про сесію
-
----
-
-## Marketing Timeline
-
-Графік таймлайну маркетингових активностей з вікнами 30 / 60 / 90 / 180 днів.
-Відображає на одній часовій осі:
-- **Замовлення** (WooCommerce) — стовпчики з кількістю замовлень по днях
-- **Email розсилки** (SendPulse) — маркери кампаній з open rate
-- **Instagram пости** — маркери публікацій з engagement
-
-Перемикач періоду (30д / 60д / 90д / 180д) дозволяє масштабувати вікно. Графік допомагає візуально оцінити кореляцію між маркетинговими активностями та продажами.
-
----
-
-## sync.gs — Синхронізація даних
-
-### Розташування
-Google Sheet (SID) → Extensions → Apps Script
-
-### Конфігурація
-Всі ключі в об'єкті `CONFIG` на початку файлу:
-- SendPulse API key
-- WooCommerce ck/cs
-- Meta token, Page ID, IG Account ID, Ad Account ID
-
-### Функції
-
-| Функція | Що робить | Тригер |
-|---|---|---|
-| `syncAll()` | Повна синхронізація всього | Щоденно 6:00-7:00 |
-| `syncWCOrdersIncremental()` | WC замовлення за 2 дні | Кожну годину |
-| `syncSendPulse()` | Тільки SP (lists + campaigns) | За потреби |
-| `syncWooCommerce()` | Тільки WC (orders + products) | За потреби |
-| `syncAllMarketing()` | IG + FB + Meta Ads | Щоденно |
-| `syncIGPosts()` | Instagram пости (100 останніх) | Щоденно |
-| `syncFBPosts()` | Facebook пости (100 останніх) | Щоденно |
-| `syncMetaAds()` | Meta рекламні кампанії | Щоденно |
-| `syncUK()` | Повна синхронізація UK (orders + products) | Щоденно |
-| `syncUKOrders()` | Тільки UK замовлення (Metorik API) | За потреби |
-| `syncUKProducts()` | Тільки UK товари (Metorik API) | За потреби |
-| `syncPart1()` | Перша частина sync (SP + WC) — split для уникнення 6-хв таймауту | Щоденно |
-| `syncPart2()` | Друга частина sync (Marketing + UK) — split для уникнення 6-хв таймауту | Щоденно |
-| `discoverMetaIds()` | Показує Page/IG/Ad IDs | Одноразово |
-
-### Налаштування тригерів
-Apps Script → Triggers → Add Trigger:
-1. `syncAll` → Time-driven → Day timer → 6am-7am
-2. `syncWCOrdersIncremental` → Time-driven → Hour timer → Every hour
-3. `syncAllMarketing` → Time-driven → Day timer → 7am-8am
-
----
-
-## Оновлення даних з 1С
-
-1. Вивантажити xlsx з 1С (Бухгалтерія для України)
-2. Завантажити в GitHub репо (замінити `beykush_data.xlsx`)
-3. Запустити конвертацію:
-```bash
-python3 -c "
-import openpyxl, csv, os
-wb = openpyxl.load_workbook('beykush_data.xlsx', read_only=True, data_only=True)
-sheets = {'Продажи':'sales','Контрагенты':'partners','Номенклатура':'products',
-          'ОСВ':'osv','Банк':'bank','Склады':'warehouses','Договоры':'contracts',
-          'Организации':'orgs','Сотрудники':'staff','ОС':'assets'}
-for name,eng in sheets.items():
-    ws = wb[name]
-    rows = list(ws.iter_rows(values_only=True))
-    hdr_idx = 3 if name == 'ОСВ' else 2
-    headers = [str(c).strip() if c else f'col{i}' for i,c in enumerate(rows[hdr_idx])]
-    fname = f'data/1c_{eng}.csv'
-    with open(fname,'w',newline='',encoding='utf-8') as f:
-        w = csv.writer(f)
-        w.writerow(headers)
-        for r in rows[hdr_idx+1:]:
-            if any(c for c in r): w.writerow([str(c) if c else '' for c in r])
-    print(f'{name} → {fname}')
-"
 ```
-4. Commit + push → Vercel автодеплой
+employee,role,manager_name,base,currency,commission_pct,zp_category,date_from,active,notes
+Світлана,manager,Света,20000,UAH,5,BW Света,2026-01-01,true,менеджер HoReCa
+Іван Петренко,staff,,18000,UAH,,ЗП Виноробня,2025-06-01,true,
+```
+- `role`: manager (рахується комісія) / staff · `manager_name`: як у колонці «менеджер» Dashboard_Data · `commission_pct`: ставка менеджера, якщо у клієнта немає своєї у workerNEW · `zp_category`: категорія виплат у Dashboard_Data (для порівняння з фактом) · `currency`: UAH/EUR/USD.
+
+**Payroll_Adj** (опційно): `employee,month,type,amount,note`, де `type` = bonus (+) | advance (−) | deduction (−), `month` = YYYY-MM.
+
+Комісія по операції = колонка `commission` у Dashboard_Data, якщо заповнена; інакше нетто × ставка: клієнта (workerNEW «Коміссія Фінальна»: «5%», «5» або «0.05») → менеджера (Payroll) → `mgr_commission_default` (Settings).
 
 ---
 
-## Оновлення Meta токену
+## Розробка і тести
 
-### User Token (короткоживучий, ~60 днів)
-Meta токен живе ~60 днів. Для оновлення:
-1. https://developers.facebook.com/tools/explorer/
-2. Вибрати додаток Beykush
-3. Додати permissions: pages_show_list, pages_read_engagement, instagram_basic, instagram_manage_insights
-4. Generate Access Token
-5. Оновити в sync.gs → CONFIG.META_TOKEN
-6. Запустити syncAll() для перевірки
-
-### System User Token (безстроковий, рекомендований)
-Для уникнення ротації токену кожні 60 днів можна використати System User token:
-1. https://business.facebook.com/settings/system-users
-2. Створити System User (або використати існуючий)
-3. Додати Assets → призначити Page та Ad Account
-4. Generate Token з потрібними permissions
-5. Токен не має терміну дії (безстроковий) — не потребує оновлення
-6. Оновити в sync.gs → CONFIG.META_TOKEN
-
----
+- Локально: `python3 -m http.server 8765` → `http://127.0.0.1:8765/index.html` (реальні Sheets) або `?src=local` (знімок `data/sheets/`) або `?src=test` (синтетика).
+- Синтетичні дані: `python3 tests/make_fixtures.py`. Smoke-тест усіх вкладок: `node tests/smoke.js` (потрібні `playwright-core` і Chromium; `PW_CHROMIUM=/шлях/до/chromium`).
+- Перевірка синтаксису: `for f in js/*.js js/tabs/*.js; do node --check $f; done`.
+- Аналіз даних: `python3 tools/pull_sheets.py && python3 tools/analyze.py` → `reports/latest.md`.
+- Після змін: оновити `STATUS.md`, `js/version.js`, підняти `?v=` в `index.html` (див. CLAUDE.md).
 
 ## Технічні деталі
 
-### НДС логіка
-- PRIVAT/VOSTOK доходи Україна: /1.2 (крім Експорт)
-- PRIVAT/VOSTOK витрати: /1.2 (крім ЗП, Податки, Банківська)
-- Експорт і 2Ф — без змін
+- ПДВ: доходи PRIVAT/VOSTOK (крім Експорт) ÷ 1.2; витрати PRIVAT/VOSTOK ÷ 1.2 (крім ЗП, Податки, Банківська); Експорт і 2Ф — без змін.
+- Кеш: `csvF()` зберігає останні дані в localStorage (офлайн-фолбек); таймаут 8 с.
+- Рендер — лише активна вкладка; фокус у полях пошуку зберігається.
+- Свіжість: пороги по кожному джерелу — у `healthSources()` (`warn`/`stale` днів від дати даних, `syncWarn`/`syncStale` — від останньої синхронізації).
+- CSS: фон `#0c0e13`, картки `#151821`, бордер `#232738`; акценти `#10b981` зелений, `#ef4444` червоний, `#f59e0b` жовтий, `#3b82f6` синій, `#8b5cf6` фіолет, `#9f1239` бренд.
 
-### Кеш
-- `csvF()` кешує дані в localStorage (offline fallback)
-- Таймаут fetch: 8 секунд
-- Якщо Google Sheets недоступний — показує закешовані дані
+## Безпека
 
-### Безпека
-- XSS захист: `esc()` для HTML в модалках
-- Сесія: 30 хв таймаут
-- Паролі в config.js (видимі через View Source — обмеження static site)
-
-### CSS конвенції
-- Темна тема: bg `#0c0e13`, карточки `#151821`, border `#232738`
-- Акценти: `#10b981` зелений, `#ef4444` червоний, `#f59e0b` жовтий, `#3b82f6` синій, `#9f1239` бренд
-- Класи: `.kpi`, `.cc`, `.tbl`, `.row`, `.flt`, `.info`, `.warn`, `.sec`
-
----
-
-## Контакти та доступи
-
-| Ресурс | URL |
-|---|---|
-| Дашборд | https://project-33ms4.vercel.app |
-| GitHub | https://github.com/shneyderis/BW |
-| Google Sheet (основна) | SID: 1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ |
-| Google Sheet (баланси) | SID2: 1NGC2iicXsEZRzOASBz2KZY46Lu7EO7jNd28UOWmQK7w |
-| Apps Script | В основній таблиці → Extensions → Apps Script |
-| Meta Developers | https://developers.facebook.com/apps/ |
-| Vercel | https://vercel.com (автодеплой з GitHub) |
+- Репозиторій публічний → у ньому не може бути ключів. Усі ключі — Script Properties в Apps Script. Якщо ключ потрапив у git — перевипустити його.
+- Паролі ролей у `config.js` видно всім, хто відкриє сайт. Для реального захисту — Google Sign-In або серверний middleware (у плані).
+- Книги Google Sheets відкриті «за посиланням» — це необхідно для роботи дашборду, але означає, що ID книг = доступ до даних.

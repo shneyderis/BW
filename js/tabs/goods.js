@@ -94,66 +94,8 @@ function gdChan(cust){
   return w.channel||"";
 }
 
-function rGoods(){
-  const el=document.getElementById("t-goods");if(!el)return;
-  if(!GD.length){el.innerHTML='<div class="info">Завантаження FINAL_sales_detail...</div>';return}
-  // Reset caches on each render (WN may have loaded since last render)
-  _chanMap=null;Object.keys(_chanCache).forEach(k=>delete _chanCache[k]);
-  const c$=cs();
-
-  // === Available years, channels, geo ===
-  const allYrs=[...new Set(GD.map(r=>r.yr))].filter(y=>y>="2020").sort();
-  const allChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
-  // Geo from T mapping (via _chanLookup)
-  function _gdGeoFor(cust){const w=_chanLookup(cust);return w&&w.geo?w.geo:""}
-  const allGeos=[...new Set(GD.map(r=>{const w=_chanLookup(r.cust);return w&&w.geo?w.geo:""}).filter(Boolean))].sort();
-
-  // === Filter data ===
-  let fd=GD;
-  if(_gdYr!=="ALL")fd=fd.filter(r=>r.yr===_gdYr);
-  if(_gdChan==="?")fd=fd.filter(r=>!gdChan(r.cust));
-  else if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
-  if(_gdGeo!=="ALL")fd=fd.filter(r=>_gdGeoFor(r.cust)===_gdGeo);
-
-  const totalQty=fd.reduce((s,r)=>s+r.qty,0);
-  const totalSum=fd.reduce((s,r)=>s+r.sum,0);
-  const totalDocs=[...new Set(fd.map(r=>r.doc))].length;
-  const totalProds=[...new Set(fd.map(r=>r.prod))].length;
-  const totalCusts=[...new Set(fd.map(r=>r.cust))].length;
-
-  // === Header: sub-tabs + filters ===
-  const header=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-    <div class="sh-tabs">
-      <button class="sh-tab ${_gdView==="top"?"on":""}" onclick="_gdView='top';render()">Топ вина</button>
-      <button class="sh-tab ${_gdView==="abc"?"on":""}" onclick="_gdView='abc';render()">ABC</button>
-      <button class="sh-tab ${_gdView==="customers"?"on":""}" onclick="_gdView='customers';render()">Клієнти</button>
-      <button class="sh-tab ${_gdView==="trends"?"on":""}" onclick="_gdView='trends';render()">Тренди</button>
-    </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
-      <select class="flt" id="gdYrFlt">
-        <option value="ALL" ${_gdYr==="ALL"?"selected":""}>Всі роки</option>
-        ${allYrs.map(y=>`<option ${y===_gdYr?"selected":""}>${y}</option>`).join("")}
-      </select>
-      ${allGeos.length?`<select class="flt" id="gdGeoFlt">
-        <option value="ALL" ${_gdGeo==="ALL"?"selected":""}>Все гео</option>
-        ${allGeos.map(g=>`<option ${g===_gdGeo?"selected":""}>${g}</option>`).join("")}
-      </select>`:""}
-      <input type="text" placeholder="Пошук вина..." value="${_gdSearch}" style="background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:5px 8px;border-radius:4px;font-size:11px;width:130px" oninput="_gdSearch=this.value;render()">
-    </div>
-  </div>
-  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
-    <button class="flt" style="${_gdChan==="ALL"?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='ALL';render()">Всі канали</button>
-    ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
-    <button class="flt" style="${_gdChan==="?"?"background:#7d8196;color:#fff;border-color:#7d8196":""}" onclick="_gdChan='?';render()">Невизначений</button>
-  </div>
-  ${srcN([srcP(BK_MAIN()+" → лист FINAL_sales_detail — продажі по пляшках (накладні з 1С)",maxD(GD,r=>r.date)),(typeof SD!=="undefined"&&SD.length)?srcP("лист Stock_Data — залишки складу",maxD(SD,r=>gv(r,"date"))):(typeof SK!=="undefined"&&SK.length?srcP("лист 3_Stock — залишки складу"):""),"канали: Dashboard_Data + customer_channels, worker_new ("+BK_ACC()+")"])}`;
-
-  function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
-
-  if(_gdView==="abc"){rGdABC(el,header,fd,c$);bindFlt();return}
-  if(_gdView==="customers"){rGdCustomers(el,header,fd,c$);bindFlt();return}
-  if(_gdView==="trends"){rGdTrends(el,header,allYrs,c$);bindFlt();return}
-
+// Статистика по винах (без фільтрів пошуку): продано, швидкість, склад, місяців запасу. Використовується і в health.js
+function gdWineStats(fd){
   // === TOP PRODUCTS (grouped by base name, without vintage year) ===
   const byWine={};
   fd.forEach(r=>{
@@ -206,7 +148,7 @@ function rGoods(){
   });
 
   // Calculate velocity + sell-through + stock months
-  let prodArr=Object.entries(byWine).map(([name,d])=>{
+  const prodArr=Object.entries(byWine).map(([name,d])=>{
     const months=Object.keys(d.byMonth).sort();
     const activeMonths=months.length;
     const velocity=activeMonths>0?d.qty/activeMonths:0;
@@ -220,6 +162,70 @@ function rGoods(){
     const monthsLeft=velocity>0?stock/velocity:stock>0?999:0;
     return{name,qty:d.qty,sum:d.sum,avg:d.qty>0?d.sum/d.qty:0,vintages:[...d.vintages].sort().join(", "),velocity,activeMonths,sellMonths,stock,monthsLeft};
   });
+  return prodArr;
+}
+
+function rGoods(){
+  const el=document.getElementById("t-goods");if(!el)return;
+  if(!GD.length){el.innerHTML='<div class="info">Завантаження FINAL_sales_detail...</div>';return}
+  // Reset caches on each render (WN may have loaded since last render)
+  _chanMap=null;Object.keys(_chanCache).forEach(k=>delete _chanCache[k]);
+  const c$=cs();
+
+  // === Available years, channels, geo ===
+  const allYrs=[...new Set(GD.map(r=>r.yr))].filter(y=>y>="2020").sort();
+  const allChans=[...new Set(GD.map(r=>gdChan(r.cust)).filter(Boolean))].sort();
+  // Geo from T mapping (via _chanLookup)
+  function _gdGeoFor(cust){const w=_chanLookup(cust);return w&&w.geo?w.geo:""}
+  const allGeos=[...new Set(GD.map(r=>{const w=_chanLookup(r.cust);return w&&w.geo?w.geo:""}).filter(Boolean))].sort();
+
+  // === Filter data ===
+  let fd=GD;
+  if(_gdYr!=="ALL")fd=fd.filter(r=>r.yr===_gdYr);
+  if(_gdChan==="?")fd=fd.filter(r=>!gdChan(r.cust));
+  else if(_gdChan!=="ALL")fd=fd.filter(r=>gdChan(r.cust)===_gdChan);
+  if(_gdGeo!=="ALL")fd=fd.filter(r=>_gdGeoFor(r.cust)===_gdGeo);
+
+  const totalQty=fd.reduce((s,r)=>s+r.qty,0);
+  const totalSum=fd.reduce((s,r)=>s+r.sum,0);
+  const totalDocs=[...new Set(fd.map(r=>r.doc))].length;
+  const totalProds=[...new Set(fd.map(r=>r.prod))].length;
+  const totalCusts=[...new Set(fd.map(r=>r.cust))].length;
+
+  // === Header: sub-tabs + filters ===
+  const header=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+    <div class="sh-tabs">
+      <button class="sh-tab ${_gdView==="top"?"on":""}" onclick="_gdView='top';render()">Топ вина</button>
+      <button class="sh-tab ${_gdView==="abc"?"on":""}" onclick="_gdView='abc';render()">ABC</button>
+      <button class="sh-tab ${_gdView==="customers"?"on":""}" onclick="_gdView='customers';render()">Клієнти</button>
+      <button class="sh-tab ${_gdView==="trends"?"on":""}" onclick="_gdView='trends';render()">Тренди</button>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+      <select class="flt" id="gdYrFlt">
+        <option value="ALL" ${_gdYr==="ALL"?"selected":""}>Всі роки</option>
+        ${allYrs.map(y=>`<option ${y===_gdYr?"selected":""}>${y}</option>`).join("")}
+      </select>
+      ${allGeos.length?`<select class="flt" id="gdGeoFlt">
+        <option value="ALL" ${_gdGeo==="ALL"?"selected":""}>Все гео</option>
+        ${allGeos.map(g=>`<option ${g===_gdGeo?"selected":""}>${g}</option>`).join("")}
+      </select>`:""}
+      <input type="text" id="gdSearch" placeholder="Пошук вина..." value="${esc(_gdSearch)}" style="background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:5px 8px;border-radius:4px;font-size:11px;width:130px" oninput="_gdSearch=this.value;dbRender(200)">
+    </div>
+  </div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
+    <button class="flt" style="${_gdChan==="ALL"?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='ALL';render()">Всі канали</button>
+    ${allChans.map(ch=>`<button class="flt" style="${_gdChan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_gdChan='${ch.replace(/'/g,"\\'")}';render()">${ch}</button>`).join("")}
+    <button class="flt" style="${_gdChan==="?"?"background:#7d8196;color:#fff;border-color:#7d8196":""}" onclick="_gdChan='?';render()">Невизначений</button>
+  </div>
+  ${srcN([srcP(BK_MAIN()+" → лист FINAL_sales_detail — продажі по пляшках (накладні з 1С)",maxD(GD,r=>r.date),"gd"),(typeof SD!=="undefined"&&SD.length)?srcP("лист Stock_Data — залишки складу",maxD(SD,r=>gv(r,"date")),"stock"):(typeof SK!=="undefined"&&SK.length?srcP("лист 3_Stock — залишки складу","","stock"):""),srcP("канали: workerNEW ("+BK_ACC()+") + customer_channels + Dashboard_Data","","wn")])}`;
+
+  function bindFlt(){const s=document.getElementById("gdYrFlt");if(s)s.onchange=e=>{_gdYr=e.target.value;render()};const g=document.getElementById("gdGeoFlt");if(g)g.onchange=e=>{_gdGeo=e.target.value;render()}}
+
+  if(_gdView==="abc"){rGdABC(el,header,fd,c$);bindFlt();return}
+  if(_gdView==="customers"){rGdCustomers(el,header,fd,c$);bindFlt();return}
+  if(_gdView==="trends"){rGdTrends(el,header,allYrs,c$);bindFlt();return}
+
+  let prodArr=gdWineStats(fd);
   if(_gdSearch){const q=_gdSearch.toLowerCase();prodArr=prodArr.filter(p=>p.name.toLowerCase().includes(q))}
 
   // Sort

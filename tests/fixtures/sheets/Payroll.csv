@@ -1,0 +1,8 @@
+employee,role,manager_name,base,currency,commission_pct,zp_category,date_from,active,notes
+Світлана,manager,Света,18000,UAH,5,BW Света,2025-01-01,true,HoReCa
+Світлана,manager,Света,20000,UAH,5,BW Света,2026-03-01,true,підвищення
+Наталія,manager,Наташа,20000,UAH,3,BW Наташа,2025-01-01,true,мережі
+Тетяна,manager,Таня,500,EUR,2,BW Таня,2025-01-01,true,експорт/дистр
+Виноробня (бригада),staff,,90000,UAH,,ЗП Виноробня,2025-01-01,true,
+Виноградник (бригада),staff,,70000,UAH,,ЗП Виноградник,2025-01-01,true,
+Колишній,staff,,10000,UAH,,,2024-01-01,false,звільнений

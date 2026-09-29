@@ -51,7 +51,8 @@ function rPartners(){
   const totalPaid=merged.reduce((s,p)=>s+p.paid,0);
   const debtors=merged.filter(p=>p.debt>1000&&!isInternal(p.name)).sort((a,b)=>b.debt-a.debt);
   const totalDebtReal=debtors.reduce((s,p)=>s+p.debt,0);
-  const now=Date.now();
+  const now=c1RefDate(); // "сьогодні" для боргів = дата останніх даних 1С
+  const refISO=c1RefISO();
 
   // === By warehouse (channel) ===
   const byWH={};
@@ -73,7 +74,7 @@ function rPartners(){
       ${allOrgs.map(o=>`<option ${o===_partOrg?"selected":""}>${o}</option>`).join("")}
     </select>
   </div>
-  ${srcN([srcP("1С: файл data/1c_sales.csv — продажі (або книга "+BK_1C()+")",maxD(C1.sales,s=>s.date)),C1.bank&&C1.bank.length?srcP("1С: файл data/1c_bank.csv — банк",maxD(C1.bank,b=>toISO(b.date))):"",(window.CRM_LEADS&&CRM_LEADS.length)?srcP(BK_MAIN()+" → CRM_Leads"):""])}`;
+  ${srcN([srcP("1С: файл data/1c_sales.csv — продажі (або книга "+BK_1C()+")",maxD(C1.sales,s=>s.date),"c1"),C1.bank&&C1.bank.length?srcP("1С: файл data/1c_bank.csv — банк",maxD(C1.bank,b=>toISO(b.date))):"",srcP("контакти: workerNEW ("+BK_ACC()+")","","wn"),(window.CRM_LEADS&&CRM_LEADS.length)?srcP(BK_MAIN()+" → CRM_Leads",maxD(CRM_LEADS,l=>l.date),"crm"):""])}`;
 
   function bindOrgFlt(){const s=document.getElementById("partOrgFlt");if(s)s.onchange=e=>{_partOrg=e.target.value;render()}}
 
@@ -86,11 +87,11 @@ function rPartners(){
   // === OVERVIEW ===
   const byYr={};sales.forEach(s=>{const y=toISO(s.date).substring(0,4);if(y<"2015")return;if(!byYr[y])byYr[y]={sum:0,cnt:0};byYr[y].sum+=s.sum;byYr[y].cnt++});
   const yrArr=Object.entries(byYr).sort((a,b)=>b[0].localeCompare(a[0]));
-  const active=merged.filter(p=>toISO(p.lastSale)>=String(new Date().getFullYear()));
+  const active=merged.filter(p=>toISO(p.lastSale)>=refISO.substring(0,4));
   const overdue=debtors.filter(p=>{const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;return(now-new Date(lp).getTime())>30*24*60*60*1000}).slice(0,10);
 
   el.innerHTML=`${tabs}
-    <div class="info">${ff(sales.length)} реалізацій · ${partners.length} контрагентів · ${ff(bank.length)} банк.операцій</div>
+    <div class="info">${ff(sales.length)} реалізацій · ${partners.length} контрагентів · ${ff(bank.length)} банк.операцій · борги та «днів без оплати» рахуються станом на <b>${refISO}</b> (дата останніх даних 1С)</div>
     <div class="kpis">
       <div class="kpi"><div class="l">Продано</div><div class="v g">${ff(totalSold)}₴</div><div class="s">${ff(sales.length)} док.</div></div>
       <div class="kpi"><div class="l">Оплачено</div><div class="v" style="color:#3b82f6">${ff(totalPaid)}₴</div><div class="s">${ff(payments.length)} платежів</div></div>
@@ -163,7 +164,7 @@ function rPartChannels(el,tabs,whArr,merged){
 
 // === DEBTORS VIEW ===
 function rPartDebtors(el,tabs,debtors,now){
-  const sixMAgo=new Date();sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
+  const sixMAgo=new Date(now);sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
   const noPayData=_partOrg==="Бейкуш Ф2"||_partOrg==="Интернет магазин"||_partOrg==="Дегустации";
   const overdue=noPayData?[]:debtors.filter(p=>{const lp=toISO(p.lastPay);if(!lp)return p.debt>5000;return(now-new Date(lp).getTime())>30*24*60*60*1000});
   const dormant=debtors.filter(p=>p.sold>10000&&toISO(p.lastSale)<sixMS);
@@ -216,9 +217,9 @@ function rPartContacts(el,tabs,merged,partners){
 
   el.innerHTML=`${tabs}
     <div style="margin-bottom:10px">
-      <input type="text" placeholder="Пошук партнера..." value="${esc(_partSearch)}"
+      <input type="text" id="partSearch" placeholder="Пошук партнера..." value="${esc(_partSearch)}"
         style="width:100%;max-width:300px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:12px"
-        oninput="_partSearch=this.value;render()">
+        oninput="_partSearch=this.value;dbRender(200)">
     </div>
     <div class="info">${filtered.length} партнерів · контакти: ${filtered.filter(p=>p.wn&&p.wn.contact).length} · телефони: ${filtered.filter(p=>p.wn&&p.wn.tel).length}</div>
     <div class="cc"><h3>Контакти партнерів</h3>
@@ -256,7 +257,7 @@ function rPartCRM(el,tabs,merged,debtors,now,bank){
       debt:p.debt,days,channel:w.channel||"",mgr:w.mgr||""});
   });
   // 2. Sleeping partners (had sales >6mo ago, no recent activity) → FOLLOW-UP
-  const sixMAgo=new Date();sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
+  const sixMAgo=new Date(now);sixMAgo.setMonth(sixMAgo.getMonth()-6);const sixMS=sixMAgo.toISOString().substring(0,10);
   merged.filter(p=>p.sold>20000&&!isInternal(p.name)&&toISO(p.lastSale)<sixMS&&toISO(p.lastSale)>"2020").forEach(p=>{
     const w=wnForPartner(p.name)||{};
     tasks.push({type:"followup",priority:"low",name:w.alias||shortName(p.name),contact:w.contact||"",tel:w.tel||"",
@@ -279,9 +280,9 @@ function rPartCRM(el,tabs,merged,debtors,now,bank){
 
   el.innerHTML=`${tabs}
     <div style="margin-bottom:10px">
-      <input type="text" placeholder="Пошук..." value="${esc(_partSearch)}"
+      <input type="text" id="partSearch" placeholder="Пошук..." value="${esc(_partSearch)}"
         style="width:100%;max-width:300px;background:#0c0e13;border:1px solid #232738;color:#e4e5ea;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:12px"
-        oninput="_partSearch=this.value;render()">
+        oninput="_partSearch=this.value;dbRender(200)">
     </div>
 
     <div class="kpis">
@@ -329,24 +330,24 @@ function rPartLeads(el,tabs){
     {id:"lost",name:"Програно",clr:"#ef4444",icon:"❌"}
   ];
 
-  // Use real CRM_Leads if loaded, demo fallback
+  // Тільки реальні дані з листа CRM_Leads. Демо-даних немає: порожній стан = інструкція.
   const hasReal=typeof CRM_LEADS!=="undefined"&&CRM_LEADS.length>0;
-  const leads=hasReal?CRM_LEADS:[
-    {company:"Ресторан 'La Terrazza'",contact:"Марія Іванова",phone:"+380501234567",stage:"new",source:"Instagram",date:"2026-04-05",value:50000,notes:"Зацікавились Кара Кермен"},
-    {company:"Wine Bar Kyiv",contact:"Олексій Петров",phone:"+380671234567",stage:"contact",source:"Виставка",date:"2026-04-01",value:120000,notes:"Хочуть лінійку Artania"},
-    {company:"Мережа 'Сільпо'",contact:"Анна Коваленко",phone:"+380931234567",stage:"negotiate",source:"Холодний дзвінок",date:"2026-03-15",value:500000,notes:"Тестова поставка 3 SKU"},
-    {company:"Експорт Польща",contact:"Jan Kowalski",phone:"+48501234567",stage:"negotiate",source:"Email",date:"2026-03-20",value:800000,notes:"Loca Deserta + Kara Kermen"},
-    {company:"Готель Одеса",contact:"Ігор Шевченко",phone:"+380661234567",stage:"won",source:"Рекомендація",date:"2026-02-10",value:35000,notes:"Перше замовлення відправлено"},
-    {company:"Бар 'Дрова'",contact:"",phone:"",stage:"lost",source:"Instagram",date:"2026-01-20",value:20000,notes:"Обрали іншого постачальника"}
-  ];
-
+  const leads=hasReal?CRM_LEADS:[];
+  if(!hasReal){el.innerHTML=`${tabs}
+    <div class="cc"><h3>Ліди — воронка продажів</h3>
+      <div class="info">Лист <b>CRM_Leads</b> ще не створено або порожній. Щоб увімкнути воронку:</div>
+      <ol class="md-list" style="font-size:10.5px;line-height:1.6;color:#c9ccd8">
+        <li>У книзі ${BK_MAIN()} створити лист <b>CRM_Leads</b></li>
+        <li>Колонки: <code>company, contact, phone, email, stage, source, date, value, next, notes</code></li>
+        <li><code>stage</code> = new | contact | negotiate | won | lost; <code>date</code> = YYYY-MM-DD; <code>value</code> = очікувана сума ₴; <code>next</code> = наступна дія</li>
+        <li>Оновити сторінку дашборду</li>
+      </ol></div>`;return}
   const byStage={};stages.forEach(s=>{byStage[s.id]=leads.filter(l=>l.stage===s.id)});
   const totalValue=leads.filter(l=>l.stage!=="lost").reduce((s,l)=>s+l.value,0);
   const wonValue=leads.filter(l=>l.stage==="won").reduce((s,l)=>s+l.value,0);
   const needAction=leads.filter(l=>l.next&&l.stage!=="won"&&l.stage!=="lost");
 
   el.innerHTML=`${tabs}
-    ${!hasReal?'<div class="warn" style="border-color:rgba(245,158,11,.4)">Демо-дані. Створіть лист <b>CRM_Leads</b> в Google Sheets: company, contact, phone, stage (new/contact/negotiate/won/lost), source, date, value, next, notes</div>':""}
 
     <div class="kpis">
       <div class="kpi"><div class="l">Лідів</div><div class="v">${leads.length}</div></div>

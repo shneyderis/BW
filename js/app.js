@@ -6,15 +6,19 @@ const ACATS=["Обладнання виноробні","Обладнання в�
 const CHS=["Продаж, Мережі","Продаж, Horeca & Shops","Продаж, Експорт","Доход, ФОП","Продаж, Корп клієнт","Доход, каса БВ","Продаж,  Дістрібʼютор Укр","Продаж, Інтернет магазини","Продаж, на виноробні"];
 const CSH={"Продаж, Мережі":"Мережі","Продаж, Horeca & Shops":"HoReCa","Продаж, Експорт":"Експорт","Доход, ФОП":"ФОП","Продаж, Корп клієнт":"Корп","Доход, каса БВ":"Каса","Продаж,  Дістрібʼютор Укр":"Дистр","Продаж, Інтернет магазини":"Інет","Продаж, на виноробні":"Виноробня"};
 const CC=["#e11d48","#8b5cf6","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#6366f1","#a855f7"];
-const MN=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+const MN=["Січ","Лют","Бер","Кві","Тра","Чер","Лип","Сер","Вер","Жов","Лис","Гру"];
 const MMa=["01","02","03","04","05","06","07","08","09","10","11","12"];
 const COB={responsive:true,plugins:{legend:{labels:{color:"#7d8196",font:{size:9},boxWidth:9,padding:6}}},scales:{x:{ticks:{color:"#7d8196",font:{size:9}},grid:{color:"#1e2130"}},y:{ticks:{color:"#7d8196",font:{size:9},callback:v=>fm(v)},grid:{color:"#1e2130"}}}};
+const TAB_IDS=["balance","pl","sales","goods","exp","salary","shop","stock","cash","mkt","partners","uk","production","unrec","status","settings"];
+// Вкладки зі своїми фільтрами (глобальний filterbar ховається)
+const OWN_FILTER_TABS=["sales","partners","uk","production","goods","stock","mkt","settings","unrec","status","salary"];
 
 // ========== GLOBALS ==========
 let T=[],SK=[],SD=[],BL=[],WO=[],WP=[],WCU=[],GD=[],WN={},FX={EUR:44,USD:41},CH={},SETS={fopTax:7.5,fopBank:0,dispCur:"UAH"},SETTINGS=[];
 let wcLoaded=false,wcError="",SP={},IG={posts:[]},MA={campaigns:[]},mktLoaded=false,mktError="";
 let C1={sales:[],partners:[],products:[],osv:[],bank:[],staff:[],loaded:false};
 let USERS={}; // email → {name,role,tabs,phone,active}
+let LOAD_PHASE=0; // 0 — нічого, 1 — основні дані, 2 — усе
 
 // ========== HELPERS ==========
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -25,6 +29,14 @@ function net(t){
 }
 function isA(t){return ACATS.some(a=>t.cat.includes(a))}
 function sT(t){return(t.src==="2fMK"||t.src==="2fKiev")?"2Ф":"1Ф"}
+// Останній місяць (YYYY-MM), за який є операції у Dashboard_Data (доходи, якщо inc=true)
+function lastYM(inc){const l=inc?T.filter(t=>t.tp==="Доход"):T;return l.length?l.reduce((a,b)=>a.ym>b.ym?a:b).ym:""}
+// YYYY-MM ± n місяців
+function ymAdd(ym,n){const y=parseInt(ym.substring(0,4)),m=parseInt(ym.substring(5,7))-1+n;const d=new Date(y,m,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+// Опорна дата для боргів/простроки по 1С: остання дата банку або реалізацій (не сьогодні — дані можуть відставати)
+function c1RefDate(){const c=C1||{};let m="";(c.bank||[]).forEach(b=>{const d=typeof parseAnyDate==="function"?parseAnyDate(b.date):null;if(d&&d.getTime()<=Date.now()){const s=d.toISOString().substring(0,10);if(s>m)m=s}});const s2=maxD(c.sales||[],r=>r.date);if(s2>m)m=s2;return m?new Date(m).getTime():Date.now()}
+function c1RefISO(){return new Date(c1RefDate()).toISOString().substring(0,10)}
+function ymLabel(ym){if(!ym||ym.length<7)return ym||"";return MN[parseInt(ym.substring(5,7))-1]+" "+ym.substring(0,4)}
 
 // ========== LOAD ==========
 async function load(){
@@ -36,219 +48,121 @@ async function load(){
     SK=s;BL=b;SD=sd;
     console.log("BL loaded:",BL.length,"rows");
     const yrs=[...new Set(T.map(x=>x.yr))].filter(y=>y>="2020").sort();
-    const lastTxn=T.length?T.reduce((a,b)=>a.mo>b.mo?a:b).ym:"?";
-    const lastTxnDate=lastTxn!=="?"?new Date(lastTxn.substring(0,4)+"-"+lastTxn.substring(5,7)+"-28"):null;
-    const daysSince=lastTxnDate?Math.floor((Date.now()-lastTxnDate.getTime())/(1000*60*60*24)):null;
-    const daysStr=daysSince!==null?` · останнє оновлення: ${daysSince} днів тому`:"";
-    const daysClr=daysSince>30?"#ef4444":daysSince>7?"#f59e0b":"";
     document.getElementById("status").textContent="● Connected";document.getElementById("status").style.color="#10b981";
-    document.getElementById("subtitle").textContent=ff(T.length)+" опер · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+" · ⏳ WC...";
     document.getElementById("ld").classList.add("hidden");
+    LOAD_PHASE=1;setSubtitle("⏳ завантаження інших джерел…");
     bldFlt(yrs);render();
 
-    // Phase 2: WooCommerce — from Google Sheets only
-    try{
-      const[wcOrdSheet,wcProdSheet]=await Promise.all([csvF("WC_Orders").catch(()=>[]),csvF("WC_Products").catch(()=>[])]);
-      if(wcOrdSheet.length){
-        WO=wcOrdSheet.map(r=>{
-          return{
-            id:pn(gv(r,"id")),
-            status:gv(r,"status")||"",
-            date_created:gv(r,"date_created")||"",
-            total:gv(r,"total")||"0",
-            billing:{
-              first_name:gv(r,"billing_first_name")||"",
-              last_name:gv(r,"billing_last_name")||"",
-              email:gv(r,"billing_email")||"",
-              city:gv(r,"billing_city")||"",
-              country:gv(r,"billing_country")||"",
-              phone:gv(r,"billing_phone")||""
-            },
-            shipping:{city:gv(r,"shipping_city")||"",country:gv(r,"shipping_country")||""},
-            payment_method:gv(r,"payment_method")||"",
-            payment_method_title:gv(r,"payment_method_title")||"",
-            utm_source:gv(r,"utm_source")||"",
-            items_count:pn(gv(r,"items_count")),
-            line_items:[],meta_data:[]
-          }});
-        console.log("WC from Sheets:",WO.length,"orders");
-      }
-      if(wcProdSheet.length){
-        WP=wcProdSheet.map(r=>{
-          let cats=[];try{const c=gv(r,"categories")||r["categories"]||"";if(c)cats=JSON.parse(c)}catch(e){const c=gv(r,"categories")||r["categories"]||"";if(c)cats=c.split(",").map(n=>({name:n.trim()}))}
-          return{
-            id:pn(gv(r,"id")||r["id"]),
-            name:gv(r,"name")||r["name"]||"",
-            stock_status:gv(r,"stock_status")||r["stock_status"]||"instock",
-            stock_quantity:gv(r,"stock_quantity")||r["stock_quantity"]?pn(gv(r,"stock_quantity")||r["stock_quantity"]):null,
-            categories:cats
-          }});
-      }
-      wcLoaded=true;
-      console.log("WC from Sheets:",WO.length,"orders,",WP.length,"products");
-    }catch(e){wcError="Sheets: "+e.message;console.error("WC Sheets error:",e);wcLoaded=true}
-
-    // Phase 2b: FINAL_sales_detail — product-level sales
-    try{
-      const gd=await csvF("FINAL_sales_detail");
-      GD=gd.map(r=>{
-        const d=gv(r,"date")||"";
-        return{
-          date:d,yr:d.substring(0,4),mo:d.substring(0,7),
-          doc:gv(r,"document")||"",
-          cust:gv(r,"customer")||"",
-          wh:gv(r,"warehouse")||"",
-          prod:gv(r,"product")||"",
-          code:gv(r,"product code")||"",
-          qty:pn(gv(r,"quantity")),
-          price:pn(gv(r,"price")),
-          sum:pn(gv(r,"sum")),
-          vat:pn(gv(r,"vat"))
-        };
-      }).filter(r=>r.prod&&r.qty>0);
-      console.log("FINAL_sales_detail loaded:",GD.length,"rows");
-    }catch(e){console.warn("FINAL_sales_detail not loaded:",e.message)}
-
-    // Phase 2c: worker_new — customer aliases & channels
-    try{
-      // Try multiple possible sheet names
-      let wn=[];
-      for(const name of["workerNEW","worker_new","Worker_New","WorkerNew"]){
-        try{wn=await csvF(name,SID2);if(wn.length){console.log("worker_new found as '"+name+"':",wn.length,"rows");break}}catch(e){}
-      }
-      WN={};
-      if(wn.length){
-        const k0=Object.keys(wn[0]);
-        console.log("worker_new columns:",k0.join(", "));
-        console.log("worker_new row0:",JSON.stringify(wn[0]));
-        wn.forEach(r=>{
-          const cust=(r["F"]||gv(r,"f")||"").trim();
-          const alias=(r["ALIAS"]||gv(r,"alias")||"").trim();
-          const chan=(r["CATEGORY"]||gv(r,"category")||"").trim();
-          const geo=(r["GEO"]||gv(r,"geo")||"").trim();
-          const mgr=(r["Менеджер"]||gv(r,"менеджер")||"").trim();
-          const contact=(r["Контактное лицо"]||gv(r,"контактн")||"").trim();
-          const tel=(r["Tel"]||gv(r,"tel")||gv(r,"phone")||"").trim();
-          const edrpou=(r["EDRPOU"]||gv(r,"edrpou")||"").trim();
-          const discount=(r["ЗНИЖКА"]||gv(r,"знижка")||"").trim();
-          const commission=(r["Коміссія Фінальна"]||gv(r,"коміссія фін")||gv(r,"коміссія")||"").trim();
-          if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr,contact,tel,edrpou,discount,commission};
-        });
-        console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
-      } else {WN._err="Sheet empty or not found (tried: worker_new, Worker_New, WorkerNew, worker, Worker)"}
-    }catch(e){WN={};WN._err=e.message;console.warn("worker_new not loaded:",e.message)}
-
-    // Phase 2d: customer_channels — manual override mapping (Customer → Channel, Alias)
-    try{
-      const cc=await csvF("customer_channels");
-      if(cc.length){
-        window.CC_MAP={};
-        cc.forEach(r=>{
-          const cust=(gv(r,"customer")||gv(r,"клієнт")||gv(r,"name")||"").trim();
-          const chan=(gv(r,"channel")||gv(r,"канал")||"").trim();
-          const alias=(gv(r,"alias")||gv(r,"аліас")||"").trim();
-          if(cust&&chan)CC_MAP[cust]={channel:chan,alias:alias||cust};
-        });
-        console.log("customer_channels loaded:",Object.keys(CC_MAP).length,"mappings");
-      }
-    }catch(e){console.warn("customer_channels not found (optional):",e.message)}
-
-    // Phase 2e: CRM_Leads + CRM_Contacts (optional)
-    try{
-      const[leads,contacts]=await Promise.all([csvF("CRM_Leads").catch(()=>[]),csvF("CRM_Contacts").catch(()=>[])]);
-      window.CRM_LEADS=leads.map(r=>({
-        company:gv(r,"company")||gv(r,"компанія")||"",
-        contact:gv(r,"contact")||gv(r,"контакт")||"",
-        phone:gv(r,"phone")||gv(r,"телефон")||"",
-        email:gv(r,"email")||"",
-        stage:gv(r,"stage")||gv(r,"стадія")||gv(r,"status")||"new",
-        source:gv(r,"source")||gv(r,"джерело")||"",
-        date:gv(r,"date")||gv(r,"дата")||"",
-        value:pn(gv(r,"value")||gv(r,"сума")),
-        next:gv(r,"next")||gv(r,"next_action")||gv(r,"наступний")||"",
-        notes:gv(r,"notes")||gv(r,"нотатки")||gv(r,"коментар")||""
-      })).filter(r=>r.company);
-      window.CRM_CONTACTS=contacts.map(r=>({
-        partner:gv(r,"partner")||gv(r,"партнер")||"",
-        contact:gv(r,"contact")||gv(r,"контакт")||gv(r,"name")||"",
-        phone:gv(r,"phone")||gv(r,"телефон")||"",
-        email:gv(r,"email")||"",
-        position:gv(r,"position")||gv(r,"посада")||"",
-        notes:gv(r,"notes")||gv(r,"нотатки")||""
-      })).filter(r=>r.partner);
-      if(CRM_LEADS.length)console.log("CRM_Leads loaded:",CRM_LEADS.length);
-      if(CRM_CONTACTS.length)console.log("CRM_Contacts loaded:",CRM_CONTACTS.length);
-    }catch(e){}
-
-    // Phase 3: 1C Бухгалтерія (local CSV or Google Sheets)
-    try{
-      async function csv1C(name){try{const r=await fetch("data/1c_"+name+".csv");if(!r.ok)throw new Error(r.status);const t=await r.text();const rows=[];let c=[],q=false,f="";for(let i=0;i<t.length;i++){const x=t[i];if(q){if(x==='"'&&t[i+1]==='"'){f+='"';i++}else if(x==='"')q=false;else f+=x}else{if(x==='"')q=true;else if(x===','){c.push(f);f=""}else if(x==='\n'||(x==='\r'&&t[i+1]==='\n')){c.push(f);f="";rows.push(c);c=[];if(x==='\r')i++}else f+=x}}if(f||c.length){c.push(f);rows.push(c)}if(rows.length<2)return[];const h=rows[0].map(x=>x.trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{o[k]=r[i]!==undefined?r[i].trim():""});return o})}catch(e){return csvF(name,SID3).catch(()=>[])}}
-      const[sales1c,partners1c,products1c,osv1c,bank1c,staff1c]=await Promise.all([
-        csv1C("sales"),
-        csv1C("partners"),
-        csv1C("products"),
-        csv1C("osv"),
-        csv1C("bank"),
-        csv1C("staff")
-      ]);
-      function d2iso(d){if(!d)return"";const p=d.split(/[.\-\/]/);if(p.length>=3&&p[0].length<=2)return p[2].substring(0,4)+"-"+p[1]+"-"+p[0];return d.substring(0,10)}
-      C1.sales=(sales1c||[]).map(r=>({
-        date:d2iso(gv(r,"дата"))||"",
-        num:gv(r,"номер")||"",
-        type:gv(r,"вид")||"",
-        sum:pn(gv(r,"сумма")),
-        currency:gv(r,"валюта")||"грн",
-        partner:gv(r,"контрагент")||"",
-        warehouse:gv(r,"склад")||"",
-        org:gv(r,"организация")||"",
-        manager:gv(r,"ответственный")||"",
-        comment:gv(r,"комментарий")||""
-      })).filter(r=>r.sum>0);
-      C1.partners=(partners1c||[]).map(r=>({
-        name:gv(r,"наименование")||"",
-        code:gv(r,"код")||"",
-        fullname:gv(r,"полное")||"",
-        type:gv(r,"вид")||"",
-        edrpou:gv(r,"код по едрпоу")||gv(r,"едрпоу")||r["Код по ЕДРПОУ"]||"",
-        tax:gv(r,"схема")||""
-      }));
-      C1.products=(products1c||[]).map(r=>({
-        name:gv(r,"наименование")||"",
-        code:gv(r,"код")||"",
-        sku:gv(r,"артикул")||"",
-        unit:gv(r,"ед")||"",
-        vat:gv(r,"ндс")||"",
-        comment:gv(r,"комментарий")||""
-      }));
-      C1.osv=(osv1c||[]).map(r=>{const v=Object.values(r);return{
-        account:v[0]||"",saldoStartDt:pn(v[1]),saldoStartKt:pn(v[2]),turnDt:pn(v[3]),turnKt:pn(v[4]),saldoEndDt:pn(v[5]),saldoEndKt:pn(v[6])
-      }}).filter(r=>r.account);
-      C1.bank=(bank1c||[]).map(r=>({
-        date:gv(r,"дата")||"",
-        income:pn(gv(r,"поступление")),
-        expense:pn(gv(r,"списание")),
-        purpose:gv(r,"назначение")||"",
-        partner:gv(r,"контрагент")||"",
-        type:gv(r,"вид")||"",
-        org:gv(r,"организация")||"",
-        account:gv(r,"банковский")||""
-      }));
-      C1.staff=(staff1c||[]).map(r=>({
-        code:gv(r,"код")||"",name:gv(r,"фио")||gv(r,"піб")||"",
-        active:gv(r,"актуален")||"",archived:gv(r,"в архиве")||gv(r,"в архів")||""
-      }));
-      C1.loaded=true;
-      console.log("1C loaded: sales",C1.sales.length,", partners",C1.partners.length,", staff",C1.staff.length);
-    }catch(e){console.warn("1C load failed:",e)}
-
-    const warns=[];
-    if(!WO.length)warns.push("WC_Orders порожній");
-    if(!BL.length)warns.push("Баланси не завантажені");
-    const subEl=document.getElementById("subtitle");
-    subEl.innerHTML=ff(T.length)+" опер · "+WO.length+" WC · до "+lastTxn+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)+(daysStr?` · <span style="${daysClr?"color:"+daysClr:""}">${daysStr.trim().substring(3)}</span>`:"")+(warns.length?' · <span style="color:#f59e0b">⚠ '+warns.join(", ")+'</span>':"")+(wcError?' · <span style="color:#ef4444">'+wcError+'</span>':"");
+    // Phase 2: усі інші джерела паралельно (кожне — незалежно, помилки не блокують інші)
+    await Promise.all([
+      loadWC(),loadGD(),loadWN(),loadCC(),loadCRM(),load1C(),
+      (typeof loadLots==="function"?loadLots():Promise.resolve()),
+      (typeof loadUK==="function"?loadUK():Promise.resolve()),
+      (typeof loadMkt==="function"?loadMkt():Promise.resolve()),
+      (typeof loadPayroll==="function"?loadPayroll():Promise.resolve()),
+      loadSyncLog(),loadManifest()
+    ].map(p=>p.catch(e=>console.warn("phase2:",e))));
+    LOAD_PHASE=2;
+    try{healthCompute()}catch(e){console.error("healthCompute:",e)}
+    setSubtitle("");healthUpdateChip();
     render();
-  }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>'}
+  }catch(e){document.getElementById("status").textContent="● Err";document.getElementById("status").style.color="#ef4444";document.getElementById("ld").innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">'+e.message+'</p>';console.error(e)}
 }
+
+function setSubtitle(extra){
+  const last=lastYM(false);const ago=last&&typeof agoStr==="function"?agoStr(last):"";
+  const dClr=(()=>{const n=last&&typeof daysSince==="function"?daysSince(last):null;return n===null?"":n>75?"#ef4444":n>40?"#f59e0b":""})();
+  const warns=[];if(LOAD_PHASE>=2){if(!WO.length)warns.push("WC_Orders порожній");if(!BL.length)warns.push("баланси не завантажені")}
+  document.getElementById("subtitle").innerHTML=ff(T.length)+" опер"+(WO.length?" · "+WO.length+" WC":"")+" · виписки до <b style=\""+(dClr?"color:"+dClr:"")+"\">"+(last||"?")+"</b>"+(ago?" ("+ago+")":"")+" · €"+FX.EUR.toFixed(2)+" $"+FX.USD.toFixed(2)
+    +(warns.length?' · <span style="color:#f59e0b">⚠ '+warns.join(", ")+'</span>':"")+(wcError?' · <span style="color:#ef4444">'+esc(wcError)+'</span>':"")+(extra?" · "+extra:"")
+    +(DATA_SRC?' · <span style="color:#8b5cf6">джерело: '+esc(DATA_SRC)+'</span>':"");
+}
+
+// ---- Phase 2 loaders ----
+async function loadWC(){
+  try{
+    const[wcOrdSheet,wcProdSheet]=await Promise.all([csvF("WC_Orders").catch(()=>[]),csvF("WC_Products").catch(()=>[])]);
+    if(wcOrdSheet.length){
+      WO=wcOrdSheet.map(r=>({
+        id:pn(gv(r,"id")),status:gv(r,"status")||"",date_created:gv(r,"date_created")||"",total:gv(r,"total")||"0",
+        billing:{first_name:gv(r,"billing_first_name")||"",last_name:gv(r,"billing_last_name")||"",email:gv(r,"billing_email")||"",city:gv(r,"billing_city")||"",country:gv(r,"billing_country")||"",phone:gv(r,"billing_phone")||""},
+        shipping:{city:gv(r,"shipping_city")||"",country:gv(r,"shipping_country")||""},
+        payment_method:gv(r,"payment_method")||"",payment_method_title:gv(r,"payment_method_title")||"",
+        utm_source:gv(r,"utm_source")||"",items_count:pn(gv(r,"items_count")),items_detail:gv(r,"items_detail")||"",
+        line_items:[],meta_data:[]}));
+      console.log("WC from Sheets:",WO.length,"orders");
+    }
+    if(wcProdSheet.length){
+      WP=wcProdSheet.map(r=>{
+        let cats=[];try{const c=gv(r,"categories")||r["categories"]||"";if(c)cats=JSON.parse(c)}catch(e){const c=gv(r,"categories")||r["categories"]||"";if(c)cats=c.split(",").map(n=>({name:n.trim()}))}
+        return{id:pn(gv(r,"id")||r["id"]),name:gv(r,"name")||r["name"]||"",stock_status:gv(r,"stock_status")||r["stock_status"]||"instock",
+          stock_quantity:gv(r,"stock_quantity")||r["stock_quantity"]?pn(gv(r,"stock_quantity")||r["stock_quantity"]):null,categories:cats}});
+    }
+    wcLoaded=true;
+  }catch(e){wcError="Sheets: "+e.message;console.error("WC Sheets error:",e);wcLoaded=true}
+}
+async function loadGD(){
+  try{
+    const gd=await csvF("FINAL_sales_detail");
+    GD=gd.map(r=>{const d=gv(r,"date")||"";return{date:d,yr:d.substring(0,4),mo:d.substring(0,7),doc:gv(r,"document")||"",cust:gv(r,"customer")||"",wh:gv(r,"warehouse")||"",prod:gv(r,"product")||"",code:gv(r,"product code")||"",qty:pn(gv(r,"quantity")),price:pn(gv(r,"price")),sum:pn(gv(r,"sum")),vat:pn(gv(r,"vat"))}}).filter(r=>r.prod&&r.qty>0);
+    console.log("FINAL_sales_detail loaded:",GD.length,"rows");
+  }catch(e){console.warn("FINAL_sales_detail not loaded:",e.message)}
+}
+async function loadWN(){
+  try{
+    let wn=[];
+    for(const name of["workerNEW","worker_new","Worker_New","WorkerNew"]){try{wn=await csvF(name,SID2);if(wn.length){console.log("worker_new found as '"+name+"':",wn.length,"rows");break}}catch(e){}}
+    WN={};
+    if(wn.length){
+      wn.forEach(r=>{
+        const cust=(r["F"]||gv(r,"f")||"").trim();
+        const alias=(r["ALIAS"]||gv(r,"alias")||"").trim();
+        const chan=(r["CATEGORY"]||gv(r,"category")||"").trim();
+        const geo=(r["GEO"]||gv(r,"geo")||"").trim();
+        const mgr=(r["Менеджер"]||gv(r,"менеджер")||"").trim();
+        const contact=(r["Контактное лицо"]||gv(r,"контактн")||"").trim();
+        const tel=(r["Tel"]||gv(r,"tel")||gv(r,"phone")||"").trim();
+        const edrpou=(r["EDRPOU"]||gv(r,"edrpou")||"").trim();
+        const discount=(r["ЗНИЖКА"]||gv(r,"знижка")||"").trim();
+        const commission=(r["Коміссія Фінальна"]||gv(r,"коміссія фін")||gv(r,"коміссія")||gv(r,"комісія")||"").trim();
+        if(cust)WN[cust]={alias:alias||cust,channel:chan,geo,mgr,contact,tel,edrpou,discount,commission};
+      });
+      console.log("worker_new loaded:",Object.keys(WN).length,"mappings");
+    } else {WN._err="Sheet empty or not found"}
+  }catch(e){WN={};WN._err=e.message;console.warn("worker_new not loaded:",e.message)}
+}
+async function loadCC(){
+  try{
+    const cc=await csvF("customer_channels");
+    if(cc.length){window.CC_MAP={};cc.forEach(r=>{const cust=(gv(r,"customer")||gv(r,"клієнт")||gv(r,"name")||"").trim();const chan=(gv(r,"channel")||gv(r,"канал")||"").trim();const alias=(gv(r,"alias")||gv(r,"аліас")||"").trim();if(cust&&chan)CC_MAP[cust]={channel:chan,alias:alias||cust}});console.log("customer_channels loaded:",Object.keys(CC_MAP).length)}
+  }catch(e){console.warn("customer_channels not found (optional):",e.message)}
+}
+async function loadCRM(){
+  try{
+    const[leads,contacts]=await Promise.all([csvF("CRM_Leads").catch(()=>[]),csvF("CRM_Contacts").catch(()=>[])]);
+    window.CRM_LEADS=leads.map(r=>({company:gv(r,"company")||gv(r,"компанія")||"",contact:gv(r,"contact")||gv(r,"контакт")||"",phone:gv(r,"phone")||gv(r,"телефон")||"",email:gv(r,"email")||"",stage:gv(r,"stage")||gv(r,"стадія")||gv(r,"status")||"new",source:gv(r,"source")||gv(r,"джерело")||"",date:gv(r,"date")||gv(r,"дата")||"",value:pn(gv(r,"value")||gv(r,"сума")),next:gv(r,"next")||gv(r,"next_action")||gv(r,"наступний")||"",notes:gv(r,"notes")||gv(r,"нотатки")||gv(r,"коментар")||""})).filter(r=>r.company);
+    window.CRM_CONTACTS=contacts.map(r=>({partner:gv(r,"partner")||gv(r,"партнер")||"",contact:gv(r,"contact")||gv(r,"контакт")||gv(r,"name")||"",phone:gv(r,"phone")||gv(r,"телефон")||"",email:gv(r,"email")||"",position:gv(r,"position")||gv(r,"посада")||"",notes:gv(r,"notes")||gv(r,"нотатки")||""})).filter(r=>r.partner);
+    if(CRM_LEADS.length)console.log("CRM_Leads loaded:",CRM_LEADS.length);
+  }catch(e){window.CRM_LEADS=window.CRM_LEADS||[];window.CRM_CONTACTS=window.CRM_CONTACTS||[]}
+}
+// 1С: локальні CSV з data/ (якщо є), інакше — книга beykush_data (SID3)
+async function csv1C(name){const d=await csvLocal("data/1c_"+name+".csv");if(d.length)return d;return csvF(name,SID3).catch(()=>[])}
+function d2iso(d){if(!d)return"";const p=d.split(/[.\-\/]/);if(p.length>=3&&p[0].length<=2)return p[2].substring(0,4)+"-"+p[1]+"-"+p[0];return d.substring(0,10)}
+async function load1C(){
+  try{
+    const[sales1c,partners1c,products1c,osv1c,bank1c,staff1c]=await Promise.all([csv1C("sales"),csv1C("partners"),csv1C("products"),csv1C("osv"),csv1C("bank"),csv1C("staff")]);
+    C1.sales=(sales1c||[]).map(r=>({date:d2iso(gv(r,"дата"))||"",num:gv(r,"номер")||"",type:gv(r,"вид")||"",sum:pn(gv(r,"сумма")),currency:gv(r,"валюта")||"грн",partner:gv(r,"контрагент")||"",warehouse:gv(r,"склад")||"",org:gv(r,"организация")||"",manager:gv(r,"ответственный")||"",comment:gv(r,"комментарий")||""})).filter(r=>r.sum>0);
+    C1.partners=(partners1c||[]).map(r=>({name:gv(r,"наименование")||"",code:gv(r,"код")||"",fullname:gv(r,"полное")||"",type:gv(r,"вид")||"",edrpou:gv(r,"код по едрпоу")||gv(r,"едрпоу")||r["Код по ЕДРПОУ"]||"",tax:gv(r,"схема")||""}));
+    C1.products=(products1c||[]).map(r=>({name:gv(r,"наименование")||"",code:gv(r,"код")||"",sku:gv(r,"артикул")||"",unit:gv(r,"ед")||"",vat:gv(r,"ндс")||"",comment:gv(r,"комментарий")||""}));
+    C1.osv=(osv1c||[]).map(r=>{const v=Object.values(r);return{account:v[0]||"",saldoStartDt:pn(v[1]),saldoStartKt:pn(v[2]),turnDt:pn(v[3]),turnKt:pn(v[4]),saldoEndDt:pn(v[5]),saldoEndKt:pn(v[6])}}).filter(r=>r.account);
+    C1.bank=(bank1c||[]).map(r=>({date:gv(r,"дата")||"",income:pn(gv(r,"поступление")),expense:pn(gv(r,"списание")),purpose:gv(r,"назначение")||"",partner:gv(r,"контрагент")||"",type:gv(r,"вид")||"",org:gv(r,"организация")||"",account:gv(r,"банковский")||""}));
+    C1.staff=(staff1c||[]).map(r=>({code:gv(r,"код")||"",name:gv(r,"фио")||gv(r,"піб")||"",active:gv(r,"актуален")||"",archived:gv(r,"в архиве")||gv(r,"в архів")||""}));
+    C1.loaded=true;
+    console.log("1C loaded: sales",C1.sales.length,", partners",C1.partners.length,", staff",C1.staff.length);
+  }catch(e){C1.loaded=true;console.warn("1C load failed:",e)}
+}
+async function loadSyncLog(){try{const rows=await csvF("Sync_Log").catch(()=>[]);healthParseSyncLog(rows);if(SYNC_LOG.length)console.log("Sync_Log:",SYNC_LOG.length,"rows")}catch(e){}}
+async function loadManifest(){try{const r=await fetch("data/manifest.json",{cache:"no-store"});if(r.ok)MANIFEST=await r.json()}catch(e){MANIFEST=null}}
 
 // ========== FILTERS ==========
 function bldFlt(yrs){
@@ -258,7 +172,7 @@ function bldFlt(yrs){
   const mgrs=[...new Set(T.filter(t=>t.mgr&&t.mgr!=="-"&&t.mgr!=="="&&t.mgr.trim()).map(t=>t.mgr))].sort();
   fb.innerHTML=`
     <select class="flt" id="fY"><option value="ALL">Всі роки</option>${yrs.map(y=>'<option>'+y+'</option>').join("")}</select>
-    <select class="flt" id="fM"><option value="ALL">Всі міс</option>${["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>'<option>'+m+'</option>').join("")}</select>
+    <select class="flt" id="fM"><option value="ALL">Всі міс</option>${MMa.map((m,i)=>'<option value="'+m+'">'+MN[i]+'</option>').join("")}</select>
     <select class="flt" id="fS"><option value="ALL">1Ф+2Ф</option><option>1Ф</option><option>2Ф</option></select>
     <select class="flt" id="fC"><option value="ALL">Всі канали</option>${chs.map(c=>'<option value="'+c+'">'+(c.length>22?c.substring(0,22)+"…":c)+'</option>').join("")}</select>
     <select class="flt" id="fG"><option value="ALL">Все гео</option>${geos.map(g=>'<option>'+g+'</option>').join("")}</select>
@@ -268,7 +182,9 @@ function bldFlt(yrs){
 }
 function gF(){return{yr:document.getElementById("fY")?.value||"ALL",mm:document.getElementById("fM")?.value||"ALL",src:document.getElementById("fS")?.value||"ALL",chan:document.getElementById("fC")?.value||"ALL",geo:document.getElementById("fG")?.value||"ALL",mgr:document.getElementById("fMgr")?.value||"ALL"}}
 function fl(list,f,tp){let r=list;if(f.yr!=="ALL")r=r.filter(t=>t.yr===f.yr);if(f.mm!=="ALL")r=r.filter(t=>t.mm===f.mm);if(f.src!=="ALL")r=r.filter(t=>t.st===f.src);if(f.chan!=="ALL")r=r.filter(t=>t.cat===f.chan);if(f.geo!=="ALL")r=r.filter(t=>t.geo===f.geo);if(f.mgr!=="ALL")r=r.filter(t=>t.mgr===f.mgr);if(tp)r=r.filter(t=>t.tp===tp);return r}
-function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');['balance','pl','sales','goods','exp','salary','shop','stock','cash','mkt','partners','uk','production','unrec','settings'].forEach(t=>document.getElementById('t-'+t).classList.add('hidden'));document.getElementById('t-'+id).classList.remove('hidden');render()}
+function sw(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));if(btn)btn.classList.add('on');TAB_IDS.forEach(t=>{const el=document.getElementById('t-'+t);if(el)el.classList.add('hidden')});const target=document.getElementById('t-'+id);if(target)target.classList.remove('hidden');window.scrollTo(0,0);render()}
+// Перейти на вкладку за id (з задач, довідки, чіпа в хедері)
+window.goTab=function(id){const b=document.querySelector(`.tab[onclick*="'${id}'"]`);if(b&&!b.classList.contains("hidden"))sw(id,b)};
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
 function aY(){return[...new Set(T.map(x=>x.yr))].sort()}
 function sY(f){return f.yr!=="ALL"?f.yr:aY().pop()||String(new Date().getFullYear())}
@@ -276,7 +192,16 @@ function pYr(y){return String(parseInt(y)-1)}
 function mxMM(y){const ms=T.filter(t=>t.yr===y).map(t=>parseInt(t.mm));return ms.length?Math.max(...ms):12}
 
 // ========== RENDER ==========
-function render(){const f=gF();const salesOn=!document.getElementById("t-sales").classList.contains("hidden");const partnersOn=!document.getElementById("t-partners").classList.contains("hidden");const ukOn=!document.getElementById("t-uk").classList.contains("hidden");document.getElementById("filterbar").classList.toggle("hidden",salesOn||partnersOn||ukOn||!document.getElementById("t-production").classList.contains("hidden")||!document.getElementById("t-goods").classList.contains("hidden")||!document.getElementById("t-stock").classList.contains("hidden")||!document.getElementById("t-mkt").classList.contains("hidden")||!document.getElementById("t-settings").classList.contains("hidden")||!document.getElementById("t-unrec").classList.contains("hidden"));[()=>rBalance(),()=>rPL(f),()=>rSales(f),()=>rGoods(),()=>rExp(f),()=>rSalary(f),()=>rShop(f),()=>rStock(),()=>rCash(f),()=>rMkt(),()=>rPartners(),()=>rUK(),()=>rProduction(),()=>rUnrec(),()=>rSettings()].forEach(fn=>{try{fn()}catch(e){console.error("Render error:",e)}})}
+const RENDERERS={balance:()=>rBalance(),pl:f=>rPL(f),sales:f=>rSales(f),goods:()=>rGoods(),exp:f=>rExp(f),salary:f=>rSalary(f),shop:f=>rShop(f),stock:()=>rStock(),cash:f=>rCash(f),mkt:()=>rMkt(),partners:()=>rPartners(),uk:()=>rUK(),production:()=>rProduction(),unrec:()=>rUnrec(),status:()=>rStatus(),settings:()=>rSettings()};
+// Рендеримо ТІЛЬКИ активну вкладку (швидко) і зберігаємо фокус/курсор у полі вводу, якщо він був
+function render(){
+  const f=gF();const id=activeTabId();
+  document.getElementById("filterbar").classList.toggle("hidden",OWN_FILTER_TABS.includes(id));
+  const ae=document.activeElement;const keep=ae&&ae.id&&(ae.tagName==="INPUT"||ae.tagName==="SELECT")&&document.getElementById("t-"+id)?.contains(ae)?{id:ae.id,s:ae.selectionStart,e:ae.selectionEnd}:null;
+  const fn=RENDERERS[id];if(fn){try{fn(f)}catch(e){console.error("Render error ["+id+"]:",e);const el=document.getElementById("t-"+id);if(el&&!el.innerHTML)el.innerHTML='<div class="warn">Помилка відображення: '+esc(e.message)+'</div>'}}
+  if(keep){const el2=document.getElementById(keep.id);if(el2){el2.focus();try{if(keep.s!==null&&keep.s!==undefined&&el2.setSelectionRange)el2.setSelectionRange(keep.s,keep.e)}catch(e){}}}
+}
+let _dbT=null;function dbRender(ms){clearTimeout(_dbT);_dbT=setTimeout(render,ms||150)}
 // load() is called by showApp() after auth
 
 // ========== MODALS ==========
@@ -306,3 +231,4 @@ window.showContr=function(n){
 };
 window.closeModal=function(){document.getElementById("modal").classList.add("hidden")};
 document.getElementById("modal").onclick=function(e){if(e.target===this)closeModal()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});

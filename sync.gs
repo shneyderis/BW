@@ -1,23 +1,44 @@
 /**
- * Beykush Winery — Data Sync to Google Sheets v4
- * SendPulse + WooCommerce + Meta/Instagram + Facebook
+ * Beykush Winery — Data Sync to Google Sheets v5
+ * SendPulse + WooCommerce + Meta/Instagram + Facebook + Metorik UK
+ * Ключі — ТІЛЬКИ у Script Properties (див. нижче), не в коді: репозиторій публічний.
+ * Журнал запусків — лист Sync_Log (source, result, timestamp); його читає дашборд (📋 Статус).
  */
 
+// ============================================================
+// СЕКРЕТИ: Apps Script → Project Settings (⚙) → Script Properties → Add property
+// Обовʼязкові: SP_APIKEY, WC_KEY, WC_SECRET, META_TOKEN, METORIK_UK_TOKEN
+// Необовʼязкові (є значення за замовчуванням): META_PAGE_TOKEN, SPREADSHEET_ID, IG_ACCOUNT_ID, META_PAGE_ID, META_AD_ACCOUNT_ID
+// Перевірка: Run → checkConfig → View → Logs
+// ============================================================
+function prop_(key, fallback) {
+  const v = PropertiesService.getScriptProperties().getProperty(key);
+  if (v !== null && v !== '') return v;
+  if (fallback !== undefined) return fallback;
+  throw new Error('Script Property "' + key + '" не задано: Project Settings → Script Properties');
+}
 const CONFIG = {
-  SP_APIKEY: 'sp_apikey_d946cffb25603f31e60a035793c33da83a21328418b2d5d63a4bb5056022a70c',
+  get SP_APIKEY() { return prop_('SP_APIKEY'); },
   SP_BASE: 'https://api.sendpulse.com',
   WC_BASE: 'https://beykush.com/wp-json/wc/v3',
-  WC_KEY: 'ck_5b87215529858139d17b602945170ae4d9c8adbd',
-  WC_SECRET: 'cs_3ad054a505185162e849a92bf019979e6c037c93',
-  SPREADSHEET_ID: '1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ',
-  META_TOKEN: 'EAAoOzvxe9CgBRH4dIlKSAZCy6tWZBxRFYLaaY2mKVNgCaKNXQnTdHEDuIbS5jcMdlUixBPpvB2Jp3SbAO3nfdOwwxBpY4kjH5LVsWnSQE0mr6zWMPE01Pgl4W0KQEeZAV702zSZAr4JlJUHkTaIgkKSCUOaYigYfMFfOjZA8sZArmUajsyB6wbSaopQ06Sm0rnjAZDZD', // System User token (безстроковий) v3 with Page access
-  IG_ACCOUNT_ID: '17841400059003944',
-  META_PAGE_ID: '160594843975804',
-  META_PAGE_TOKEN: 'EAAoOzvxe9CgBRFCSgm1rq5MRWKL5YhVVx8ZCZAoYvkAc1GX4xJjnDyvrVBLjbliSAqWgZBU1ni90hqKRMFZCH4YWpdFcxY2n0nf11Lh7u1SR5PTSSSsgmlrFdC722nIZBVjALAmNc5ORRw3rvZBMUqVfsXASQyXy4LZBRZC2ogm3ZCIgJXQGSc8auXZBQZBvQpQp1tULBOHQIkZD', // Page token for FB Posts
-  META_AD_ACCOUNT_ID: 'act_2205073692870663',
-  METORIK_UK_TOKEN: 'mtk_8yjvfwcu0gjhkn0z53wpliv6el0jfc1a7gvm5d8z6icvqvao',
+  get WC_KEY() { return prop_('WC_KEY'); },
+  get WC_SECRET() { return prop_('WC_SECRET'); },
+  get SPREADSHEET_ID() { return prop_('SPREADSHEET_ID', '1K52LGIjxaQg1LfmjdVKXA0-wMh0MVUo16q-Z6BiNOsQ'); },
+  get META_TOKEN() { return prop_('META_TOKEN'); },                 // System User token (безстроковий)
+  get IG_ACCOUNT_ID() { return prop_('IG_ACCOUNT_ID', '17841400059003944'); },
+  get META_PAGE_ID() { return prop_('META_PAGE_ID', '160594843975804'); },
+  get META_PAGE_TOKEN() { return prop_('META_PAGE_TOKEN', ''); },   // Page token для FB Posts (порожньо → META_TOKEN)
+  get META_AD_ACCOUNT_ID() { return prop_('META_AD_ACCOUNT_ID', 'act_2205073692870663'); },
+  get METORIK_UK_TOKEN() { return prop_('METORIK_UK_TOKEN'); },
   METORIK_UK_BASE: 'https://app.metorik.com/api/v1',
 };
+
+// Одноразово після вставки коду: перевірити, що всі ключі задані
+function checkConfig() {
+  ['SP_APIKEY', 'WC_KEY', 'WC_SECRET', 'META_TOKEN', 'METORIK_UK_TOKEN'].forEach(function (k) {
+    try { prop_(k); Logger.log(k + ': OK'); } catch (e) { Logger.log(k + ': ВІДСУТНІЙ — ' + e.message); }
+  });
+}
 
 // ============================================================
 // MAIN SYNC FUNCTIONS

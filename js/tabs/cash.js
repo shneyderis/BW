@@ -13,7 +13,7 @@ function rCash(f){
   let cum=0;const cumData=netto.map(n=>{cum+=n;return cum});
   const lastD={};T.forEach(t=>{if(!lastD[t.src]||t.ym>lastD[t.src])lastD[t.src]=t.ym});
   el.innerHTML=`
-    ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — рухи по рахунках",maxD(T,t=>t.ym)),BL.length?srcP(BK_ACC()+" → PRIVAT_BALANCES — поточні залишки"):""])}
+    ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — рухи по рахунках",maxD(T,t=>t.ym),"dd"),BL.length?srcP(BK_ACC()+" → PRIVAT_BALANCES — поточні залишки",maxD(BL,b=>gv(b,"dpd")),"bal"):""])}
     <div class="kpis">
       <div class="kpi"><div class="l">Всього ₴</div><div class="v" style="color:#f59e0b">${ff(totalB)} ₴</div></div>
       <div class="kpi"><div class="l">Всього €</div><div class="v" style="color:#3b82f6">${ff(totalEUR)} €</div></div>

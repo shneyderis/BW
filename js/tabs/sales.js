@@ -23,14 +23,18 @@ function rSales(f){
   const yrData=allInc.filter(t=>t.yr===_s.year);
   const py=String(parseInt(_s.year)-1);
 
-  // Period filter
-  const now=new Date();const curMM=String(now.getMonth()+1).padStart(2,"0");const curYM=_s.year+"-"+curMM;
-  const prevMonth=now.getMonth()===0?12:now.getMonth();const prevMM=String(prevMonth).padStart(2,"0");const prevYM=prevMonth===12?String(parseInt(_s.year)-1)+"-12":_s.year+"-"+prevMM;
+  // Period filter — прив'язаний до ОСТАННЬОГО місяця з даними за вибраний рік (не до календарного)
+  const lastYm=yrData.length?yrData.reduce((a,b)=>a.ym>b.ym?a:b).ym:_s.year+"-01";
+  const mData=ym=>allInc.filter(t=>t.ym===ym);
+  const qOf=ym=>Math.floor((parseInt(ym.substring(5,7))-1)/3); // 0..3
+  const qData=(yr,q)=>allInc.filter(t=>t.yr===yr&&qOf(t.ym)===q);
   let pdCur,pdPrev,periodLabel;
-  if(_s.period==="month"){pdCur=yrData.filter(t=>t.mm===curMM);pdPrev=yrData.filter(t=>t.mm===prevMM);periodLabel=MN[parseInt(curMM)-1]+" "+_s.year}
-  else if(_s.period==="prev"){pdCur=yrData.filter(t=>t.mm===prevMM);pdPrev=yrData.filter(t=>t.mm===String(Math.max(1,parseInt(prevMM)-1)).padStart(2,"0"));periodLabel=MN[parseInt(prevMM)-1]+" "+_s.year}
-  else if(_s.period==="quarter"){const q=Math.floor((now.getMonth())/3)*3;const qms=[q+1,q+2,q+3].map(m=>String(m).padStart(2,"0"));pdCur=yrData.filter(t=>qms.includes(t.mm));const pqms=[q-2,q-1,q].filter(m=>m>0).map(m=>String(m).padStart(2,"0"));pdPrev=yrData.filter(t=>pqms.includes(t.mm));periodLabel="Q"+Math.ceil((q+1)/3)+" "+_s.year}
+  if(_s.period==="month"){pdCur=mData(lastYm);pdPrev=mData(ymAdd(lastYm,-1));periodLabel=ymLabel(lastYm)}
+  else if(_s.period==="prev"){const p1=ymAdd(lastYm,-1);pdCur=mData(p1);pdPrev=mData(ymAdd(lastYm,-2));periodLabel=ymLabel(p1)}
+  else if(_s.period==="quarter"){const q=qOf(lastYm);pdCur=qData(_s.year,q);pdPrev=q>0?qData(_s.year,q-1):qData(py,3);periodLabel="Q"+(q+1)+" "+_s.year}
   else{pdCur=yrData;pdPrev=allInc.filter(t=>t.yr===py);periodLabel=_s.year}
+  const calYm=new Date().toISOString().substring(0,7);
+  const lagNote=lastYm<calYm?`<span style="color:#f59e0b;font-size:9px;margin-left:6px">останній місяць з даними: ${ymLabel(lastYm)}</span>`:"";
 
   // Channel filter for chart
   const chartData=_s.chan?yrData.filter(t=>getChan(t.cat)===_s.chan):yrData;
@@ -64,7 +68,7 @@ function rSales(f){
   const clr=_s.chan?CHAN_CLR[_s.chan]||"#10b981":"#10b981";
 
   el.innerHTML=`
-    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data — банківські виписки, доходи",maxD(allInc,t=>t.ym)))}
+    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data — банківські виписки, доходи",maxD(allInc,t=>t.ym),"dd"))}
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <select class="flt" id="sY">${yrs.map(y=>`<option ${y===_s.year?"selected":""}>${y}</option>`).join("")}</select>
       ${CHAN_ORDER.filter(ch=>{const d=allInc.filter(t=>t.yr===_s.year&&getChan(t.cat)===ch);return d.length>0}).map(ch=>`<button class="flt" style="${_s.chan===ch?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_s.chan=${_s.chan===ch?"null":"'"+ch+"'"};render()">${ch}</button>`).join("")}
@@ -77,7 +81,7 @@ function rSales(f){
     </div>
 
     <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">
-      ${["month","prev","quarter","year"].map(p=>`<button class="flt" style="${_s.period===p?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_s.period='${p}';render()">${p==="month"?"Поточний міс.":p==="prev"?"Минулий міс.":p==="quarter"?"Квартал":"Рік"}</button>`).join("")}
+      ${["month","prev","quarter","year"].map(p=>`<button class="flt" style="${_s.period===p?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="_s.period='${p}';render()">${p==="month"?"Останній міс.":p==="prev"?"Попередній міс.":p==="quarter"?"Квартал":"Рік"}</button>`).join("")}${lagNote}
     </div>
 
     <div class="kpis" style="margin-bottom:8px">
@@ -138,7 +142,7 @@ function rSalesPartner(el,c$,allInc,back){
   const txs=[...yData].sort((a,b)=>b.mo.localeCompare(a.mo)).slice(0,100);
 
   el.innerHTML=`${back}
-    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data",maxD(pData,t=>t.ym)))}
+    ${srcN(srcP(BK_MAIN()+" → лист Dashboard_Data",maxD(pData,t=>t.ym),"dd"))}
     <div class="kpis"><div class="kpi"><div class="l">${esc(p)}</div><div class="v g">${ff(total)}${c$}</div><div class="s">${info?.edrpou||""} ${_s.year} · ${yData.length} опер</div></div></div>
     <div class="cc"><h3>Продажі по місяцях</h3><canvas id="sPartCh" height="100"></canvas></div>
     <div class="row">

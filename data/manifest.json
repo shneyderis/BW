@@ -1,0 +1,52 @@
+{
+ "generated": "2026-09-29",
+ "files": {
+  "data/1c_assets.csv": {
+   "exported": "2026-04-07",
+   "rows": 116
+  },
+  "data/1c_bank.csv": {
+   "exported": "2026-04-07",
+   "rows": 4781,
+   "max_date": "2026-03-31"
+  },
+  "data/1c_contracts.csv": {
+   "exported": "2026-04-07",
+   "rows": 1519,
+   "max_date": "2026-02-20"
+  },
+  "data/1c_orgs.csv": {
+   "exported": "2026-04-07",
+   "rows": 4
+  },
+  "data/1c_osv.csv": {
+   "exported": "2026-04-07",
+   "rows": 14
+  },
+  "data/1c_partners.csv": {
+   "exported": "2026-04-07",
+   "rows": 670
+  },
+  "data/1c_products.csv": {
+   "exported": "2026-04-07",
+   "rows": 630
+  },
+  "data/1c_sales.csv": {
+   "exported": "2026-04-07",
+   "rows": 11885,
+   "max_date": "2026-04-02"
+  },
+  "data/1c_staff.csv": {
+   "exported": "2026-04-07",
+   "rows": 37
+  },
+  "data/1c_warehouses.csv": {
+   "exported": "2026-04-07",
+   "rows": 9
+  },
+  "data/lots.csv": {
+   "exported": "2026-04-07",
+   "rows": 66
+  }
+ }
+}

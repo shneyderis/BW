@@ -1,0 +1,7 @@
+id,name,sku,price,stock_quantity,stock_status,total_sales,categories
+700,Beykush Chardonnay 2023,UK0,18,0,instock,30,Wine
+701,Beykush Chardonnay 2024,UK1,19,4,instock,2,Wine
+702,Artania Red 2022,UK2,20,4,instock,36,Wine
+703,Artania Rose 2024,UK3,21,0,instock,15,Wine
+704,Kara Kermen Blanc 2021,UK4,22,4,instock,52,Wine
+705,Beresagne Brut 2020,UK5,23,30,instock,52,Wine

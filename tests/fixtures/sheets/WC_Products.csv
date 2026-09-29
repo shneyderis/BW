@@ -1,0 +1,11 @@
+id,name,sku,status,price,regular_price,sale_price,stock_quantity,stock_status,categories,total_sales
+100,Beykush Chardonnay 2023,SKU0,publish,450,450,0,0,outofstock,Ігристе,336
+101,Beykush Chardonnay 2024,SKU1,publish,490,490,0,0,outofstock,Ігристе,550
+102,Artania Red 2022,SKU2,publish,530,530,0,40,instock,Ігристе,611
+103,Artania Rose 2024,SKU3,publish,570,570,0,40,instock,Червоне,177
+104,Kara Kermen Blanc 2021,SKU4,publish,610,610,0,3,outofstock,Червоне,233
+105,Beresagne Brut 2020,SKU5,publish,650,650,0,3,instock,Червоне,553
+106,Loca Deserta Riesling 2023,SKU6,publish,690,690,0,40,outofstock,Біле,780
+107,Yafe Nagar Pinot 2022,SKU7,publish,730,730,0,0,instock,Біле,169
+108,Beykush Timorasso 2023,SKU8,publish,770,770,0,3,outofstock,Біле,593
+109,Artania White 2024,SKU9,publish,810,810,0,120,instock,Біле,533

@@ -38,7 +38,7 @@ function rBalance(){
   if(C1&&C1.sales&&C1.bank){
     const byP={};C1.sales.filter(s=>s.org==="Бейкуш Вайнери").forEach(s=>{const p=s.partner;if(!byP[p])byP[p]={sold:0,paid:0,lastPay:""};byP[p].sold+=s.sum});
     C1.bank.filter(b=>b.income>0&&b.type.includes("покупат")).forEach(b=>{const p=b.partner;if(byP[p]){byP[p].paid+=b.income;if(b.date>byP[p].lastPay)byP[p].lastPay=b.date}});
-    const now=Date.now();
+    const now=c1RefDate(); // станом на дату останніх даних 1С
     Object.values(byP).forEach(p=>{
       const debt=p.sold-p.paid;
       if(debt>1000){
@@ -57,8 +57,9 @@ function rBalance(){
   const goodsOnStock=acc28.saldoEndDt||0;
 
   // === P&L YTD ===
-  const curYr=String(new Date().getFullYear());
+  const curYr=aY().pop()||String(new Date().getFullYear()); // останній рік з даними (не календарний)
   const prevYr=String(parseInt(curYr)-1);
+  const calYr=String(new Date().getFullYear());
   const opex=T.filter(t=>!isA(t));
   const revYTD=opex.filter(t=>t.yr===curYr&&t.tp==="Доход").reduce((s,t)=>s+t.nt,0);
   const expYTD=opex.filter(t=>t.yr===curYr&&t.tp==="Расход").reduce((s,t)=>s+t.nt,0);
@@ -96,13 +97,14 @@ function rBalance(){
   // === RENDER ===
   el.innerHTML=`
     <div class="sec">💰 Баланс · Beykush Winery</div>
-    ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — виписки (P&L, CAPEX)",maxD(T,t=>t.ym)),BL.length?srcP(BK_ACC()+" → PRIVAT_BALANCES — рахунки"):"",lots.length?srcP("файл data/lots.csv — лоти виноробні"):"",C1.osv&&C1.osv.length?srcP("1С: файл data/1c_osv.csv (або "+BK_1C()+") — дебіторка, осн.засоби, рах.28"):""])}
+    ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — виписки (P&L, CAPEX)",maxD(T,t=>t.ym),"dd"),BL.length?srcP(BK_ACC()+" → PRIVAT_BALANCES — рахунки",maxD(BL,b=>gv(b,"dpd")),"bal"):"",lots.length?srcP("файл data/lots.csv — лоти виноробні",(MANIFEST&&MANIFEST.files&&MANIFEST.files["data/lots.csv"]||{}).exported||"","lots"):"",C1.osv&&C1.osv.length?srcP("1С: файл data/1c_osv.csv (або "+BK_1C()+") — дебіторка, осн.засоби, рах.28",maxD(C1.sales,s=>s.date),"c1"):""])}
+    ${LOAD_PHASE<2?'<div class="info">⏳ Завантажуються інші джерела (1С, магазин, лоти, маркетинг)… стан даних і задачі зʼявляться за кілька секунд</div>':healthTasksHTML({max:6})}
 
     <div class="kpis">
       <div class="kpi"><div class="l">Загальні активи</div><div class="v" style="color:#f59e0b">${ff(toCur(totalAssets))}${c$}</div></div>
       <div class="kpi"><div class="l">Гроші</div><div class="v g">${ff(toCur(totalMoney))}${c$}</div><div class="s">₴${ff(uahB)} €${ff(eurB)} $${ff(usdB)}</div></div>
       <div class="kpi"><div class="l">Дебіторка</div><div class="v" style="color:#3b82f6">${ff(toCur(receivables))}${c$}</div><div class="s">${overdueCount?`<span style="color:#ef4444">⚠ ${ff(overdueDebt)}₴ прострочено</span>`:"✓"}</div></div>
-      <div class="kpi"><div class="l">Вино всього</div><div class="v" style="color:#8b5cf6">${ff(toCur(totalWine))}${c$}</div><div class="s">бочки + пляшки</div></div>
+      <div class="kpi"><div class="l">Вино всього</div><div class="v" style="color:#8b5cf6">${ff(toCur(totalWine))}${c$}</div><div class="s">оцінка: бочки + пляшки</div></div>
     </div>
 
     <div class="row">
@@ -142,7 +144,7 @@ function rBalance(){
       </div>
     </div>
 
-    <div class="cc"><h3>📊 P&L ${curYr} YTD + Прогноз${srcI("Dashboard_Data",maxD(T,t=>t.ym))}</h3>
+    <div class="cc"><h3>📊 P&L ${curYr} YTD + Прогноз${srcI("Dashboard_Data",maxD(T,t=>t.ym))}${curYr!==calYr?`<span class="srcnote-i" style="color:#f59e0b">⚠ за ${calYr} даних ще немає</span>`:""}</h3>
       ${(()=>{
         // Forecast: extrapolate current year based on completed months
         const completedMonths=parseInt(mxMM(curYr));
@@ -168,7 +170,7 @@ function rBalance(){
     </div>
 
     ${overdueDebt>0?`<div class="cc" style="border-color:rgba(239,68,68,.4)"><h3 style="color:#ef4444">⚠ Прострочена заборгованість</h3>
-      <div style="font-size:11px">Борг >30 днів: <b style="color:#ef4444">${ff(overdueDebt)}₴</b> (${overdueCount} партнерів)</div>
+      <div style="font-size:11px">Борг >30 днів: <b style="color:#ef4444">${ff(overdueDebt)}₴</b> (${overdueCount} партнерів) <span style="color:#7d8196;font-size:9px">станом на ${c1RefISO()} — дату останніх даних 1С</span></div>
       <div style="font-size:9px;color:#7d8196;margin-top:4px">Деталі → вкладка Партнери → Борги</div>
     </div>`:""}
 

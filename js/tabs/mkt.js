@@ -238,14 +238,14 @@ async function rMkt(){
   // ========== RENDER ==========
   el.innerHTML=`
     ${mktError?'<div class="warn">⚠ '+mktError+'</div>':""}
-    ${srcN([srcP("книга "+BK_MAIN()+", листи:"),spCamp.length?srcP("SP_Campaigns — email-розсилки",maxD(spCamp,c=>c.send_date)):"",igPosts.length?srcP("IG_Posts — Instagram",maxD(igPosts,p=>p.date)):"",adCamps.length?srcP("ADD1 / Meta_Ads — реклама",maxD(adCamps,a=>a.date_stop)):"",WO.length?srcP("WC_Orders — замовлення",maxD(WO,o=>o.date_created)):""])}
+    ${srcN([srcP("книга "+BK_MAIN()+":"),srcP("SP_Campaigns — email-розсилки",maxD(spCamp,c=>c.send_date),"sp"),srcP("IG_Posts — Instagram",maxD(igPosts,p=>p.date),"ig"),adCamps.length?srcP("ADD1 / Meta_Ads — реклама",maxD(adCamps,a=>a.date_stop),"ads"):"",srcP("WC_Orders — замовлення",maxD(WO,o=>o.date_created),"wc")])}
 
     ${hasTimeline?`<div class="sec">📊 Маркетинг Timeline
       <span style="float:right;font-size:10px;font-weight:400">
         ${[30,60,90,180].map(d=>`<button class="flt" style="margin-left:3px;${window._mktDays===d?"background:#9f1239;color:#fff;border-color:#9f1239":""}" onclick="window._mktDays=${d};render()">${d}д</button>`).join("")}
       </span>
     </div>
-    <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях, ${window._mktDays}д)</h3><canvas id="cTimeline" height="160"></canvas></div>`:""}
+    <div class="cc"><h3>Замовлення · Розсилки · IG пости (по днях, ${window._mktDays}д)</h3><canvas id="cTimeline" height="160"></canvas></div>`:`<div class="info">За останні ${window._mktDays} днів немає замовлень, постів чи розсилок у даних. Останнє замовлення: <b>${maxD(WO,o=>o.date_created)||"—"}</b> · пост: <b>${maxD(igPosts,p=>p.date)||"—"}</b> · розсилка: <b>${maxD(spCamp,c=>c.send_date)||"—"}</b>. Якщо це не так — синхронізація не працює (див. 📋 Статус).</div>`}
 
     ${(()=>{
       // === AI INSIGHTS ===
@@ -311,8 +311,9 @@ async function rMkt(){
 
     ${(()=>{
       // === MONTHLY COMPARISON ===
-      const now=new Date();const curM=now.toISOString().substring(0,7);
-      const prevM=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString().substring(0,7);
+      // Останній місяць з даними (замовлення або пости), а не календарний
+      const curM=[maxD(filteredOrders,o=>o.date_created).substring(0,7),maxD(igPosts,p=>p.date).substring(0,7)].filter(Boolean).sort().pop()||new Date().toISOString().substring(0,7);
+      const prevM=ymAdd(curM,-1);
       const curIG=igPosts.filter(p=>p.date&&p.date.startsWith(curM));
       const prevIG=igPosts.filter(p=>p.date&&p.date.startsWith(prevM));
       const curEmail=recentCamp.filter(c=>c.send_date&&c.send_date.startsWith(curM));
@@ -324,7 +325,7 @@ async function rMkt(){
       function delta(cur,prev){if(!prev)return"—";const d=((cur-prev)/prev*100);return`<span style="color:${d>=0?"#10b981":"#ef4444"}">${d>0?"+":""}${d.toFixed(0)}%</span>`}
       const curIGReach=curIG.reduce((s,p)=>s+p.reach,0);const prevIGReach=prevIG.reduce((s,p)=>s+p.reach,0);
       const curIGLikes=curIG.reduce((s,p)=>s+p.likes,0);const prevIGLikes=prevIG.reduce((s,p)=>s+p.likes,0);
-      if(curIG.length||prevIG.length)return`<div class="cc" style="border-color:rgba(245,158,11,.3)"><h3 style="color:#f59e0b">📊 Місячний звіт: ${curM} vs ${prevM}</h3>
+      if(curIG.length||prevIG.length)return`<div class="cc" style="border-color:rgba(245,158,11,.3)"><h3 style="color:#f59e0b">📊 Місячний звіт: ${curM} vs ${prevM} <span class="srcnote-i">останній місяць з даними</span></h3>
         <table class="tbl"><tr><th>Метрика</th><th class="r">${curM}</th><th class="r">${prevM}</th><th class="r">Δ</th></tr>
           <tr><td>Замовлення</td><td class="r">${curOrd.length}</td><td class="r">${prevOrd.length}</td><td class="r">${delta(curOrd.length,prevOrd.length)}</td></tr>
           <tr><td>Виручка</td><td class="r g">${ff(curRev)}₴</td><td class="r">${ff(prevRev)}₴</td><td class="r">${delta(curRev,prevRev)}</td></tr>

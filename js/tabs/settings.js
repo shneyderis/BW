@@ -15,6 +15,7 @@ const ALL_TABS=[
   {id:"uk",label:"UK",icon:"🇬🇧"},
   {id:"production",label:"Виробн.",icon:"🍷"},
   {id:"unrec",label:"Нерозпізнані",icon:"⚠️"},
+  {id:"status",label:"Статус",icon:"📋"},
   {id:"settings",label:"Налаштування",icon:"⚙"}
 ];
 
@@ -104,24 +105,8 @@ function rSettings(){
     ${GOOGLE_CLIENT_ID?"":'<div style="margin-top:8px;font-size:9px;color:#f59e0b">⚠ GOOGLE_CLIENT_ID не задано. Google Sign-In вимкнено, працюють тільки паролі.</div>'}
   </div>`:"";
 
-  // Data sources
-  const srcHTML=`<div class="cc"><h3>Джерела даних</h3>
-    <table class="tbl">
-      <tr><th>Джерело</th><th class="r">Записів</th><th class="r">Статус</th></tr>
-      <tr><td>Dashboard_Data</td><td class="r">${ff(T.length)}</td><td class="r g">✓</td></tr>
-      <tr><td>Баланси (PRIVAT_BALANCES)</td><td class="r">${BL.length}</td><td class="r ${BL.length?"g":"rd"}">${BL.length?"✓":"—"}</td></tr>
-      <tr><td>3_Stock / Stock_Data</td><td class="r">${SK.length||SD.length}</td><td class="r ${SK.length||SD.length?"g":"rd"}">${SK.length||SD.length?"✓":"—"}</td></tr>
-      <tr><td>WC замовлення (Sheets)</td><td class="r">${WO.length}</td><td class="r ${WO.length?"g":"rd"}">${WO.length?"✓":"—"}</td></tr>
-      <tr><td>WC товари (Sheets)</td><td class="r">${WP.length}</td><td class="r ${WP.length?"g":"rd"}">${WP.length?"✓":"—"}</td></tr>
-      <tr><td>SP кампанії</td><td class="r">${(SP.campaigns||[]).length}</td><td class="r g">✓</td></tr>
-      <tr><td>IG пости</td><td class="r">${IG.posts.length}</td><td class="r ${IG.posts.length?"g":""}">${IG.posts.length?"✓":"очікує токен"}</td></tr>
-      <tr><td>Meta Ads</td><td class="r">${MA.campaigns.length}</td><td class="r ${MA.campaigns.length?"g":""}">${MA.campaigns.length?"✓":"очікує токен"}</td></tr>
-      <tr><td>1С Продажі</td><td class="r">${ff(C1.sales.length)}</td><td class="r ${C1.sales.length?"g":"rd"}">${C1.sales.length?"✓":"—"}</td></tr>
-      <tr><td>1С Контрагенти</td><td class="r">${C1.partners.length}</td><td class="r ${C1.partners.length?"g":"rd"}">${C1.partners.length?"✓":"—"}</td></tr>
-      <tr><td>1С Банк</td><td class="r">${ff((C1.bank||[]).length)}</td><td class="r ${(C1.bank||[]).length?"g":"rd"}">${(C1.bank||[]).length?"✓":"—"}</td></tr>
-      <tr><td>1С Номенклатура</td><td class="r">${C1.products.length}</td><td class="r ${C1.products.length?"g":"rd"}">${C1.products.length?"✓":"—"}</td></tr>
-      <tr><td>Settings</td><td class="r">${SETTINGS.length}</td><td class="r g">✓</td></tr>
-    </table></div>`;
+  // Data sources — повна таблиця у health.js (та сама, що у вкладці Статус)
+  const srcHTML=(typeof healthTableHTML==="function"&&HEALTH.list.length)?healthTableHTML():`<div class="cc"><h3>Джерела даних</h3><div class="info">⏳ завантаження…</div></div>`;
 
   el.innerHTML=`
     <div class="cc"><h3>Налаштування ФОП (магазин)</h3><table class="tbl">
@@ -161,8 +146,8 @@ window.togglePerm=function(role,tabId,enabled){
 
 // Reset to defaults
 window.resetPerms=function(){
-  ROLES.owner.tabs=["balance","pl","sales","goods","exp","salary","shop","stock","cash","mkt","partners","uk","production","unrec","settings"];
-  ROLES.manager.tabs=["sales","goods","shop","stock","mkt","partners"];
-  ROLES.accountant.tabs=["balance","pl","goods","exp","salary","cash","partners","unrec"];
+  ROLES.owner.tabs=["balance","pl","sales","goods","exp","salary","shop","stock","cash","mkt","partners","uk","production","unrec","status","settings"];
+  ROLES.manager.tabs=["sales","goods","shop","stock","mkt","partners","status"];
+  ROLES.accountant.tabs=["balance","pl","goods","exp","salary","cash","partners","unrec","status"];
   render();
 };
