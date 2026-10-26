@@ -50,10 +50,11 @@ def posting(amount, purpose, edrpou, currency, cp=""):
     p = (purpose or "").lower().replace("i", "і")
     who = ((cp or "").lower() + " " + p).replace("i", "і")
     bank = "311" if currency == "UAH" else "312"
-    if edrpou == OWN_EDRPOU or "#перенесення" in p or "перенесення залишку" in p:
-        return bank, bank, "внутрішній переказ", ["internal_transfer"]
-    if re.search(r"купівля валют|продаж валют|конверта|валютно-обмін|для покупки eur|для покупки usd|для продажу", who):
+    if re.search(r"купівля.{0,25}(eur|usd|валют)|продаж.{0,25}(eur|usd|валют)|конверта|валютно-обмін|для покупки (eur|usd)|по курсу", who):
         return (bank, "333", "конвертація", ["conversion_pair"]) if amount > 0 else ("333", bank, "конвертація", ["conversion_pair"])
+    is_export_in = amount > 0 and currency != "UAH" and p.strip().startswith("from")
+    if (edrpou == OWN_EDRPOU and not is_export_in) or "#перенесення" in p or "перенесення залишку" in p:
+        return bank, bank, "внутрішній переказ", ["internal_transfer"]
     if amount > 0:
         if re.search(r"еквайр|екв\.|acquiring|торговел", p): return bank, "333", "еквайринг", []
         if re.search(r"повернення|возврат", p): return bank, "631", "повернення від постачальника", []
@@ -77,16 +78,15 @@ def posting(amount, purpose, edrpou, currency, cp=""):
     flags = ["no_purpose"] if not p.strip() else []
     return "631", bank, "оплата постачальнику", flags
 
-# --- парсер виписки ПриватБанку ---
+# --- парсер виписки ПриватБанку (грн і валютні; у валютних є «Курс НБУ» та «Сума еквівалент у гривні») ---
 def parse_privat(path):
     rows = list(csv.reader(open(path, encoding="utf-8", errors="replace")))
-    # знайти заголовок
     hi = next((i for i, r in enumerate(rows) if any("Дата проводки" in (c or "") for c in r)), None)
     if hi is None: return None
     hdr = rows[hi]
     ix = {re.sub(r"\s+"," ",(c or "").strip()): j for j, c in enumerate(hdr)}
-    def col(r, name, alt=None):
-        j = ix.get(name, ix.get(alt or "", -1))
+    def col(r, name):
+        j = ix.get(name, -1)
         return r[j].strip() if 0 <= j < len(r) else ""
     acc_line = next((" ".join(c for c in r if c) for r in rows[:hi] if any("Виписка по рахунку" in (c or "") for c in r)), os.path.basename(path))
     m = re.search(r"UA\d{10,}", acc_line); acc = m.group(0) if m else os.path.basename(path)
@@ -96,17 +96,50 @@ def parse_privat(path):
         if not d: continue
         amt = num(col(r, "Сума"))
         if amt == 0: continue
+        cur = col(r, "Валюта") or "UAH"
+        eq  = num(col(r, "Сума еквівалент у гривні"))
         out.append({
             "date": d, "time": col(r, "Час проводки"), "amount": amt,
-            "currency": col(r, "Валюта") or "UAH",
+            "amount_uah": eq if cur != "UAH" and eq else amt,
+            "currency": cur,
             "purpose": col(r, "Призначення платежу"),
             "edrpou": col(r, "ЄДРПОУ"), "cp": col(r, "Назва контрагента"),
-            "cp_acc": col(r, "Рахунок контрагента"), "ref": col(r, "Референс"),
+            "ref": col(r, "Референс") or col(r, "№"),
             "bank_acc": acc, "src_file": os.path.basename(path),
         })
     return out
 
-PARSERS = [parse_privat]  # parse_vostok додамо, щойно побачимо формат
+# --- парсер виписки Банку Восток (заголовок у 1-му рядку, дата MM/DD/YYYY, окремі Дебет/Кредит) ---
+def parse_vostok(path):
+    rows = list(csv.reader(open(path, encoding="utf-8", errors="replace")))
+    if not rows or "Дата операції" not in rows[0] or "Дебет" not in rows[0]: return None
+    ix = {c.strip(): j for j, c in enumerate(rows[0])}
+    def col(r, name):
+        j = ix.get(name, -1)
+        return r[j].strip() if 0 <= j < len(r) else ""
+    out = []
+    for r in rows[1:]:
+        dm = re.match(r"(\d{2})/(\d{2})/(\d{4})(?:\s+(\d{2}:\d{2}))?", col(r, "Дата операції"))
+        if not dm: continue
+        d = f"{dm.group(3)}-{dm.group(1)}-{dm.group(2)}"; t = (dm.group(4) or "") + (":00" if dm.group(4) else "")
+        deb, cre = num(col(r, "Дебет")), num(col(r, "Кредит"))
+        if not deb and not cre: continue
+        amt = cre if cre else -deb
+        cur = col(r, "Валюта") or "UAH"
+        eq  = num(col(r, "Гривневе покриття"))
+        out.append({
+            "date": d, "time": t, "amount": amt,
+            "amount_uah": eq if cur != "UAH" and eq else amt,
+            "currency": cur,
+            "purpose": col(r, "Призначення платежу"),
+            "edrpou": col(r, "ЄДРПОУ кореспондента"), "cp": col(r, "Кореспондент"),
+            "ref": col(r, "Номер документа"),
+            "bank_acc": col(r, "Рахунок") or os.path.basename(path),
+            "src_file": os.path.basename(path),
+        })
+    return out
+
+PARSERS = [parse_privat, parse_vostok]
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -133,18 +166,19 @@ def main():
     for o in ops:
         dt, kt, note, flags = posting(o["amount"], o["purpose"], o["edrpou"], o["currency"], o["cp"])
         rows.append([o["date"], o["time"], o["bank_acc"], o["currency"],
-                     f'{abs(o["amount"]):.2f}', "in" if o["amount"] > 0 else "out",
+                     f'{abs(o["amount"]):.2f}', f'{abs(o.get("amount_uah", o["amount"])):.2f}',
+                     "in" if o["amount"] > 0 else "out",
                      dt, kt, note, o["cp"], o["edrpou"], o["purpose"], o["ref"],
                      o["src_file"], ";".join(flags)])
         k = (o["date"][:4], dt, kt, note)
-        agg[k][0] += abs(o["amount"]); agg[k][1] += 1
+        agg[k][0] += abs(o.get("amount_uah", o["amount"])); agg[k][1] += 1
     with open(os.path.join(OUT, "bank_postings_daily.csv"), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["date","time","bank_account","currency","amount","direction","dt","kt","note","counterparty","edrpou","purpose","ref","src_file","flags"])
+        w.writerow(["date","time","bank_account","currency","amount","amount_uah","direction","dt","kt","note","counterparty","edrpou","purpose","ref","src_file","flags"])
         w.writerows(rows)
     with open(os.path.join(OUT, "bank_postings_daily_summary.csv"), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["year","dt","kt","note","amount","ops"])
+        w.writerow(["year","dt","kt","note","amount_uah","ops"])
         for (yr, dt, kt, note), (s, c) in sorted(agg.items()):
             w.writerow([yr, dt, kt, note, f"{s:.2f}", c])
     print(f"Разом: {len(rows)} проводок → export/bank_postings_daily.csv (+_summary)")
