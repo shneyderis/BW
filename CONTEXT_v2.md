@@ -25,6 +25,9 @@ js/tabs/mkt.js      — Маркетинг v2 (читает из Google Sheets, 
 js/tabs/unrec.js    — Нераспознанные
 js/tabs/settings.js — Настройки
 vercel.json         — proxy rewrites для WC, SP, Meta
+accounting/         — аудит і нормалізація даних 1С: audit.py (перевірки якості),
+                      build_export.py (експорт у нейтральні CSV для міграції в бухпрограму),
+                      export/*.csv (довідники+журнали), issues/*.csv (проблеми), AUDIT_*.md (знімок аудиту)
 ```
 
 ## Источники данных
