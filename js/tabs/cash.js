@@ -14,6 +14,13 @@ function rCash(f){
   const lastD={};T.forEach(t=>{if(!lastD[t.src]||t.ym>lastD[t.src])lastD[t.src]=t.ym});
   el.innerHTML=`
     ${srcN([srcP(BK_MAIN()+" → Dashboard_Data — рухи по рахунках",maxD(T,t=>t.ym)),BL.length?srcP(BK_ACC()+" → PRIVAT_BALANCES — поточні залишки"):""])}
+    <div class="cc"><h3>Проводки для бухгалтерії — ТОВ «Бейкуш Вайнері» <span style="font-size:8px;color:#7d8196;font-weight:400">рахунки PRIVAT + VOSTOK · Дт/Кт за планом №291</span></h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="flt" onclick="exportPostingsCSV()">⬇ Журнал проводок CSV</button>
+        <button class="flt" onclick="exportPostingsSummaryCSV()">⬇ Зведення по рахунках CSV</button>
+      </div>
+      <div style="font-size:9px;color:#7d8196;margin-top:5px">Оплати покупців → Дт 311/312 Кт 361/362 · постачальники → Дт 631 Кт 311 · ЗП → 661 · податки → 641/651 · комісія → 92 · конвертації позначені для ручної розноски. Дата з точністю до місяця — для фінального імпорту беріть виписки банку з денними датами.</div>
+    </div>
     <div class="kpis">
       <div class="kpi"><div class="l">Всього ₴</div><div class="v" style="color:#f59e0b">${ff(totalB)} ₴</div></div>
       <div class="kpi"><div class="l">Всього €</div><div class="v" style="color:#3b82f6">${ff(totalEUR)} €</div></div>
