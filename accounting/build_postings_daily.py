@@ -32,7 +32,7 @@ def d2iso(d):
 # --- правила розноски ---
 # Податкові рахунки застосовуються ЛИШЕ до платежів у бюджет (казначейство/ДПС),
 # інакше «у т.ч. ПДВ 20%» у звичайних оплатах постачальникам дає хибні 641.
-BUDGET_RX = r"казначейств|держказна|дпс\b|дпi|дпі|податкова|пенсійн|фонд соц|до бюджету|держбюджет"
+BUDGET_RX = r"казнач|\bгук\b|гудксу|дпс\b|дпi|дпі|податкова|пенсійн|фонд соц|до бюджету|держбюджет"
 TAX_RULES = [
     (r"єдиний внесок|єсв|есв", "651", "ЄСВ"),
     (r"пдфо|податку? на доходи|військов|военн", "641", "ПДФО/ВЗ"),
@@ -41,7 +41,7 @@ TAX_RULES = [
     (r"єдиний податок", "641", "єдиний податок"),
     (r"земельн|оренда земл|екологічн", "641", "інші податки/збори"),
 ]
-COMMISSION_RX = r"комісі|комиси|обслуговування рахунк|абонплата|банк-клієнт|банк-клиент"
+COMMISSION_RX = r"комісі|комиси|обслуговування рахунк|розрахункове обслуговування|абонплата|банк-клієнт|банк-клиент"
 SALARY_RX = r"заробітн|зарплат|відпускн|лікарнян|аванс.*зарпл"
 BANK_EDRPOU = {"14360570"}  # ПриватБанк (комісії, «ДОХОДЫ РО БАНК-КЛИЕНТ»)
 
@@ -68,13 +68,14 @@ def posting(amount, purpose, edrpou, currency, cp=""):
         return "92", bank, "комісія банку", []
     if re.search(SALARY_RX, p):
         return "661", bank, "зарплата", []
-    if re.search(BUDGET_RX, who) or re.search(r"єдиний внесок|єсв|есв|пдфо|військов", p):
+    if re.search(BUDGET_RX, who) or re.match(r"^\s*[*;]*\s*101[ ;,]", p) or re.search(r"єдиний внесок|єсв|есв|пдфо|військов", p):
         for rx, acc, note in TAX_RULES:
             if re.search(rx, p): return acc, bank, note, []
         return "641", bank, "податки (уточнити)", ["tax_unclassified"]
     if re.search(r"відсотк|процент|кредит", p): return "684", bank, "кредит/відсотки", []
     if re.search(r"поворотн.*фінанс|фіндопомог", p): return "685", bank, "фіндопомога", []
     if re.search(r"відряджен|добові|підзвіт", p): return "372", bank, "підзвіт/відрядження", []
+    if re.search(r"митне оформлення|митні платежі|митниц", p): return "377", bank, "митниця (аванс)", []
     flags = ["no_purpose"] if not p.strip() else []
     return "631", bank, "оплата постачальнику", flags
 
@@ -109,7 +110,30 @@ def parse_privat(path):
         })
     return out
 
-# --- парсер виписки Банку Восток (заголовок у 1-му рядку, дата MM/DD/YYYY, окремі Дебет/Кредит) ---
+# --- парсер листів PRIVAT / PRIVAT21-24 з книги BW_accounts (extract_book_sheets.py) ---
+# Колонки позиційні: №, дата(ISO), час, Cума, Валюта, Курс, Еквівалент грн,
+# Призначення, ЄДРПОУ, Назва контрагента, Рахунок, МФО, Референс, DATE
+def parse_privat_sheet(path):
+    if not os.path.basename(path).startswith("sheet_privat"): return None
+    rows = list(csv.reader(open(path, encoding="utf-8", errors="replace")))
+    out = []
+    for r in rows:
+        if len(r) < 13 or not re.match(r"\d{4}-\d{2}-\d{2}", r[1] or ""): continue
+        amt = num(r[3])
+        if amt == 0: continue
+        cur = (r[4] or "UAH").strip()
+        eq = num(r[6])
+        out.append({
+            "date": r[1][:10], "time": (r[2] or "").strip()[:8], "amount": amt,
+            "amount_uah": eq if cur != "UAH" and eq else amt,
+            "currency": cur, "purpose": (r[7] or "").strip(),
+            "edrpou": re.sub(r"\.0$", "", (r[8] or "").strip()),
+            "cp": (r[9] or "").strip(), "ref": (r[12] or "").strip(),
+            "bank_acc": "PRIVAT (лист BW_accounts)", "src_file": os.path.basename(path),
+        })
+    return out
+
+# --- парсер виписки Банку Восток (файл: дата MM/DD/YYYY; лист: ISO дата) ---
 def parse_vostok(path):
     rows = list(csv.reader(open(path, encoding="utf-8", errors="replace")))
     if not rows or "Дата операції" not in rows[0] or "Дебет" not in rows[0]: return None
@@ -119,9 +143,14 @@ def parse_vostok(path):
         return r[j].strip() if 0 <= j < len(r) else ""
     out = []
     for r in rows[1:]:
-        dm = re.match(r"(\d{2})/(\d{2})/(\d{4})(?:\s+(\d{2}:\d{2}))?", col(r, "Дата операції"))
-        if not dm: continue
-        d = f"{dm.group(3)}-{dm.group(1)}-{dm.group(2)}"; t = (dm.group(4) or "") + (":00" if dm.group(4) else "")
+        raw_d = col(r, "Дата операції")
+        dm = re.match(r"(\d{2})/(\d{2})/(\d{4})(?:\s+(\d{2}:\d{2}))?", raw_d)
+        if dm:
+            d = f"{dm.group(3)}-{dm.group(1)}-{dm.group(2)}"; t = (dm.group(4) or "") + (":00" if dm.group(4) else "")
+        else:
+            im = re.match(r"(\d{4}-\d{2}-\d{2})[ T]?(\d{2}:\d{2})?", raw_d)
+            if not im: continue
+            d = im.group(1); t = (im.group(2) or "") + (":00" if im.group(2) else "")
         deb, cre = num(col(r, "Дебет")), num(col(r, "Кредит"))
         if not deb and not cre: continue
         amt = cre if cre else -deb
@@ -132,14 +161,14 @@ def parse_vostok(path):
             "amount_uah": eq if cur != "UAH" and eq else amt,
             "currency": cur,
             "purpose": col(r, "Призначення платежу"),
-            "edrpou": col(r, "ЄДРПОУ кореспондента"), "cp": col(r, "Кореспондент"),
+            "edrpou": re.sub(r"\.0$", "", col(r, "ЄДРПОУ кореспондента")), "cp": col(r, "Кореспондент"),
             "ref": col(r, "Номер документа"),
             "bank_acc": col(r, "Рахунок") or os.path.basename(path),
             "src_file": os.path.basename(path),
         })
     return out
 
-PARSERS = [parse_privat, parse_vostok]
+PARSERS = [parse_privat_sheet, parse_privat, parse_vostok]
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -153,11 +182,14 @@ def main():
         allops += parsed
         print(f"  {os.path.basename(path)}: {len(parsed)} операцій")
     if skipped: print("  НЕ розпізнано формат:", ", ".join(skipped))
-    # дедуплікація (той самий референс+дата+сума може бути у двох файлах, що перетинаються)
+    # дедуплікація: та сама операція може бути у файлі-виписці І в листі книги.
+    # Ключ — нормалізований референс (без суфіксів .1/.P) + дата + сума, без рахунку,
+    # бо листи книги не містять номера рахунку. Порожній референс не дедуплікується.
     seen, ops = set(), []
     for o in allops:
-        key = (o["ref"] or "", o["date"], f'{o["amount"]:.2f}', o["bank_acc"])
-        if o["ref"] and key in seen: continue
+        nref = re.sub(r"\.\w{1,3}$", "", o["ref"] or "")
+        key = (nref, o["date"], f'{o["amount"]:.2f}')
+        if nref and key in seen: continue
         seen.add(key); ops.append(o)
     dup = len(allops) - len(ops)
     if dup: print(f"  прибрано дублікатів (перетин файлів): {dup}")
